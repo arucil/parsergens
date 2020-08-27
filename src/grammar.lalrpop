@@ -1,0 +1,75 @@
+use super::ast::*;
+use super::lex;
+
+#[LALR]
+grammar<'input>(input: &'input str);
+
+pub document: Grammar = <decl*>
+  => {
+    <>.into_iter()
+      .filter_map(|x| x)
+      .collect()
+  };
+
+decl: Option<Spanned<Decl>> = {
+  <l:@L> <decl:rule_decl> <r:@L> => Some(Spanned(l..r, Decl::Rule(decl))),
+  <l:@L> <decl:start_decl> <r:@L> => Some(Spanned(l..r, Decl::Start(decl))),
+  <l:@L> <decl:token_decl> <r:@L> => Some(Spanned(l..r, Decl::Token(decl))),
+  Newline => None,
+};
+
+rule_decl: RuleDecl =
+  <name:ident> Assign <alt1:production> Newline <mut alts:(Indent Or <production> Newline)*>
+  => {
+    alts.insert(0, alt1);
+    RuleDecl {
+      name,
+      alts,
+    }
+  }; 
+
+production: Spanned<RuleAlt> = {
+  <l:@L> <terms:ident*> <r:@L> => Spanned(l..r, RuleAlt::Terms(terms)),
+  <l:@L> Epsilon <r:@L> => Spanned(l..r, RuleAlt::Epsilon),
+};
+
+start_decl: StartDecl = Percent Start <name:ident> Newline
+  => {
+    StartDecl {
+      name,
+    }
+  };
+
+token_decl: TokenDecl = Percent Token <name:ident> <regex:regex>
+  => {
+    TokenDecl {
+      name,
+      regex,
+    }
+  };
+
+spanned<T>: Spanned<String> = <l:@L> <x:T> <r:@L> => Spanned(l..r, x.text.to_owned());
+
+ident = spanned<Ident>;
+regex = spanned<Regex>;
+
+extern {
+  type Location = usize;
+  type Error = lex::LexError;
+
+  enum lex::Token<'input> {
+    Ident => lex::Token { kind: lex::TokenKind::Ident, .. },
+    Start => lex::Token { kind: lex::TokenKind::Start, .. },
+    Token => lex::Token { kind: lex::TokenKind::Token, .. },
+    Regex => lex::Token { kind: lex::TokenKind::Regex, .. },
+
+    Percent => lex::Token { kind: lex::TokenKind::Percent, .. },
+    Assign => lex::Token { kind: lex::TokenKind::Assign, .. },
+    Or => lex::Token { kind: lex::TokenKind::Or, .. },
+    Epsilon => lex::Token { kind: lex::TokenKind::Epsilon, .. },
+    Comma => lex::Token { kind: lex::TokenKind::Comma, .. },
+
+    Indent => lex::Token { kind: lex::TokenKind::Indent, .. },
+    Newline => lex::Token { kind: lex::TokenKind::Newline, .. },
+  }
+}
