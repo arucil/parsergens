@@ -35,13 +35,15 @@ pub enum LexError {
 pub struct Lexer<'a> {
   input: &'a str,
   chars: Peekable<CharIndices<'a>>,
+  sol: bool,
 }
 
 impl<'a> Lexer<'a> {
   pub fn new(input: &'a str) -> Self {
     Self {
       input,
-      chars: input.char_indices().peekable()
+      chars: input.char_indices().peekable(),
+      sol: true
     }
   }
 }
@@ -50,10 +52,57 @@ impl<'a> Iterator for Lexer<'a> {
   type Item = Spanned<Token<'a>, usize, LexError>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    while let Some((_, c)) = self.chars.peek() {
+    let &(i, _) = self.chars.peek()?;
+
+    while let Some((_, ' ')) = self.chars.peek() {
       self.chars.next();
     }
 
-    None
+    let &(j, c) = self.chars.peek()?;
+    if j > i && self.sol {
+      if c != '\n' && &self.input[j..j + 2] != "//" {
+        let tok = Token {
+          kind: TokenKind::Indent,
+          text: &self.input[i..j],
+        };
+        return Some(Ok((i, tok, j)));
+      }
+    }
+
+    self.sol = false;
+    self.chars.next();
+
+    match c {
+      '\n' => {
+        self.sol = true;
+        let token = Token {
+          kind: TokenKind::Newline,
+          text: &self.input[j..j + 1],
+        };
+        return Some(Ok((j, token, j + 1)));
+      }
+      '/' => {
+        if let Some((_, '/')) = self.chars.peek() {
+          self.chars.next();
+          loop {
+            let (k, c) = self.chars.next()?;
+            if c == '\n' {
+              self.sol = true;
+              let token = Token {
+                kind: TokenKind::Newline,
+                text: &self.input[k..k + 1],
+              };
+              return Some(Ok((k, token, k + 1)));
+            }
+          }
+        } else {
+          loop {
+          }
+        }
+      }
+      _ => {}
+    }
+
+    Some(Err(LexError::InvalidChar))
   }
 }
