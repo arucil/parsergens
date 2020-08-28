@@ -30,13 +30,16 @@ rule_decl: RuleDecl =
 
 production: Spanned<RuleAlt> = {
   <l:@L> <terms:ident*> <r:@L> => Spanned(l..r, RuleAlt::Terms(terms)),
-  <l:@L> Epsilon <r:@L> => Spanned(l..r, RuleAlt::Epsilon),
+  <l:@L> epsilon <r:@L> => Spanned(l..r, RuleAlt::Epsilon),
 };
 
-start_decl: StartDecl = Percent Start <name:ident> Newline
+epsilon: () = LParen RParen;
+
+start_decl: StartDecl = Percent Start <name:ident> <mut names:(Comma <ident>)*> Newline
   => {
+    names.insert(0, name);
     StartDecl {
-      name,
+      names,
     }
   };
 
@@ -66,7 +69,8 @@ extern {
     Percent => lex::Token { kind: lex::TokenKind::Percent, .. },
     Assign => lex::Token { kind: lex::TokenKind::Assign, .. },
     Or => lex::Token { kind: lex::TokenKind::Or, .. },
-    Epsilon => lex::Token { kind: lex::TokenKind::Epsilon, .. },
+    LParen => lex::Token { kind: lex::TokenKind::LParen, .. },
+    RParen => lex::Token { kind: lex::TokenKind::RParen, .. },
     Comma => lex::Token { kind: lex::TokenKind::Comma, .. },
 
     Indent => lex::Token { kind: lex::TokenKind::Indent, .. },
