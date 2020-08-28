@@ -36,7 +36,7 @@ pub enum LexError {
 pub struct Lexer<'a> {
   input: &'a str,
   chars: Peekable<CharIndices<'a>>,
-  sol: bool,
+  bol: bool,
 }
 
 impl<'a> Lexer<'a> {
@@ -44,7 +44,7 @@ impl<'a> Lexer<'a> {
     Self {
       input,
       chars: input.char_indices().peekable(),
-      sol: true
+      bol: true
     }
   }
 
@@ -70,7 +70,7 @@ impl<'a> Iterator for Lexer<'a> {
     }
 
     let &(j, c) = self.chars.peek()?;
-    if j > i && self.sol {
+    if j > i && self.bol {
       if c != '\n' && &self.input[j..j + 2] != "//" {
         let tok = Token {
           kind: TokenKind::Indent,
@@ -80,12 +80,17 @@ impl<'a> Iterator for Lexer<'a> {
       }
     }
 
-    self.sol = false;
+    self.bol = false;
     self.chars.next();
 
     match c {
       '\n' => {
-        self.sol = true;
+        // collapse newlines
+        if j > i || self.bol {
+          return self.next();
+        }
+
+        self.bol = true;
         let token = Token {
           kind: TokenKind::Newline,
           text: &self.input[j..j + 1],
@@ -98,7 +103,7 @@ impl<'a> Iterator for Lexer<'a> {
           loop {
             let (k, c) = self.chars.next()?;
             if c == '\n' {
-              self.sol = true;
+              self.bol = true;
               let token = Token {
                 kind: TokenKind::Newline,
                 text: &self.input[k..k + 1],

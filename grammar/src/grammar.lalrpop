@@ -19,7 +19,7 @@ decl: Option<Spanned<Decl>> = {
 };
 
 rule_decl: RuleDecl =
-  <name:ident> Assign <alt1:production> Newline <mut alts:(Indent Or <production> Newline)*>
+  <name:ident> Assign Newline Indent <alt1:production> Newline <mut alts:(Indent Or <production> Newline)*>
   => {
     alts.insert(0, alt1);
     RuleDecl {
