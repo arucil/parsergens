@@ -1,5 +1,5 @@
 ---
-source: grammar/src/lex.rs
+source: grammar/grammar_parser/src/lex.rs
 expression: result
 ---
 [

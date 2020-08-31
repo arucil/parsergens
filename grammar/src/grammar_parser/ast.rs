@@ -17,7 +17,7 @@ pub struct TokenDecl {
 
 #[derive(Debug)]
 pub struct StartDecl {
-  pub names: Vec<Spanned<String>>,
+  pub name: Spanned<String>,
 }
 
 #[derive(Debug)]

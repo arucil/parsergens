@@ -1,9 +1,4 @@
-use lalrpop_util::lalrpop_mod;
-
-lalrpop_mod!(grammar);
-
-mod lex;
-mod ast;
+use grammar::grammar::lex;
 
 fn main() {
   let input = r"
@@ -19,8 +14,7 @@ fn main() {
 %token NUMBER /\d+(\.\d*)?/
 %token IDENT /[a-zA-Z][\w_]*/
 
-expr =
-    expr PLUS expr
+expr = expr PLUS expr
   | expr MINUS expr
   | expr MUL expr
   | expr DIV expr

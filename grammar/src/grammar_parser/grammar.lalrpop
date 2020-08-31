@@ -4,7 +4,7 @@ use super::lex;
 #[LALR]
 grammar<'input>(input: &'input str);
 
-pub document: Grammar = <decl*>
+pub Document: Grammar = <decl*>
   => {
     <>.into_iter()
       .filter_map(|x| x)
@@ -19,7 +19,7 @@ decl: Option<Spanned<Decl>> = {
 };
 
 rule_decl: RuleDecl =
-  <name:ident> Assign Newline Indent <alt1:production> Newline <mut alts:(Indent Or <production> Newline)*>
+  <name:ident> Assign (Newline Indent)? <alt1:production> Newline <mut alts:(Indent Or <production> Newline)*>
   => {
     alts.insert(0, alt1);
     RuleDecl {
@@ -29,17 +29,16 @@ rule_decl: RuleDecl =
   }; 
 
 production: Spanned<RuleAlt> = {
-  <l:@L> <terms:ident*> <r:@L> => Spanned(l..r, RuleAlt::Terms(terms)),
+  <l:@L> <terms:ident+> <r:@L> => Spanned(l..r, RuleAlt::Terms(terms)),
   <l:@L> epsilon <r:@L> => Spanned(l..r, RuleAlt::Epsilon),
 };
 
 epsilon: () = LParen RParen;
 
-start_decl: StartDecl = Percent Start <name:ident> <mut names:(Comma <ident>)*> Newline
+start_decl: StartDecl = Percent Start <name:ident> Newline
   => {
-    names.insert(0, name);
     StartDecl {
-      names,
+      name,
     }
   };
 

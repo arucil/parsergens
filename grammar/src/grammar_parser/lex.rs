@@ -1,5 +1,7 @@
 use std::str::CharIndices;
 use std::iter::Peekable;
+use std::fmt::Display;
+use std::fmt;
 
 pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 
@@ -29,8 +31,8 @@ pub struct Token<'a> {
 
 #[derive(Debug)]
 pub enum LexError {
-  UnclosedRegex,
-  InvalidChar,
+  UnclosedRegex(usize, usize),
+  InvalidChar(usize, usize),
 }
 
 pub struct Lexer<'a> {
@@ -85,11 +87,6 @@ impl<'a> Iterator for Lexer<'a> {
 
     match c {
       '\n' => {
-        // collapse newlines
-        if j > i || self.bol {
-          return self.next();
-        }
-
         self.bol = true;
         let token = Token {
           kind: TokenKind::Newline,
@@ -113,10 +110,12 @@ impl<'a> Iterator for Lexer<'a> {
           }
         } else {
           let mut unescaped = true;
+          let mut end = j;
           loop {
             match self.chars.next() {
-              Some((_, '\\')) => {
+              Some((t, '\\')) => {
                 unescaped = !unescaped;
+                j += t + 1;
               }
               Some((k, '/')) if unescaped => {
                 self.chars.next();
@@ -126,11 +125,12 @@ impl<'a> Iterator for Lexer<'a> {
                 };
                 return Some(Ok((j, token, k + 1)));
               }
-              None => {
-                return Some(Err(LexError::UnclosedRegex))
+              Some((_, '\n')) | None => {
+                return Some(Err(LexError::UnclosedRegex(j, end)))
               }
-              _ => {
+              Some((t, c)) => {
                 unescaped = true;
+                j += t + c.len_utf8();
               }
             }
           }
@@ -173,7 +173,13 @@ impl<'a> Iterator for Lexer<'a> {
       _ => {}
     }
 
-    Some(Err(LexError::InvalidChar))
+    Some(Err(LexError::InvalidChar(j, j + c.len_utf8())))
+  }
+}
+
+impl<'a> Display for Token<'a> {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "<{:?}: {:?}>", self.kind, self.text)
   }
 }
 
