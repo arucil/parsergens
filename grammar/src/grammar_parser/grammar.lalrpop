@@ -62,12 +62,21 @@ skip_decl: SkipDecl = Percent Skip <pattern:token_pattern>
   };
 
 token_pattern: TokenPattern = {
-  <regex:regex> =>? regex::parse_regex(&regex.1, regex.0 .start, regex.0 .end)
+  <regex:regex> =>? regex::parse_regex(
+    &regex.1[1..regex.1.len() - 1],
+    regex.0 .start + 1
+  )
     .map(|x| TokenPattern::Regex(Spanned(regex.0, (regex.1, x))))
     .map_err(|error| ParseError::User {
       error: UserParseError::RegexError(error),
     }),
-  <str:string> => TokenPattern::String(str),
+  <str:string> =>? regex::parse_raw_string(
+    &str.1[1..str.1.len() - 1], str.0 .start
+  )
+    .map(|x| TokenPattern::String(Spanned(str.0, (str.1, x))))
+    .map_err(|error| ParseError::user {
+      error: UserParseError::RegexError(error)
+    }),
 }
 
 spanned<T>: Spanned<String> = <l:@L> <x:T> <r:@L> => Spanned(l..r, x.text.to_owned());

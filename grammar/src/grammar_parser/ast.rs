@@ -19,22 +19,20 @@ pub struct TokenDecl {
 #[derive(Debug)]
 pub enum TokenPattern {
   Regex(Spanned<(String, Regex)>),
-  String(Spanned<String>),
+  String(Spanned<(String, Regex)>),
 }
 
 #[derive(Debug)]
-pub struct Regex(Vec<RegexItem>);
-
-#[derive(Debug)]
-pub enum RegexItem {
+pub enum Regex {
   Any,
   Char(char),
   CharSet(Vec<Range<char>>),
   CharClass(CharClassKind),
-  Or(Regex, Regex),
-  Optional(Regex),
-  Many(Regex),
-  Many1(Regex),
+  Or(Box<Regex>, Box<Regex>),
+  Optional(Box<Regex>),
+  Many(Box<Regex>),
+  Many1(Box<Regex>),
+  Seq(Vec<Regex>),
 }
 
 #[derive(Debug)]

@@ -1,3 +1,5 @@
+#![feature(or_patterns)]
+
 use lalrpop_util::ParseError;
 
 mod grammar_parser;
@@ -71,6 +73,14 @@ impl<'a> Into<GrammarError> for ParseError<usize, Token<'a>, UserParseError> {
             match error.kind {
               RegexErrorKind::SyntaxError => {
                 GrammarError::ParseError("regex syntax error".to_owned(),
+                  error.span.0, error.span.1)
+              }
+              RegexErrorKind::InvalidCodePoint => {
+                GrammarError::ParseError("invalid code point".to_owned(),
+                  error.span.0, error.span.1)
+              }
+              RegexErrorKind::Empty => {
+                GrammarError::ParseError("empty regex or string".to_owned(),
                   error.span.0, error.span.1)
               }
             }
