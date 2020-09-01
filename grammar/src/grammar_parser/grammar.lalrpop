@@ -1,5 +1,8 @@
+use lalrpop_util::ParseError;
 use super::ast::*;
 use super::lex;
+use super::UserParseError;
+use super::regex;
 
 #[LALR]
 grammar<'input>(input: &'input str);
@@ -15,6 +18,7 @@ decl: Option<Spanned<Decl>> = {
   <l:@L> <decl:rule_decl> <r:@L> => Some(Spanned(l..r, Decl::Rule(decl))),
   <l:@L> <decl:start_decl> <r:@L> => Some(Spanned(l..r, Decl::Start(decl))),
   <l:@L> <decl:token_decl> <r:@L> => Some(Spanned(l..r, Decl::Token(decl))),
+  <l:@L> <decl:skip_decl> <r:@L> => Some(Spanned(l..r, Decl::Skip(decl))),
   Newline => None,
 };
 
@@ -42,28 +46,48 @@ start_decl: StartDecl = Percent Start <name:ident> Newline
     }
   };
 
-token_decl: TokenDecl = Percent Token <name:ident> <regex:regex>
+token_decl: TokenDecl = Percent Token <name:ident> <pattern:token_pattern>
   => {
     TokenDecl {
       name,
-      regex,
+      pattern,
     }
   };
+
+skip_decl: SkipDecl = Percent Skip <pattern:token_pattern>
+  => {
+    SkipDecl {
+      pattern,
+    }
+  };
+
+token_pattern: TokenPattern = {
+  <regex:regex> =>? regex::parse_regex(&regex.1, regex.0 .start, regex.0 .end)
+    .map(|x| TokenPattern::Regex(Spanned(regex.0, (regex.1, x))))
+    .map_err(|error| ParseError::User {
+      error: UserParseError::RegexError(error),
+    }),
+  <str:string> => TokenPattern::String(str),
+}
 
 spanned<T>: Spanned<String> = <l:@L> <x:T> <r:@L> => Spanned(l..r, x.text.to_owned());
 
 ident = spanned<Ident>;
+string = spanned<String>;
 regex = spanned<Regex>;
 
 extern {
   type Location = usize;
-  type Error = lex::LexError;
+  type Error = UserParseError;
 
   enum lex::Token<'input> {
-    Ident => lex::Token { kind: lex::TokenKind::Ident, .. },
     Start => lex::Token { kind: lex::TokenKind::Start, .. },
     Token => lex::Token { kind: lex::TokenKind::Token, .. },
+    Skip => lex::Token { kind: lex::TokenKind::Skip, .. },
+
+    Ident => lex::Token { kind: lex::TokenKind::Ident, .. },
     Regex => lex::Token { kind: lex::TokenKind::Regex, .. },
+    String => lex::Token { kind: lex::TokenKind::String, .. },
 
     Percent => lex::Token { kind: lex::TokenKind::Percent, .. },
     Assign => lex::Token { kind: lex::TokenKind::Assign, .. },

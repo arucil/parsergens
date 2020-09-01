@@ -7,12 +7,45 @@ pub enum Decl {
   Token(TokenDecl),
   Start(StartDecl),
   Rule(RuleDecl),
+  Skip(SkipDecl),
 }
 
 #[derive(Debug)]
 pub struct TokenDecl {
   pub name: Spanned<String>,
-  pub regex: Spanned<String>,
+  pub pattern: TokenPattern,
+}
+
+#[derive(Debug)]
+pub enum TokenPattern {
+  Regex(Spanned<(String, Regex)>),
+  String(Spanned<String>),
+}
+
+#[derive(Debug)]
+pub struct Regex(Vec<RegexItem>);
+
+#[derive(Debug)]
+pub enum RegexItem {
+  Any,
+  Char(char),
+  CharSet(Vec<Range<char>>),
+  CharClass(CharClassKind),
+  Or(Regex, Regex),
+  Optional(Regex),
+  Many(Regex),
+  Many1(Regex),
+}
+
+#[derive(Debug)]
+pub enum CharClassKind {
+  Digit,
+  Word,
+}
+
+#[derive(Debug)]
+pub struct SkipDecl {
+  pub pattern: TokenPattern,
 }
 
 #[derive(Debug)]

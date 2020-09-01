@@ -1,59 +1,40 @@
-use std::collections::HashMap;
+use std::hash::Hash;
+use std::fmt::{self, Debug};
 use super::dfa::Dfa;
+use super::nfa_builder::NfaBuilder;
+use super::{Map, Set};
 
 #[derive(Debug)]
-pub struct Nfa<P, V> {
-  transitions: HashMap<(State, Option<char>), Vec<State>>,
-  finals: HashMap<State, (P, V)>,
+pub struct Nfa<A, P, V> {
+  pub transitions: Map<(State, Option<A>), Set<State>>,
+  pub alphabets: Map<State, Set<A>>,
+  pub accept_states: Map<State, (P, V)>,
 }
 
-pub struct NfaBuilder<P, V> {
-  counter: usize,
-  transitions: HashMap<(State, Option<char>), Vec<State>>,
-  finals: HashMap<State, (P, V)>,
-}
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+pub struct State(pub usize);
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct State(usize);
-
-impl<P: PartialOrd, V> Nfa<P, V> {
-  pub fn builder() -> NfaBuilder<P, V> {
+impl<A, P, V> Nfa<A, P, V>
+  where A: Eq + Hash + Copy,
+        P: PartialOrd
+{
+  pub fn builder() -> NfaBuilder<A, P, V> {
     NfaBuilder::new()
   }
 }
 
-impl<P: PartialOrd, V> NfaBuilder<P, V> {
-  fn new() -> Self {
-    Self {
-      counter: 0,
-      transitions: HashMap::new(),
-      finals: HashMap::new(),
-    }
-  }
-
-  pub fn build(self) -> Nfa<P, V> {
-    Nfa {
-      transitions: self.transitions,
-      finals: self.finals,
-    }
-  }
-
-  pub fn state(&mut self) -> State {
-    self.counter += 1;
-    State(self.counter)
-  }
-
-  pub fn transition(&mut self, src: State, dest: State, c: Option<char>) {
-    self.transitions.entry((src, c)).or_default().push(dest);
-  }
-
-  pub fn final_state(&mut self, state: State, priority: P, value: V) {
-    self.finals.insert(state, (priority, value));
+impl<A, P, V> Nfa<A, P, V>
+  where A: Eq + Hash + Copy + Debug,
+        P: PartialOrd,
+        V: Clone
+{
+  pub fn to_dfa(&self, start: State) -> Dfa<A, V> {
+    super::powerset_cons::powerset(self, start)
   }
 }
 
-impl<P: PartialOrd, V> Nfa<P, V> {
-  fn to_dfa(&self, start: State) -> Dfa<V> {
-    super::powerset_cons::powerset(self, start)
+impl Debug for State {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "State({})", self.0)
   }
 }

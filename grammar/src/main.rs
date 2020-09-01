@@ -1,18 +1,19 @@
-use grammar::grammar::lex;
 
 fn main() {
-  let input = r"
+  let _input = r#"
 %start expr
 
-%token PLUS /\+/
-%token MINUS /-/
-%token MUL /\*/
-%token DIV /\//
-%token LPAREN /\(/
-%token RPAREN /)/
-%token COMMA /,/
+%token PLUS "+"
+%token MINUS "-"
+%token MUL "\"
+%token DIV "/"
+%token LPAREN "("
+%token RPAREN ")"
+%token COMMA ","
 %token NUMBER /\d+(\.\d*)?/
 %token IDENT /[a-zA-Z][\w_]*/
+
+%skip /[ \n]/
 
 expr = expr PLUS expr
   | expr MINUS expr
@@ -31,7 +32,5 @@ factor =
 param_list =
     expr
   | param_list COMMA expr
-    ";
-  let lexer = lex::Lexer::new(input);
-  println!("{:#?}", grammar::documentParser::new().parse(input, lexer));
+    "#;
 }

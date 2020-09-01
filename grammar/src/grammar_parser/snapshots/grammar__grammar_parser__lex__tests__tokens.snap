@@ -1,5 +1,5 @@
 ---
-source: grammar/grammar_parser/src/lex.rs
+source: grammar/src/grammar_parser/lex.rs
 expression: result
 ---
 [
@@ -48,159 +48,159 @@ expression: result
             8,
             Token {
                 kind: Regex,
-                text: "/\\d+[0-9]\\//",
+                text: "/\\d+\\\\[0-9]\\//",
             },
-            20,
+            22,
         ),
     ),
     Ok(
         (
-            29,
+            31,
             Token {
                 kind: Newline,
                 text: "\n",
             },
-            30,
+            32,
         ),
     ),
     Ok(
         (
-            30,
+            32,
             Token {
                 kind: Indent,
                 text: "    ",
             },
-            34,
-        ),
-    ),
-    Ok(
-        (
-            34,
-            Token {
-                kind: Or,
-                text: "|",
-            },
-            35,
+            36,
         ),
     ),
     Ok(
         (
             36,
             Token {
-                kind: Token,
-                text: "token",
+                kind: Or,
+                text: "|",
             },
-            41,
+            37,
         ),
     ),
     Ok(
         (
-            41,
+            38,
+            Token {
+                kind: Token,
+                text: "token",
+            },
+            43,
+        ),
+    ),
+    Ok(
+        (
+            43,
             Token {
                 kind: Comma,
                 text: ",",
             },
-            42,
+            44,
         ),
     ),
     Ok(
         (
-            42,
+            44,
             Token {
                 kind: Start,
                 text: "start",
             },
-            47,
-        ),
-    ),
-    Ok(
-        (
             49,
-            Token {
-                kind: Newline,
-                text: "\n",
-            },
-            50,
-        ),
-    ),
-    Ok(
-        (
-            50,
-            Token {
-                kind: Newline,
-                text: "\n",
-            },
-            51,
         ),
     ),
     Ok(
         (
             51,
+            Token {
+                kind: Newline,
+                text: "\n",
+            },
+            52,
+        ),
+    ),
+    Ok(
+        (
+            52,
+            Token {
+                kind: Newline,
+                text: "\n",
+            },
+            53,
+        ),
+    ),
+    Ok(
+        (
+            53,
             Token {
                 kind: Indent,
                 text: "  ",
             },
-            53,
+            55,
         ),
     ),
     Ok(
         (
-            53,
+            55,
             Token {
                 kind: Assign,
                 text: "=",
             },
-            54,
-        ),
-    ),
-    Ok(
-        (
             56,
-            Token {
-                kind: LParen,
-                text: "(",
-            },
-            57,
         ),
     ),
     Ok(
         (
             58,
             Token {
-                kind: Ident,
-                text: "Ax3_",
+                kind: LParen,
+                text: "(",
             },
-            62,
+            59,
         ),
     ),
     Ok(
         (
-            63,
+            60,
+            Token {
+                kind: Ident,
+                text: "Ax3_",
+            },
+            64,
+        ),
+    ),
+    Ok(
+        (
+            65,
             Token {
                 kind: RParen,
                 text: ")",
             },
-            64,
+            66,
         ),
     ),
     Ok(
         (
-            64,
+            66,
             Token {
                 kind: Newline,
                 text: "\n",
             },
-            65,
+            67,
         ),
     ),
     Ok(
         (
-            68,
+            70,
             Token {
                 kind: Newline,
                 text: "\n",
             },
-            69,
+            71,
         ),
     ),
 ]

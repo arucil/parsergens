@@ -1,0 +1,116 @@
+---
+source: grammar/src/lexer/powerset_cons.rs
+expression: "(nfa, dfa)"
+---
+(
+    Nfa {
+        transitions: {
+            (
+                State(1),
+                Some(
+                    1,
+                ),
+            ): {
+                State(1),
+            },
+            (
+                State(1),
+                Some(
+                    0,
+                ),
+            ): {
+                State(2),
+                State(3),
+            },
+            (
+                State(1),
+                None,
+            ): {
+                State(2),
+            },
+            (
+                State(2),
+                Some(
+                    1,
+                ),
+            ): {
+                State(2),
+            },
+            (
+                State(2),
+                None,
+            ): {
+                State(3),
+            },
+            (
+                State(3),
+                Some(
+                    0,
+                ),
+            ): {
+                State(3),
+            },
+            (
+                State(3),
+                Some(
+                    1,
+                ),
+            ): {
+                State(3),
+            },
+        },
+        alphabets: {
+            State(1): {
+                1,
+                0,
+            },
+            State(2): {
+                1,
+            },
+            State(3): {
+                0,
+                1,
+            },
+        },
+        accept_states: {
+            State(3): (
+                1,
+                "final",
+            ),
+        },
+    },
+    Dfa {
+        start: 1,
+        transitions: {
+            (
+                State(1),
+                1,
+            ): State(1),
+            (
+                State(1),
+                0,
+            ): State(2),
+            (
+                State(2),
+                1,
+            ): State(2),
+            (
+                State(2),
+                0,
+            ): State(3),
+            (
+                State(3),
+                0,
+            ): State(3),
+            (
+                State(3),
+                1,
+            ): State(3),
+        },
+        accept_states: {
+            State(1): "final",
+            State(2): "final",
+            State(3): "final",
+        },
+    },
+)

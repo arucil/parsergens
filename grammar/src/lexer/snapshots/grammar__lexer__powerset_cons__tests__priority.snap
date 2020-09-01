@@ -1,0 +1,145 @@
+---
+source: grammar/src/lexer/powerset_cons.rs
+expression: "(nfa, dfa)"
+---
+(
+    Nfa {
+        transitions: {
+            (
+                State(1),
+                None,
+            ): {
+                State(2),
+                State(3),
+            },
+            (
+                State(2),
+                Some(
+                    '0',
+                ),
+            ): {
+                State(2),
+            },
+            (
+                State(2),
+                Some(
+                    '1',
+                ),
+            ): {
+                State(2),
+            },
+            (
+                State(3),
+                Some(
+                    '0',
+                ),
+            ): {
+                State(3),
+            },
+            (
+                State(3),
+                Some(
+                    '1',
+                ),
+            ): {
+                State(3),
+            },
+            (
+                State(3),
+                Some(
+                    'a',
+                ),
+            ): {
+                State(3),
+            },
+            (
+                State(3),
+                Some(
+                    'b',
+                ),
+            ): {
+                State(3),
+            },
+        },
+        alphabets: {
+            State(2): {
+                '0',
+                '1',
+            },
+            State(3): {
+                '0',
+                '1',
+                'a',
+                'b',
+            },
+        },
+        accept_states: {
+            State(2): (
+                2,
+                "number",
+            ),
+            State(3): (
+                1,
+                "symbol",
+            ),
+        },
+    },
+    Dfa {
+        start: 1,
+        transitions: {
+            (
+                State(1),
+                '0',
+            ): State(2),
+            (
+                State(1),
+                '1',
+            ): State(2),
+            (
+                State(1),
+                'a',
+            ): State(3),
+            (
+                State(1),
+                'b',
+            ): State(3),
+            (
+                State(2),
+                '0',
+            ): State(2),
+            (
+                State(2),
+                '1',
+            ): State(2),
+            (
+                State(2),
+                'a',
+            ): State(3),
+            (
+                State(2),
+                'b',
+            ): State(3),
+            (
+                State(3),
+                '0',
+            ): State(3),
+            (
+                State(3),
+                '1',
+            ): State(3),
+            (
+                State(3),
+                'a',
+            ): State(3),
+            (
+                State(3),
+                'b',
+            ): State(3),
+        },
+        accept_states: {
+            State(1): "number",
+            State(2): "number",
+            State(3): "symbol",
+        },
+    },
+)

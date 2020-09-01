@@ -5,9 +5,11 @@ mod grammar_parser;
 pub mod lexer;
 pub mod grammar;
 
-pub use grammar::*;
+pub use self::grammar::*;
 pub use lexer::*;
-use grammar_parser::lex::{Token, LexError};
+use grammar_parser::lex::{Token, LexErrorKind};
+use grammar_parser::regex::RegexErrorKind;
+use grammar_parser::UserParseError;
 
 #[derive(Debug)]
 pub enum GrammarError {
@@ -22,7 +24,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
   todo!()
 }
 
-impl<'a> Into<GrammarError> for ParseError<usize, Token<'a>, LexError> {
+impl<'a> Into<GrammarError> for ParseError<usize, Token<'a>, UserParseError> {
   fn into(self) -> GrammarError {
     match self {
       Self::InvalidToken { location } => {
@@ -49,11 +51,29 @@ impl<'a> Into<GrammarError> for ParseError<usize, Token<'a>, LexError> {
       }
       Self::User { error } => {
         match error {
-          LexError::UnclosedRegex(start, end) => {
-            GrammarError::ParseError("unclosed regexp".to_owned(), start, end)
+          UserParseError::LexError(error) => {
+            match error.kind {
+              LexErrorKind::UnclosedRegex => {
+                GrammarError::ParseError("unclosed regexp".to_owned(),
+                  error.span.0, error.span.1)
+              }
+              LexErrorKind::UnclosedString => {
+                GrammarError::ParseError("unclosed string".to_owned(),
+                  error.span.0, error.span.1)
+              }
+              LexErrorKind::InvalidChar => {
+                GrammarError::ParseError("invalid character".to_owned(),
+                  error.span.0, error.span.1)
+              }
+            }
           }
-          LexError::InvalidChar(start, end) => {
-            GrammarError::ParseError("invalid character".to_owned(), start, end)
+          UserParseError::RegexError(error) => {
+            match error.kind {
+              RegexErrorKind::SyntaxError => {
+                GrammarError::ParseError("regex syntax error".to_owned(),
+                  error.span.0, error.span.1)
+              }
+            }
           }
         }
       }

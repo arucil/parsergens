@@ -2,15 +2,19 @@ use std::str::CharIndices;
 use std::iter::Peekable;
 use std::fmt::Display;
 use std::fmt;
+use super::UserParseError;
 
 pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 
 #[derive(Clone, Debug)]
 pub enum TokenKind {
-  Ident,
   Start,
   Token,
+  Skip,
+
+  Ident,
   Regex,
+  String,
 
   Percent,
   Assign,
@@ -30,9 +34,16 @@ pub struct Token<'a> {
 }
 
 #[derive(Debug)]
-pub enum LexError {
-  UnclosedRegex(usize, usize),
-  InvalidChar(usize, usize),
+pub struct LexError {
+  pub kind: LexErrorKind,
+  pub span: (usize, usize),
+}
+
+#[derive(Debug)]
+pub enum LexErrorKind {
+  UnclosedRegex,
+  InvalidChar,
+  UnclosedString,
 }
 
 pub struct Lexer<'a> {
@@ -59,10 +70,47 @@ impl<'a> Lexer<'a> {
     };
     return Some(Ok((index, token, index + 1)));
   }
+
+  fn lex_quoted(
+    &mut self,
+    start: usize,
+    quote: char,
+    kind: TokenKind,
+    unclosed_err_kind: LexErrorKind,
+  ) -> Option<<Self as Iterator>::Item> {
+    let mut unescaped = true;
+    let mut end = start;
+    loop {
+      match self.chars.next() {
+        Some((t, '\\')) => {
+          unescaped = !unescaped;
+          end += t + 1;
+        }
+        Some((k, c)) if c == quote && unescaped => {
+          self.chars.next();
+          let token = Token {
+            kind,
+            text: &self.input[start..k + 1],
+          };
+          return Some(Ok((start, token, k + 1)));
+        }
+        Some((_, '\n')) | None => {
+          return Some(Err(UserParseError::LexError(LexError {
+            kind: unclosed_err_kind,
+            span: (start, end),
+          })))
+        }
+        Some((t, c)) => {
+          unescaped = true;
+          end += t + c.len_utf8();
+        }
+      }
+    }
+  }
 }
 
 impl<'a> Iterator for Lexer<'a> {
-  type Item = Spanned<Token<'a>, usize, LexError>;
+  type Item = Spanned<Token<'a>, usize, UserParseError>;
 
   fn next(&mut self) -> Option<Self::Item> {
     let &(i, _) = self.chars.peek()?;
@@ -109,32 +157,11 @@ impl<'a> Iterator for Lexer<'a> {
             }
           }
         } else {
-          let mut unescaped = true;
-          let mut end = j;
-          loop {
-            match self.chars.next() {
-              Some((t, '\\')) => {
-                unescaped = !unescaped;
-                j += t + 1;
-              }
-              Some((k, '/')) if unescaped => {
-                self.chars.next();
-                let token = Token {
-                  kind: TokenKind::Regex,
-                  text: &self.input[j..k + 1],
-                };
-                return Some(Ok((j, token, k + 1)));
-              }
-              Some((_, '\n')) | None => {
-                return Some(Err(LexError::UnclosedRegex(j, end)))
-              }
-              Some((t, c)) => {
-                unescaped = true;
-                j += t + c.len_utf8();
-              }
-            }
-          }
+          return self.lex_quoted(j, '/', TokenKind::Regex, LexErrorKind::UnclosedRegex);
         }
+      }
+      '"' => {
+        return self.lex_quoted(j, '/', TokenKind::String, LexErrorKind::UnclosedString);
       }
       '%' => return self.single_char_token(TokenKind::Percent, j),
       '=' => return self.single_char_token(TokenKind::Assign, j),
@@ -161,6 +188,7 @@ impl<'a> Iterator for Lexer<'a> {
         let kind = match text {
           "start" => TokenKind::Start,
           "token" => TokenKind::Token,
+          "skip" => TokenKind::Skip,
           _ => TokenKind::Ident,
         };
 
@@ -173,7 +201,10 @@ impl<'a> Iterator for Lexer<'a> {
       _ => {}
     }
 
-    Some(Err(LexError::InvalidChar(j, j + c.len_utf8())))
+    Some(Err(UserParseError::LexError(LexError {
+      kind: LexErrorKind::InvalidChar,
+      span: (j, j + c.len_utf8()),
+    })))
   }
 }
 
@@ -191,7 +222,7 @@ mod tests {
   #[test]
   fn tokens() {
     let result = Lexer::new(r"
-%% web /\d+[0-9]\//  //12345
+%% web /\d+\\[0-9]\//  //12345
     | token,start  
 
   =  ( Ax3_ )
