@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use super::lexer::Lexer;
+use super::lexer::{Lexer, TokenId};
 
 pub struct Grammar {
   pub rules: HashMap<RuleId, Rule>,
-  pub token_names: HashMap<TokenId, String>,
+  pub rule_names: HashMap<RuleId, String>,
   pub lexer: Lexer,
 }
 
@@ -21,7 +21,15 @@ pub enum Term {
 }
 
 #[derive(PartialEq, Eq, Hash)]
-pub struct RuleId(usize);
+pub struct RuleId(u32);
 
-#[derive(PartialEq, Eq, Hash)]
-pub struct TokenId(usize);
+#[derive(Default)]
+pub(crate) struct RuleIdGen(u32);
+
+impl RuleIdGen {
+  pub fn gen(&mut self) -> RuleId {
+    let i = self.0;
+    self.0 += 1;
+    RuleId(i)
+  }
+}

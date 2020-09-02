@@ -291,14 +291,12 @@ fn char_set_accepts_empty_string(set: &[CharSetItem]) -> bool {
 }
 
 #[derive(Default)]
-struct TokenGen {
-  counter: u32,
-}
+struct TokenGen(u32);
 
 impl TokenGen {
   fn gen(&mut self) -> TokenId {
-    let i = self.counter;
-    self.counter += 1;
+    let i = self.0;
+    self.0 += 1;
     TokenId(i)
   }
 }
