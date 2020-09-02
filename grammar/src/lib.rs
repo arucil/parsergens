@@ -1,4 +1,4 @@
-#![feature(or_patterns)]
+#![feature(or_patterns, never_type)]
 
 use lalrpop_util::ParseError;
 
@@ -80,7 +80,7 @@ impl<'a> Into<GrammarError> for ParseError<usize, Token<'a>, UserParseError> {
                   error.span.0, error.span.1)
               }
               RegexErrorKind::Empty => {
-                GrammarError::ParseError("empty regex or string".to_owned(),
+                GrammarError::ParseError("regex or string may accept empty string".to_owned(),
                   error.span.0, error.span.1)
               }
             }

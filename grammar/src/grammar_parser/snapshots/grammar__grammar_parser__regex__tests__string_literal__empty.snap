@@ -1,0 +1,7 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_string_literal(\"\", 100)"
+---
+Ok(
+    Empty,
+)

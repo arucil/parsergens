@@ -1,0 +1,34 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_string_literal(\"a.-+&Ro1\", 100)"
+---
+Ok(
+    Concat(
+        [
+            Char(
+                'a',
+            ),
+            Char(
+                '.',
+            ),
+            Char(
+                '-',
+            ),
+            Char(
+                '+',
+            ),
+            Char(
+                '&',
+            ),
+            Char(
+                'R',
+            ),
+            Char(
+                'o',
+            ),
+            Char(
+                '1',
+            ),
+        ],
+    ),
+)

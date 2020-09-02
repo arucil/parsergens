@@ -1,0 +1,42 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"[1234567890]+\", 100)"
+---
+Ok(
+    Many1(
+        CharSet(
+            [
+                Char(
+                    '1',
+                ),
+                Char(
+                    '2',
+                ),
+                Char(
+                    '3',
+                ),
+                Char(
+                    '4',
+                ),
+                Char(
+                    '5',
+                ),
+                Char(
+                    '6',
+                ),
+                Char(
+                    '7',
+                ),
+                Char(
+                    '8',
+                ),
+                Char(
+                    '9',
+                ),
+                Char(
+                    '0',
+                ),
+            ],
+        ),
+    ),
+)

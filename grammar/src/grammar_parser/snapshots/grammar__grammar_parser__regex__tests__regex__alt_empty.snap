@@ -1,0 +1,22 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"||ab\", 100)"
+---
+Ok(
+    Alt(
+        [
+            Empty,
+            Empty,
+            Concat(
+                [
+                    Char(
+                        'a',
+                    ),
+                    Char(
+                        'b',
+                    ),
+                ],
+            ),
+        ],
+    ),
+)

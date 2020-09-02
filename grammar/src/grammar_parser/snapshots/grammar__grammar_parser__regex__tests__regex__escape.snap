@@ -1,0 +1,43 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"ab\\U{41}\\r\\nn\\tt\\.\\+\\d\", 100)"
+---
+Ok(
+    Concat(
+        [
+            Char(
+                'a',
+            ),
+            Char(
+                'b',
+            ),
+            Char(
+                'A',
+            ),
+            Char(
+                '\r',
+            ),
+            Char(
+                '\n',
+            ),
+            Char(
+                'n',
+            ),
+            Char(
+                '\t',
+            ),
+            Char(
+                't',
+            ),
+            Char(
+                '.',
+            ),
+            Char(
+                '+',
+            ),
+            CharClass(
+                Digit,
+            ),
+        ],
+    ),
+)

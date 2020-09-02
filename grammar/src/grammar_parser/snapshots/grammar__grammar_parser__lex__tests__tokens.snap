@@ -185,22 +185,22 @@ expression: result
     ),
     Ok(
         (
-            66,
-            Token {
-                kind: Newline,
-                text: "\n",
-            },
             67,
+            Token {
+                kind: String,
+                text: "\"abcdef\"",
+            },
+            75,
         ),
     ),
     Ok(
         (
-            70,
+            79,
             Token {
                 kind: Newline,
                 text: "\n",
             },
-            71,
+            80,
         ),
     ),
 ]

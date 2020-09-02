@@ -1,0 +1,32 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"[0-9abcA-Z.]+\", 100)"
+---
+Ok(
+    Many1(
+        CharSet(
+            [
+                Range(
+                    '0',
+                    '9',
+                ),
+                Char(
+                    'a',
+                ),
+                Char(
+                    'b',
+                ),
+                Char(
+                    'c',
+                ),
+                Range(
+                    'A',
+                    'Z',
+                ),
+                Char(
+                    '.',
+                ),
+            ],
+        ),
+    ),
+)

@@ -1,0 +1,143 @@
+---
+source: grammar/src/lexer/build.rs
+expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
+---
+(
+    [
+        (
+            0,
+            46,
+        ),
+        (
+            1,
+            47,
+        ),
+        (
+            2,
+            48,
+        ),
+        (
+            3,
+            58,
+        ),
+    ],
+    Nfa {
+        transitions: {
+            (
+                State(1),
+                None,
+            ): {
+                State(2),
+            },
+            (
+                State(2),
+                Some(
+                    2,
+                ),
+            ): {
+                State(3),
+            },
+            (
+                State(3),
+                None,
+            ): {
+                State(2),
+                State(5),
+            },
+            (
+                State(3),
+                Some(
+                    0,
+                ),
+            ): {
+                State(4),
+            },
+            (
+                State(4),
+                None,
+            ): {
+                State(5),
+            },
+            (
+                State(5),
+                Some(
+                    2,
+                ),
+            ): {
+                State(6),
+            },
+            (
+                State(6),
+                None,
+            ): {
+                State(5),
+            },
+        },
+        alphabets: {
+            State(2): {
+                2,
+            },
+            State(3): {
+                0,
+            },
+            State(5): {
+                2,
+            },
+        },
+        accept_states: {
+            State(5): (
+                18446744073709551603,
+                TokenId(
+                    0,
+                ),
+            ),
+        },
+    },
+    Dfa {
+        start: 1,
+        transitions: {
+            (
+                State(1),
+                2,
+            ): State(2),
+            (
+                State(2),
+                2,
+            ): State(3),
+            (
+                State(2),
+                0,
+            ): State(4),
+            (
+                State(3),
+                2,
+            ): State(3),
+            (
+                State(3),
+                0,
+            ): State(4),
+            (
+                State(4),
+                2,
+            ): State(5),
+            (
+                State(5),
+                2,
+            ): State(5),
+        },
+        accept_states: {
+            State(2): TokenId(
+                0,
+            ),
+            State(3): TokenId(
+                0,
+            ),
+            State(4): TokenId(
+                0,
+            ),
+            State(5): TokenId(
+                0,
+            ),
+        },
+    },
+)

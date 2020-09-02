@@ -1,0 +1,38 @@
+---
+source: grammar/src/lexer.rs
+expression: tokens
+---
+[
+    Ok(
+        Token {
+            kind: "INT",
+            text: "123",
+            start: 2,
+            end: 5,
+        },
+    ),
+    Ok(
+        Token {
+            kind: "INT",
+            text: "456",
+            start: 7,
+            end: 10,
+        },
+    ),
+    Ok(
+        Token {
+            kind: "INT",
+            text: "0127401",
+            start: 15,
+            end: 22,
+        },
+    ),
+    Ok(
+        Token {
+            kind: "INT",
+            text: "5768",
+            start: 26,
+            end: 30,
+        },
+    ),
+]

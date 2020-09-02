@@ -161,7 +161,7 @@ impl<'a> Iterator for Lexer<'a> {
         }
       }
       '"' => {
-        return self.lex_quoted(j, '/', TokenKind::String, LexErrorKind::UnclosedString);
+        return self.lex_quoted(j, '"', TokenKind::String, LexErrorKind::UnclosedString);
       }
       '%' => return self.single_char_token(TokenKind::Percent, j),
       '=' => return self.single_char_token(TokenKind::Assign, j),
@@ -221,13 +221,13 @@ mod tests {
 
   #[test]
   fn tokens() {
-    let result = Lexer::new(r"
+    let result = Lexer::new(r#"
 %% web /\d+\\[0-9]\//  //12345
     | token,start  
 
-  =  ( Ax3_ )
+  =  ( Ax3_ ) "abcdef"
    
-    ").collect::<Vec<_>>();
+    "#).collect::<Vec<_>>();
 
     assert_debug_snapshot!(result);
   }

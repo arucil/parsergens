@@ -1,4 +1,3 @@
-use std::ops::Range;
 
 pub type Grammar = Vec<Spanned<Decl>>;
 
@@ -17,26 +16,41 @@ pub struct TokenDecl {
 }
 
 #[derive(Debug)]
-pub enum TokenPattern {
-  Regex(Spanned<(String, Regex)>),
-  String(Spanned<(String, Regex)>),
+pub struct TokenPattern {
+  pub kind: TokenPatternKind,
+  pub source: Spanned<String>,
+  pub regex: Regex,
+}
+
+#[derive(Debug)]
+pub enum TokenPatternKind {
+  Regex,
+  String,
 }
 
 #[derive(Debug)]
 pub enum Regex {
+  Empty,
   Any,
   Char(char),
-  CharSet(Vec<Range<char>>),
-  CharClass(CharClassKind),
-  Or(Box<Regex>, Box<Regex>),
+  CharSet(Vec<CharSetItem>),
+  CharClass(CharClass),
+  Alt(Vec<Regex>),
+  Concat(Vec<Regex>),
   Optional(Box<Regex>),
   Many(Box<Regex>),
   Many1(Box<Regex>),
-  Seq(Vec<Regex>),
 }
 
 #[derive(Debug)]
-pub enum CharClassKind {
+pub enum CharSetItem {
+  Range(char, char),
+  CharClass(CharClass),
+  Char(char),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum CharClass {
   Digit,
   Word,
 }
@@ -64,4 +78,4 @@ pub enum RuleAlt {
 }
 
 #[derive(Debug)]
-pub struct Spanned<T>(pub Range<usize>, pub T);
+pub struct Spanned<T>(pub (usize, usize), pub T);

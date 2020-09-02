@@ -11,6 +11,7 @@ lalrpop-util = "0.19.0"
 bit-set = "0.5.2"
 indexmap = "1.5.1"
 bimap = "0.5.2"
+either = "1.6.0"
 
 [build-dependencies]
 lalrpop = "0.19.0"

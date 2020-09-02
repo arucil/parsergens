@@ -1,0 +1,37 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"[a-zA-Z_][\\w_]*\", 100)"
+---
+Ok(
+    Concat(
+        [
+            CharSet(
+                [
+                    Range(
+                        'a',
+                        'z',
+                    ),
+                    Range(
+                        'A',
+                        'Z',
+                    ),
+                    Char(
+                        '_',
+                    ),
+                ],
+            ),
+            Many(
+                CharSet(
+                    [
+                        CharClass(
+                            Word,
+                        ),
+                        Char(
+                            '_',
+                        ),
+                    ],
+                ),
+            ),
+        ],
+    ),
+)

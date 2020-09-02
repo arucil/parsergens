@@ -1,0 +1,36 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"A1\\.|\\d|ab\", 100)"
+---
+Ok(
+    Alt(
+        [
+            Concat(
+                [
+                    Char(
+                        'A',
+                    ),
+                    Char(
+                        '1',
+                    ),
+                    Char(
+                        '.',
+                    ),
+                ],
+            ),
+            CharClass(
+                Digit,
+            ),
+            Concat(
+                [
+                    Char(
+                        'a',
+                    ),
+                    Char(
+                        'b',
+                    ),
+                ],
+            ),
+        ],
+    ),
+)

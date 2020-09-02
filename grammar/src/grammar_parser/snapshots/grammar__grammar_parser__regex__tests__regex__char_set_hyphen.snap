@@ -1,0 +1,37 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"([-[-z ---_-] )\", 100)"
+---
+Ok(
+    Concat(
+        [
+            CharSet(
+                [
+                    Char(
+                        '-',
+                    ),
+                    Range(
+                        '[',
+                        'z',
+                    ),
+                    Range(
+                        ' ',
+                        '-',
+                    ),
+                    Char(
+                        '-',
+                    ),
+                    Char(
+                        '_',
+                    ),
+                    Char(
+                        '-',
+                    ),
+                ],
+            ),
+            Char(
+                ' ',
+            ),
+        ],
+    ),
+)

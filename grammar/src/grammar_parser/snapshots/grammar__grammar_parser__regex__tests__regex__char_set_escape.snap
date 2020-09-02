@@ -1,0 +1,28 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"([a-zA-\\U{45}_] )\", 100)"
+---
+Ok(
+    Concat(
+        [
+            CharSet(
+                [
+                    Range(
+                        'a',
+                        'z',
+                    ),
+                    Range(
+                        'A',
+                        'E',
+                    ),
+                    Char(
+                        '_',
+                    ),
+                ],
+            ),
+            Char(
+                ' ',
+            ),
+        ],
+    ),
+)

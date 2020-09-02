@@ -1,0 +1,41 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"(ab|\\w\\d+)+|\\.\", 100)"
+---
+Ok(
+    Alt(
+        [
+            Many1(
+                Alt(
+                    [
+                        Concat(
+                            [
+                                Char(
+                                    'a',
+                                ),
+                                Char(
+                                    'b',
+                                ),
+                            ],
+                        ),
+                        Concat(
+                            [
+                                CharClass(
+                                    Word,
+                                ),
+                                Many1(
+                                    CharClass(
+                                        Digit,
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ),
+            Char(
+                '.',
+            ),
+        ],
+    ),
+)

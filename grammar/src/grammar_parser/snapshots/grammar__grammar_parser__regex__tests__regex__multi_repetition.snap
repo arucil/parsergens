@@ -1,0 +1,31 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"ab+?|\\d+*\", 100)"
+---
+Ok(
+    Alt(
+        [
+            Concat(
+                [
+                    Char(
+                        'a',
+                    ),
+                    Optional(
+                        Many1(
+                            Char(
+                                'b',
+                            ),
+                        ),
+                    ),
+                ],
+            ),
+            Many(
+                Many1(
+                    CharClass(
+                        Digit,
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

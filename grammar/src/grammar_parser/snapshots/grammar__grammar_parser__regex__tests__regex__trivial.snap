@@ -1,0 +1,22 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(\"aRo1\", 100)"
+---
+Ok(
+    Concat(
+        [
+            Char(
+                'a',
+            ),
+            Char(
+                'R',
+            ),
+            Char(
+                'o',
+            ),
+            Char(
+                '1',
+            ),
+        ],
+    ),
+)
