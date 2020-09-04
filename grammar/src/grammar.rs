@@ -1,12 +1,11 @@
-use std::collections::{HashMap, HashSet};
-use bimap::BiHashMap;
 use super::lexer::{Lexer, TokenId};
+use crate::{Map, Set, BiMap};
 
 #[derive(Debug)]
 pub struct Grammar {
-  pub rules: HashMap<RuleId, Rule>,
-  pub start_rules: HashSet<RuleId>,
-  pub rule_names: BiHashMap<RuleId, String>,
+  pub rules: Map<RuleId, Rule>,
+  pub start_rules: Set<RuleId>,
+  pub rule_names: BiMap<RuleId, String>,
   pub lexer: Lexer,
 }
 
@@ -24,7 +23,7 @@ pub enum Term {
   Token(TokenId),
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct RuleId(u32);
 
 #[derive(Default)]

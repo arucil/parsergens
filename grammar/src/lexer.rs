@@ -1,13 +1,7 @@
 use dfa::Dfa;
-use bimap::BiHashMap;
 use super::grammar_parser::ast::{TokenDecl, SkipDecl};
 use super::grammar_parser::regex::RegexError;
-
-#[cfg(not(debug_assertions))]
-use std::collections::HashMap;
-
-#[cfg(debug_assertions)]
-use indexmap::{IndexMap, IndexSet};
+use super::BiMap;
 
 pub use tokens::Tokens;
 
@@ -20,26 +14,14 @@ mod util;
 pub mod build;
 pub mod tokens;
 
-#[cfg(not(debug_assertions))]
-type Map<K, V> = HashMap<K, V>;
-
-#[cfg(debug_assertions)]
-type Map<K, V> = IndexMap<K, V>;
-
-#[cfg(not(debug_assertions))]
-type Set<K> = HashSet<K>;
-
-#[cfg(debug_assertions)]
-type Set<K> = IndexSet<K>;
-
 #[derive(Debug)]
 pub struct Lexer {
   pub(crate) dfa: Dfa<u32, TokenId>,
   pub(crate) char_intervals: Vec<u32>,
-  pub(crate) token_names: BiHashMap<TokenId, String>,
+  pub(crate) token_names: BiMap<TokenId, String>,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct TokenId(u32);
 
 #[derive(Debug)]

@@ -1,6 +1,6 @@
 use std::hash::Hash;
 use super::dfa::*;
-use super::Map;
+use crate::Map;
 
 pub struct DfaBuilder<A, V> {
   counter: usize,

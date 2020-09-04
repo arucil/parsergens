@@ -3,7 +3,7 @@ use bit_set::BitSet;
 use bimap::BiHashMap;
 use super::nfa::{Nfa, State as NfaState};
 use super::dfa::Dfa;
-use super::Map;
+use crate::Map;
 
 pub fn powerset<A, P, V>(
   nfa: &Nfa<A, P, V>,

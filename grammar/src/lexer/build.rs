@@ -1,10 +1,9 @@
 use std::collections::BTreeSet;
-use bimap::BiHashMap;
 use super::super::grammar_parser::ast::*;
 use super::super::grammar_parser::regex::{RegexError, RegexErrorKind};
 use super::nfa::{State, Nfa};
 use super::nfa_builder::NfaBuilder;
-use super::{Lexer, TokenId, LexerError};
+use super::{Lexer, TokenId, LexerError, BiMap};
 use super::util;
 
 pub fn build(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Lexer, LexerError> {
@@ -19,7 +18,7 @@ pub fn build(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Lexer, LexerEr
   let mut nfa_builder = Nfa::builder();
   let start = nfa_builder.state();
   let mut token_gen = TokenGen::default();
-  let mut token_names = BiHashMap::new();
+  let mut token_names = BiMap::new();
 
   for decl in decls {
     let accept = add_regex_to_nfa(

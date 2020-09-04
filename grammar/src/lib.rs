@@ -1,7 +1,5 @@
 #![feature(or_patterns, never_type)]
 
-use std::collections::{HashSet, HashMap};
-use bimap::BiHashMap;
 use lalrpop_util::ParseError;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::term;
@@ -21,6 +19,35 @@ use grammar_parser::lex::{Token, LexErrorKind, LexError};
 use grammar_parser::regex::{RegexError, RegexErrorKind};
 use grammar_parser::UserParseError;
 use lexer::LexerError;
+
+#[cfg(not(debug_assertions))]
+use std::collections::HashMap;
+#[cfg(not(debug_assertions))]
+use bimap::BiHashMap;
+
+#[cfg(debug_assertions)]
+use indexmap::{IndexMap, IndexSet};
+#[cfg(debug_assertions)]
+use bimap::BiBTreeMap;
+
+#[cfg(not(debug_assertions))]
+type Map<K, V> = HashMap<K, V>;
+
+#[cfg(debug_assertions)]
+type Map<K, V> = IndexMap<K, V>;
+
+#[cfg(not(debug_assertions))]
+type BiMap<K, V> = BiHashMap<K, V>;
+
+#[cfg(debug_assertions)]
+type BiMap<K, V> = BiBTreeMap<K, V>;
+
+#[cfg(not(debug_assertions))]
+type Set<K> = HashSet<K>;
+
+#[cfg(debug_assertions)]
+type Set<K> = IndexSet<K>;
+
 
 #[derive(Debug)]
 pub struct GrammarError {
@@ -98,7 +125,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
 
       Ok((id, decl.name.1.clone()))
     })
-    .collect::<Result<BiHashMap<_, _>, GrammarError>>()?;
+    .collect::<Result<BiMap<_, _>, GrammarError>>()?;
 
   let start_rules = starts.iter()
     .map(|decl| {
@@ -112,7 +139,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         })
       }
     })
-    .collect::<Result<HashSet<_>, GrammarError>>()?;
+    .collect::<Result<Set<_>, GrammarError>>()?;
 
   let rules = rules.iter()
     .map(|decl| {
@@ -143,7 +170,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         }
       ))
     })
-    .collect::<Result<HashMap<_, _>, GrammarError>>()?;
+    .collect::<Result<Map<_, _>, GrammarError>>()?;
 
   Ok(Grammar {
     rules,

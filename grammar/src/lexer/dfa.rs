@@ -1,7 +1,7 @@
 use std::hash::Hash;
 use std::fmt::{self, Debug};
 use super::dfa_builder::DfaBuilder;
-use super::Map;
+use crate::Map;
 
 #[derive(Debug)]
 pub struct Dfa<A, V> {

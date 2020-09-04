@@ -1,6 +1,6 @@
 use std::hash::Hash;
 use super::nfa::*;
-use super::{Map, Set};
+use crate::{Map, Set};
 
 pub struct NfaBuilder<A, P, V> {
   counter: usize,

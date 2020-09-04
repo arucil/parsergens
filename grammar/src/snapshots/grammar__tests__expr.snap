@@ -122,9 +122,9 @@ Ok(
                                 1,
                             ),
                         ),
-                        Token(
-                            TokenId(
-                                7,
+                        Rule(
+                            RuleId(
+                                1,
                             ),
                         ),
                     ],
@@ -213,17 +213,7 @@ Ok(
                 0,
             ),
         },
-        rule_names: {
-            RuleId(
-                0,
-            ) <> "expr",
-            RuleId(
-                2,
-            ) <> "param_list",
-            RuleId(
-                1,
-            ) <> "factor",
-        },
+        rule_names: {RuleId(0) <> "expr", RuleId(1) <> "factor", RuleId(2) <> "param_list"},
         lexer: Lexer {
             dfa: Dfa {
                 start: 1,
@@ -400,35 +390,7 @@ Ok(
                 97,
                 123,
             ],
-            token_names: {
-                TokenId(
-                    0,
-                ) <> "PLUS",
-                TokenId(
-                    2,
-                ) <> "MUL",
-                TokenId(
-                    8,
-                ) <> "IDENT",
-                TokenId(
-                    3,
-                ) <> "DIV",
-                TokenId(
-                    7,
-                ) <> "NUMBER",
-                TokenId(
-                    6,
-                ) <> "COMMA",
-                TokenId(
-                    4,
-                ) <> "LPAREN",
-                TokenId(
-                    1,
-                ) <> "MINUS",
-                TokenId(
-                    5,
-                ) <> "RPAREN",
-            },
+            token_names: {TokenId(0) <> "PLUS", TokenId(1) <> "MINUS", TokenId(2) <> "MUL", TokenId(3) <> "DIV", TokenId(4) <> "LPAREN", TokenId(5) <> "RPAREN", TokenId(6) <> "COMMA", TokenId(7) <> "NUMBER", TokenId(8) <> "IDENT"},
         },
     },
 )

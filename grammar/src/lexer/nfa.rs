@@ -2,7 +2,7 @@ use std::hash::Hash;
 use std::fmt::{self, Debug};
 use super::dfa::Dfa;
 use super::nfa_builder::NfaBuilder;
-use super::{Map, Set};
+use crate::{Map, Set};
 
 #[derive(Debug)]
 pub struct Nfa<A, P, V> {
