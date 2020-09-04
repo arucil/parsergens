@@ -6,77 +6,125 @@ expression: "(nfa, dfa)"
     Nfa {
         transitions: {
             (
-                State(1),
+                State(0),
                 None,
             ): {
-                State(2),
-                State(5),
-                State(8),
-                State(12),
-            },
-            (
-                State(2),
-                Some(
-                    'i',
-                ),
-            ): {
-                State(3),
-            },
-            (
-                State(3),
-                Some(
-                    'f',
-                ),
-            ): {
+                State(1),
                 State(4),
-            },
-            (
-                State(5),
-                Some(
-                    'i',
-                ),
-            ): {
-                State(6),
-            },
-            (
-                State(6),
-                Some(
-                    'n',
-                ),
-            ): {
                 State(7),
-            },
-            (
-                State(8),
-                Some(
-                    'i',
-                ),
-            ): {
-                State(9),
-            },
-            (
-                State(9),
-                Some(
-                    'n',
-                ),
-            ): {
-                State(10),
-            },
-            (
-                State(10),
-                Some(
-                    't',
-                ),
-            ): {
                 State(11),
             },
             (
+                State(1),
+                Some(
+                    'i',
+                ),
+            ): {
+                State(2),
+            },
+            (
+                State(2),
+                Some(
+                    'f',
+                ),
+            ): {
+                State(3),
+            },
+            (
+                State(4),
+                Some(
+                    'i',
+                ),
+            ): {
+                State(5),
+            },
+            (
+                State(5),
+                Some(
+                    'n',
+                ),
+            ): {
+                State(6),
+            },
+            (
+                State(7),
+                Some(
+                    'i',
+                ),
+            ): {
+                State(8),
+            },
+            (
+                State(8),
+                Some(
+                    'n',
+                ),
+            ): {
+                State(9),
+            },
+            (
+                State(9),
+                Some(
+                    't',
+                ),
+            ): {
+                State(10),
+            },
+            (
+                State(11),
+                Some(
+                    'i',
+                ),
+            ): {
+                State(12),
+            },
+            (
+                State(11),
+                Some(
+                    'n',
+                ),
+            ): {
+                State(12),
+            },
+            (
+                State(11),
+                Some(
+                    't',
+                ),
+            ): {
+                State(12),
+            },
+            (
+                State(11),
+                Some(
+                    'f',
+                ),
+            ): {
+                State(12),
+            },
+            (
+                State(11),
+                Some(
+                    'a',
+                ),
+            ): {
+                State(12),
+            },
+            (
+                State(11),
+                Some(
+                    'b',
+                ),
+            ): {
+                State(12),
+            },
+            (
                 State(12),
                 Some(
                     'i',
                 ),
             ): {
-                State(13),
+                State(12),
             },
             (
                 State(12),
@@ -84,7 +132,7 @@ expression: "(nfa, dfa)"
                     'n',
                 ),
             ): {
-                State(13),
+                State(12),
             },
             (
                 State(12),
@@ -92,7 +140,7 @@ expression: "(nfa, dfa)"
                     't',
                 ),
             ): {
-                State(13),
+                State(12),
             },
             (
                 State(12),
@@ -100,7 +148,7 @@ expression: "(nfa, dfa)"
                     'f',
                 ),
             ): {
-                State(13),
+                State(12),
             },
             (
                 State(12),
@@ -108,7 +156,7 @@ expression: "(nfa, dfa)"
                     'a',
                 ),
             ): {
-                State(13),
+                State(12),
             },
             (
                 State(12),
@@ -116,78 +164,38 @@ expression: "(nfa, dfa)"
                     'b',
                 ),
             ): {
-                State(13),
-            },
-            (
-                State(13),
-                Some(
-                    'i',
-                ),
-            ): {
-                State(13),
-            },
-            (
-                State(13),
-                Some(
-                    'n',
-                ),
-            ): {
-                State(13),
-            },
-            (
-                State(13),
-                Some(
-                    't',
-                ),
-            ): {
-                State(13),
-            },
-            (
-                State(13),
-                Some(
-                    'f',
-                ),
-            ): {
-                State(13),
-            },
-            (
-                State(13),
-                Some(
-                    'a',
-                ),
-            ): {
-                State(13),
-            },
-            (
-                State(13),
-                Some(
-                    'b',
-                ),
-            ): {
-                State(13),
+                State(12),
             },
         },
         alphabets: {
-            State(2): {
+            State(1): {
                 'i',
             },
-            State(3): {
+            State(2): {
                 'f',
             },
-            State(5): {
+            State(4): {
                 'i',
             },
-            State(6): {
+            State(5): {
                 'n',
+            },
+            State(7): {
+                'i',
             },
             State(8): {
-                'i',
-            },
-            State(9): {
                 'n',
             },
-            State(10): {
+            State(9): {
                 't',
+            },
+            State(11): {
+                'i',
+                'n',
+                't',
+                'f',
+                'a',
+                'b',
             },
             State(12): {
                 'i',
@@ -197,188 +205,180 @@ expression: "(nfa, dfa)"
                 'a',
                 'b',
             },
-            State(13): {
-                'i',
-                'n',
-                't',
-                'f',
-                'a',
-                'b',
-            },
         },
         accept_states: {
-            State(4): (
+            State(3): (
                 0,
                 "if",
             ),
-            State(7): (
+            State(6): (
                 0,
                 "in",
             ),
-            State(11): (
+            State(10): (
                 0,
                 "int",
             ),
-            State(13): (
+            State(12): (
                 0,
                 "ID",
             ),
         },
     },
     Dfa {
-        start: 1,
+        start: 0,
         transitions: {
+            (
+                State(0),
+                'i',
+            ): State(1),
+            (
+                State(0),
+                'n',
+            ): State(2),
+            (
+                State(0),
+                't',
+            ): State(2),
+            (
+                State(0),
+                'f',
+            ): State(2),
+            (
+                State(0),
+                'a',
+            ): State(2),
+            (
+                State(0),
+                'b',
+            ): State(2),
+            (
+                State(1),
+                'f',
+            ): State(3),
+            (
+                State(1),
+                'n',
+            ): State(4),
             (
                 State(1),
                 'i',
             ): State(2),
             (
                 State(1),
-                'n',
-            ): State(3),
-            (
-                State(1),
                 't',
-            ): State(3),
-            (
-                State(1),
-                'f',
-            ): State(3),
+            ): State(2),
             (
                 State(1),
                 'a',
-            ): State(3),
+            ): State(2),
             (
                 State(1),
                 'b',
-            ): State(3),
+            ): State(2),
             (
                 State(2),
-                'f',
-            ): State(4),
+                'i',
+            ): State(2),
             (
                 State(2),
                 'n',
+            ): State(2),
+            (
+                State(2),
+                't',
+            ): State(2),
+            (
+                State(2),
+                'f',
+            ): State(2),
+            (
+                State(2),
+                'a',
+            ): State(2),
+            (
+                State(2),
+                'b',
+            ): State(2),
+            (
+                State(3),
+                'i',
+            ): State(2),
+            (
+                State(3),
+                'n',
+            ): State(2),
+            (
+                State(3),
+                't',
+            ): State(2),
+            (
+                State(3),
+                'f',
+            ): State(2),
+            (
+                State(3),
+                'a',
+            ): State(2),
+            (
+                State(3),
+                'b',
+            ): State(2),
+            (
+                State(4),
+                't',
             ): State(5),
             (
-                State(2),
-                'i',
-            ): State(3),
-            (
-                State(2),
-                't',
-            ): State(3),
-            (
-                State(2),
-                'a',
-            ): State(3),
-            (
-                State(2),
-                'b',
-            ): State(3),
-            (
-                State(3),
-                'i',
-            ): State(3),
-            (
-                State(3),
-                'n',
-            ): State(3),
-            (
-                State(3),
-                't',
-            ): State(3),
-            (
-                State(3),
-                'f',
-            ): State(3),
-            (
-                State(3),
-                'a',
-            ): State(3),
-            (
-                State(3),
-                'b',
-            ): State(3),
-            (
                 State(4),
                 'i',
-            ): State(3),
+            ): State(2),
             (
                 State(4),
                 'n',
-            ): State(3),
-            (
-                State(4),
-                't',
-            ): State(3),
+            ): State(2),
             (
                 State(4),
                 'f',
-            ): State(3),
+            ): State(2),
             (
                 State(4),
                 'a',
-            ): State(3),
+            ): State(2),
             (
                 State(4),
                 'b',
-            ): State(3),
-            (
-                State(5),
-                't',
-            ): State(6),
+            ): State(2),
             (
                 State(5),
                 'i',
-            ): State(3),
+            ): State(2),
             (
                 State(5),
                 'n',
-            ): State(3),
+            ): State(2),
             (
                 State(5),
-                'f',
-            ): State(3),
-            (
-                State(5),
-                'a',
-            ): State(3),
-            (
-                State(5),
-                'b',
-            ): State(3),
-            (
-                State(6),
-                'i',
-            ): State(3),
-            (
-                State(6),
-                'n',
-            ): State(3),
-            (
-                State(6),
                 't',
-            ): State(3),
+            ): State(2),
             (
-                State(6),
+                State(5),
                 'f',
-            ): State(3),
+            ): State(2),
             (
-                State(6),
+                State(5),
                 'a',
-            ): State(3),
+            ): State(2),
             (
-                State(6),
+                State(5),
                 'b',
-            ): State(3),
+            ): State(2),
         },
         accept_states: {
+            State(1): "ID",
             State(2): "ID",
-            State(3): "ID",
-            State(4): "if",
-            State(5): "in",
-            State(6): "int",
+            State(3): "if",
+            State(4): "in",
+            State(5): "int",
         },
     },
 )

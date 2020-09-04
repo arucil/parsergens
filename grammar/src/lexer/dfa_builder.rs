@@ -26,8 +26,9 @@ impl<A: Eq + Hash, V> DfaBuilder<A, V> {
   }
 
   pub fn state(&mut self) -> State {
+    let i = self.counter;
     self.counter += 1;
-    State(self.counter)
+    State(i)
   }
 
   pub fn transition(&mut self, src: State, dest: State, c: A) {

@@ -24,68 +24,68 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
     Nfa {
         transitions: {
             (
-                State(1),
+                State(0),
                 None,
             ): {
-                State(2),
+                State(1),
             },
             (
-                State(2),
+                State(1),
                 Some(
                     2,
                 ),
             ): {
-                State(3),
+                State(2),
             },
             (
-                State(3),
+                State(2),
                 None,
             ): {
-                State(2),
-                State(5),
+                State(1),
+                State(4),
             },
             (
-                State(3),
+                State(2),
                 Some(
                     0,
                 ),
             ): {
-                State(4),
+                State(3),
             },
             (
-                State(4),
+                State(3),
                 None,
             ): {
-                State(5),
+                State(4),
             },
             (
-                State(5),
+                State(4),
                 Some(
                     2,
                 ),
             ): {
-                State(6),
+                State(5),
             },
             (
-                State(6),
+                State(5),
                 None,
             ): {
-                State(5),
+                State(4),
             },
         },
         alphabets: {
-            State(2): {
+            State(1): {
                 2,
             },
-            State(3): {
+            State(2): {
                 0,
             },
-            State(5): {
+            State(4): {
                 2,
             },
         },
         accept_states: {
-            State(5): (
+            State(4): (
                 18446744073709551603,
                 TokenId(
                     0,
@@ -94,38 +94,41 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
         },
     },
     Dfa {
-        start: 1,
+        start: 0,
         transitions: {
+            (
+                State(0),
+                2,
+            ): State(1),
             (
                 State(1),
                 2,
             ): State(2),
             (
-                State(2),
-                2,
+                State(1),
+                0,
             ): State(3),
             (
                 State(2),
-                0,
-            ): State(4),
-            (
-                State(3),
                 2,
+            ): State(2),
+            (
+                State(2),
+                0,
             ): State(3),
             (
                 State(3),
-                0,
+                2,
             ): State(4),
             (
                 State(4),
                 2,
-            ): State(5),
-            (
-                State(5),
-                2,
-            ): State(5),
+            ): State(4),
         },
         accept_states: {
+            State(1): TokenId(
+                0,
+            ),
             State(2): TokenId(
                 0,
             ),
@@ -133,9 +136,6 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
                 0,
             ),
             State(4): TokenId(
-                0,
-            ),
-            State(5): TokenId(
                 0,
             ),
         },

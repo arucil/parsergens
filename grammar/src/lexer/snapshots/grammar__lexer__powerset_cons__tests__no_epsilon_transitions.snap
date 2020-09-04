@@ -6,12 +6,29 @@ expression: "(nfa, dfa)"
     Nfa {
         transitions: {
             (
+                State(0),
+                Some(
+                    0,
+                ),
+            ): {
+                State(0),
+            },
+            (
+                State(0),
+                Some(
+                    1,
+                ),
+            ): {
+                State(1),
+            },
+            (
                 State(1),
                 Some(
                     0,
                 ),
             ): {
                 State(1),
+                State(2),
             },
             (
                 State(1),
@@ -19,6 +36,15 @@ expression: "(nfa, dfa)"
                     1,
                 ),
             ): {
+                State(1),
+            },
+            (
+                State(2),
+                Some(
+                    1,
+                ),
+            ): {
+                State(1),
                 State(2),
             },
             (
@@ -28,85 +54,59 @@ expression: "(nfa, dfa)"
                 ),
             ): {
                 State(2),
-                State(3),
-            },
-            (
-                State(2),
-                Some(
-                    1,
-                ),
-            ): {
-                State(2),
-            },
-            (
-                State(3),
-                Some(
-                    1,
-                ),
-            ): {
-                State(2),
-                State(3),
-            },
-            (
-                State(3),
-                Some(
-                    0,
-                ),
-            ): {
-                State(3),
             },
         },
         alphabets: {
+            State(0): {
+                0,
+                1,
+            },
             State(1): {
                 0,
                 1,
             },
             State(2): {
-                0,
-                1,
-            },
-            State(3): {
                 1,
                 0,
             },
         },
         accept_states: {
-            State(3): (
+            State(2): (
                 1,
                 "final",
             ),
         },
     },
     Dfa {
-        start: 1,
+        start: 0,
         transitions: {
             (
-                State(1),
+                State(0),
                 0,
+            ): State(0),
+            (
+                State(0),
+                1,
             ): State(1),
             (
                 State(1),
-                1,
+                0,
             ): State(2),
+            (
+                State(1),
+                1,
+            ): State(1),
             (
                 State(2),
                 0,
-            ): State(3),
+            ): State(2),
             (
                 State(2),
                 1,
             ): State(2),
-            (
-                State(3),
-                0,
-            ): State(3),
-            (
-                State(3),
-                1,
-            ): State(3),
         },
         accept_states: {
-            State(3): "final",
+            State(2): "final",
         },
     },
 )

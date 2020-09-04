@@ -1,6 +1,6 @@
 ---
-source: grammar/src/lexer.rs
-expression: "(char_bounds.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
+source: grammar/src/lexer/build.rs
+expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
 ---
 (
     [
@@ -72,33 +72,89 @@ expression: "(char_bounds.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
     Nfa {
         transitions: {
             (
-                State(1),
+                State(0),
                 Some(
                     9,
                 ),
             ): {
-                State(2),
-                State(4),
-                State(7),
+                State(1),
+                State(3),
+                State(6),
             },
             (
-                State(2),
+                State(1),
                 Some(
                     7,
                 ),
             ): {
+                State(2),
+            },
+            (
                 State(3),
+                Some(
+                    11,
+                ),
+            ): {
+                State(4),
             },
             (
                 State(4),
                 Some(
-                    11,
+                    13,
                 ),
             ): {
                 State(5),
             },
             (
-                State(5),
+                State(0),
+                Some(
+                    6,
+                ),
+            ): {
+                State(6),
+            },
+            (
+                State(0),
+                Some(
+                    7,
+                ),
+            ): {
+                State(6),
+            },
+            (
+                State(0),
+                Some(
+                    8,
+                ),
+            ): {
+                State(6),
+            },
+            (
+                State(0),
+                Some(
+                    10,
+                ),
+            ): {
+                State(6),
+            },
+            (
+                State(0),
+                Some(
+                    11,
+                ),
+            ): {
+                State(6),
+            },
+            (
+                State(0),
+                Some(
+                    12,
+                ),
+            ): {
+                State(6),
+            },
+            (
+                State(0),
                 Some(
                     13,
                 ),
@@ -106,196 +162,140 @@ expression: "(char_bounds.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
                 State(6),
             },
             (
-                State(1),
-                Some(
-                    6,
-                ),
-            ): {
-                State(7),
-            },
-            (
-                State(1),
-                Some(
-                    7,
-                ),
-            ): {
-                State(7),
-            },
-            (
-                State(1),
-                Some(
-                    8,
-                ),
-            ): {
-                State(7),
-            },
-            (
-                State(1),
-                Some(
-                    10,
-                ),
-            ): {
-                State(7),
-            },
-            (
-                State(1),
-                Some(
-                    11,
-                ),
-            ): {
-                State(7),
-            },
-            (
-                State(1),
-                Some(
-                    12,
-                ),
-            ): {
-                State(7),
-            },
-            (
-                State(1),
-                Some(
-                    13,
-                ),
-            ): {
-                State(7),
-            },
-            (
-                State(1),
+                State(0),
                 Some(
                     14,
                 ),
             ): {
-                State(7),
+                State(6),
             },
             (
-                State(1),
+                State(0),
                 Some(
                     2,
                 ),
             ): {
-                State(7),
+                State(6),
             },
             (
-                State(1),
+                State(0),
                 Some(
                     4,
                 ),
             ): {
-                State(7),
+                State(6),
             },
             (
-                State(7),
+                State(6),
                 None,
             ): {
-                State(8),
+                State(7),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     0,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     6,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     7,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     8,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     9,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     10,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     11,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     12,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     13,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     14,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     2,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(8),
+                State(7),
                 Some(
                     4,
                 ),
             ): {
-                State(9),
+                State(8),
             },
             (
-                State(9),
+                State(8),
                 None,
             ): {
-                State(8),
+                State(7),
             },
         },
         alphabets: {
-            State(1): {
+            State(0): {
                 9,
                 6,
                 7,
@@ -308,16 +308,16 @@ expression: "(char_bounds.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
                 2,
                 4,
             },
-            State(2): {
+            State(1): {
                 7,
             },
-            State(4): {
+            State(3): {
                 11,
             },
-            State(5): {
+            State(4): {
                 13,
             },
-            State(8): {
+            State(7): {
                 0,
                 6,
                 7,
@@ -333,19 +333,19 @@ expression: "(char_bounds.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             },
         },
         accept_states: {
-            State(3): (
+            State(2): (
                 18446744073709551604,
                 TokenId(
                     0,
                 ),
             ),
-            State(6): (
+            State(5): (
                 18446744073709551589,
                 TokenId(
                     1,
                 ),
             ),
-            State(8): (
+            State(7): (
                 18446744073709551573,
                 TokenId(
                     2,
@@ -354,358 +354,358 @@ expression: "(char_bounds.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
         },
     },
     Dfa {
-        start: 1,
+        start: 0,
         transitions: {
             (
-                State(1),
+                State(0),
                 9,
+            ): State(1),
+            (
+                State(0),
+                6,
+            ): State(2),
+            (
+                State(0),
+                7,
+            ): State(2),
+            (
+                State(0),
+                8,
+            ): State(2),
+            (
+                State(0),
+                10,
+            ): State(2),
+            (
+                State(0),
+                11,
+            ): State(2),
+            (
+                State(0),
+                12,
+            ): State(2),
+            (
+                State(0),
+                13,
+            ): State(2),
+            (
+                State(0),
+                14,
+            ): State(2),
+            (
+                State(0),
+                2,
+            ): State(2),
+            (
+                State(0),
+                4,
             ): State(2),
             (
                 State(1),
-                6,
-            ): State(3),
-            (
-                State(1),
                 7,
-            ): State(3),
-            (
-                State(1),
-                8,
-            ): State(3),
-            (
-                State(1),
-                10,
             ): State(3),
             (
                 State(1),
                 11,
-            ): State(3),
+            ): State(4),
+            (
+                State(1),
+                0,
+            ): State(5),
+            (
+                State(1),
+                6,
+            ): State(5),
+            (
+                State(1),
+                8,
+            ): State(5),
+            (
+                State(1),
+                9,
+            ): State(5),
+            (
+                State(1),
+                10,
+            ): State(5),
             (
                 State(1),
                 12,
-            ): State(3),
+            ): State(5),
             (
                 State(1),
                 13,
-            ): State(3),
+            ): State(5),
             (
                 State(1),
                 14,
-            ): State(3),
+            ): State(5),
             (
                 State(1),
                 2,
-            ): State(3),
+            ): State(5),
             (
                 State(1),
                 4,
-            ): State(3),
+            ): State(5),
+            (
+                State(2),
+                0,
+            ): State(5),
+            (
+                State(2),
+                6,
+            ): State(5),
             (
                 State(2),
                 7,
-            ): State(4),
+            ): State(5),
+            (
+                State(2),
+                8,
+            ): State(5),
+            (
+                State(2),
+                9,
+            ): State(5),
+            (
+                State(2),
+                10,
+            ): State(5),
             (
                 State(2),
                 11,
             ): State(5),
             (
                 State(2),
-                0,
-            ): State(6),
-            (
-                State(2),
-                6,
-            ): State(6),
-            (
-                State(2),
-                8,
-            ): State(6),
-            (
-                State(2),
-                9,
-            ): State(6),
-            (
-                State(2),
-                10,
-            ): State(6),
-            (
-                State(2),
                 12,
-            ): State(6),
+            ): State(5),
             (
                 State(2),
                 13,
-            ): State(6),
+            ): State(5),
             (
                 State(2),
                 14,
-            ): State(6),
+            ): State(5),
             (
                 State(2),
                 2,
-            ): State(6),
+            ): State(5),
             (
                 State(2),
                 4,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 0,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 6,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 7,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 8,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 9,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 10,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 11,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 12,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 13,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 14,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 2,
-            ): State(6),
+            ): State(5),
             (
                 State(3),
                 4,
+            ): State(5),
+            (
+                State(4),
+                13,
             ): State(6),
             (
                 State(4),
                 0,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 6,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 7,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 8,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 9,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 10,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 11,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 12,
-            ): State(6),
-            (
-                State(4),
-                13,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 14,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 2,
-            ): State(6),
+            ): State(5),
             (
                 State(4),
                 4,
-            ): State(6),
-            (
-                State(5),
-                13,
-            ): State(7),
+            ): State(5),
             (
                 State(5),
                 0,
-            ): State(6),
+            ): State(5),
             (
                 State(5),
                 6,
-            ): State(6),
+            ): State(5),
             (
                 State(5),
                 7,
-            ): State(6),
+            ): State(5),
             (
                 State(5),
                 8,
-            ): State(6),
+            ): State(5),
             (
                 State(5),
                 9,
-            ): State(6),
+            ): State(5),
             (
                 State(5),
                 10,
-            ): State(6),
+            ): State(5),
             (
                 State(5),
                 11,
-            ): State(6),
+            ): State(5),
             (
                 State(5),
                 12,
-            ): State(6),
+            ): State(5),
+            (
+                State(5),
+                13,
+            ): State(5),
             (
                 State(5),
                 14,
-            ): State(6),
+            ): State(5),
             (
                 State(5),
                 2,
-            ): State(6),
+            ): State(5),
             (
                 State(5),
                 4,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 0,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 6,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 7,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 8,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 9,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 10,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 11,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 12,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 13,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 14,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 2,
-            ): State(6),
+            ): State(5),
             (
                 State(6),
                 4,
-            ): State(6),
-            (
-                State(7),
-                0,
-            ): State(6),
-            (
-                State(7),
-                6,
-            ): State(6),
-            (
-                State(7),
-                7,
-            ): State(6),
-            (
-                State(7),
-                8,
-            ): State(6),
-            (
-                State(7),
-                9,
-            ): State(6),
-            (
-                State(7),
-                10,
-            ): State(6),
-            (
-                State(7),
-                11,
-            ): State(6),
-            (
-                State(7),
-                12,
-            ): State(6),
-            (
-                State(7),
-                13,
-            ): State(6),
-            (
-                State(7),
-                14,
-            ): State(6),
-            (
-                State(7),
-                2,
-            ): State(6),
-            (
-                State(7),
-                4,
-            ): State(6),
+            ): State(5),
         },
         accept_states: {
+            State(1): TokenId(
+                2,
+            ),
             State(2): TokenId(
                 2,
             ),
             State(3): TokenId(
-                2,
+                0,
             ),
             State(4): TokenId(
-                0,
+                2,
             ),
             State(5): TokenId(
                 2,
             ),
             State(6): TokenId(
-                2,
-            ),
-            State(7): TokenId(
                 1,
             ),
         },

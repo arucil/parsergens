@@ -216,154 +216,154 @@ Ok(
         rule_names: {RuleId(0) <> "expr", RuleId(1) <> "factor", RuleId(2) <> "param_list"},
         lexer: Lexer {
             dfa: Dfa {
-                start: 1,
+                start: 0,
                 transitions: {
                     (
-                        State(1),
+                        State(0),
                         7,
+                    ): State(1),
+                    (
+                        State(0),
+                        9,
                     ): State(2),
                     (
-                        State(1),
-                        9,
+                        State(0),
+                        6,
                     ): State(3),
                     (
-                        State(1),
-                        6,
+                        State(0),
+                        11,
                     ): State(4),
                     (
-                        State(1),
-                        11,
+                        State(0),
+                        4,
                     ): State(5),
                     (
-                        State(1),
-                        4,
+                        State(0),
+                        5,
                     ): State(6),
                     (
-                        State(1),
-                        5,
+                        State(0),
+                        8,
                     ): State(7),
                     (
-                        State(1),
-                        8,
+                        State(0),
+                        18,
                     ): State(8),
                     (
-                        State(1),
-                        18,
-                    ): State(9),
-                    (
-                        State(1),
+                        State(0),
                         14,
+                    ): State(8),
+                    (
+                        State(0),
+                        2,
                     ): State(9),
                     (
-                        State(1),
-                        2,
-                    ): State(10),
-                    (
-                        State(1),
+                        State(0),
                         0,
+                    ): State(9),
+                    (
+                        State(0),
+                        12,
                     ): State(10),
                     (
-                        State(1),
+                        State(8),
                         12,
                     ): State(11),
                     (
-                        State(9),
-                        12,
-                    ): State(12),
-                    (
-                        State(9),
+                        State(8),
                         18,
-                    ): State(12),
+                    ): State(11),
                     (
-                        State(9),
+                        State(8),
                         14,
-                    ): State(12),
+                    ): State(11),
                     (
-                        State(9),
+                        State(8),
                         16,
+                    ): State(11),
+                    (
+                        State(10),
+                        12,
                     ): State(12),
                     (
-                        State(11),
-                        12,
+                        State(10),
+                        10,
                     ): State(13),
                     (
                         State(11),
-                        10,
-                    ): State(14),
-                    (
-                        State(12),
                         12,
-                    ): State(12),
+                    ): State(11),
                     (
-                        State(12),
+                        State(11),
                         18,
-                    ): State(12),
+                    ): State(11),
                     (
-                        State(12),
+                        State(11),
                         14,
+                    ): State(11),
+                    (
+                        State(11),
+                        16,
+                    ): State(11),
+                    (
+                        State(12),
+                        12,
                     ): State(12),
                     (
                         State(12),
-                        16,
-                    ): State(12),
-                    (
-                        State(13),
-                        12,
+                        10,
                     ): State(13),
                     (
                         State(13),
-                        10,
+                        12,
                     ): State(14),
                     (
                         State(14),
                         12,
-                    ): State(15),
-                    (
-                        State(15),
-                        12,
-                    ): State(15),
+                    ): State(14),
                 },
                 accept_states: {
-                    State(2): TokenId(
+                    State(1): TokenId(
                         0,
                     ),
-                    State(3): TokenId(
+                    State(2): TokenId(
                         1,
                     ),
-                    State(4): TokenId(
+                    State(3): TokenId(
                         2,
                     ),
-                    State(5): TokenId(
+                    State(4): TokenId(
                         3,
                     ),
-                    State(6): TokenId(
+                    State(5): TokenId(
                         4,
                     ),
-                    State(7): TokenId(
+                    State(6): TokenId(
                         5,
                     ),
-                    State(8): TokenId(
+                    State(7): TokenId(
                         6,
                     ),
-                    State(9): TokenId(
+                    State(8): TokenId(
                         8,
                     ),
-                    State(10): TokenId(
+                    State(9): TokenId(
                         9,
                     ),
-                    State(11): TokenId(
+                    State(10): TokenId(
                         7,
                     ),
-                    State(12): TokenId(
+                    State(11): TokenId(
                         8,
+                    ),
+                    State(12): TokenId(
+                        7,
                     ),
                     State(13): TokenId(
                         7,
                     ),
                     State(14): TokenId(
-                        7,
-                    ),
-                    State(15): TokenId(
                         7,
                     ),
                 },
