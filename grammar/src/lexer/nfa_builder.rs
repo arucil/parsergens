@@ -3,7 +3,7 @@ use super::nfa::*;
 use crate::{Map, Set};
 
 pub struct NfaBuilder<A, P, V> {
-  counter: usize,
+  counter: u32,
   transitions: Map<(State, Option<A>), Set<State>>,
   alphabets: Map<State, Set<A>>,
   accept_states: Map<State, (P, V)>,

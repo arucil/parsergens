@@ -12,7 +12,7 @@ pub struct Nfa<A, P, V> {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
-pub struct State(pub usize);
+pub struct State(pub u32);
 
 impl<A, P, V> Nfa<A, P, V>
   where A: Eq + Hash + Copy,
@@ -24,9 +24,9 @@ impl<A, P, V> Nfa<A, P, V>
 }
 
 impl<A, P, V> Nfa<A, P, V>
-  where A: Eq + Hash + Copy + Debug,
+  where A: Eq + Hash + Clone + Debug,
         P: PartialOrd,
-        V: Clone
+        V: Eq + Hash + Clone
 {
   pub fn to_dfa(&self, start: State) -> Dfa<A, V> {
     super::powerset_cons::powerset(self, start)

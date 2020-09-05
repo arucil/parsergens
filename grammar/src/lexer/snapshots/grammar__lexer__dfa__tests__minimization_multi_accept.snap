@@ -1,0 +1,36 @@
+---
+source: grammar/src/lexer/dfa.rs
+expression: dfa
+---
+Dfa {
+    start: 2,
+    transitions: {
+        (
+            State(2),
+            '0',
+        ): State(2),
+        (
+            State(2),
+            '1',
+        ): State(0),
+        (
+            State(0),
+            '0',
+        ): State(0),
+        (
+            State(0),
+            '1',
+        ): State(1),
+        (
+            State(1),
+            '0',
+        ): State(1),
+        (
+            State(1),
+            '1',
+        ): State(1),
+    },
+    accept_states: {
+        State(0): "end",
+    },
+}

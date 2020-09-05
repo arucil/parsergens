@@ -9,14 +9,14 @@ pub fn powerset<A, P, V>(
   nfa: &Nfa<A, P, V>,
   start: NfaState
 ) -> Dfa<A, V>
-  where A: Eq + Hash + Copy + std::fmt::Debug,
+  where A: Eq + Hash + Clone + std::fmt::Debug,
         P: PartialOrd,
-        V: Clone,
+        V: Eq + Hash + Clone,
 {
   let mut builder = Dfa::builder();
   let mut dfa_nfa_state_map = BiHashMap::new();
 
-  let initial = epsilon_closure(vec![start.0].into_iter().collect(), nfa);
+  let initial = epsilon_closure(vec![start.0 as usize].into_iter().collect(), nfa);
   let start = builder.state();
 
   let accepted = check_accept(&initial, nfa);
@@ -39,17 +39,17 @@ pub fn powerset<A, P, V>(
       let mut transitions: Map<A, Vec<usize>> = Map::new();
 
       for nfa_state in nfa_states {
-        let nfa_state = NfaState(nfa_state);
+        let nfa_state = NfaState(nfa_state as u32);
         let alphabet = nfa.alphabets.get(&nfa_state)
           .into_iter()
           .flat_map(|x| x);
-        for &c in alphabet {
-          transitions.entry(c).or_default().extend(
-            nfa.transitions.get(&(nfa_state, Some(c)))
+        for c in alphabet {
+          transitions.entry(c.clone()).or_default().extend(
+            nfa.transitions.get(&(nfa_state, Some(c.clone())))
               .into_iter()
               .flat_map(|x| x)
               .into_iter()
-              .map(|s| s.0));
+              .map(|s| s.0 as usize));
         }
       }
 
@@ -93,13 +93,13 @@ fn check_accept<'a, A, P, V>(
   nfa_states: &BitSet,
   nfa: &'a Nfa<A, P, V>
 ) -> Option<(&'a P, &'a V)>
-  where A: Eq + Hash + Copy + std::fmt::Debug,
+  where A: Eq + Hash + Clone + std::fmt::Debug,
         P: PartialOrd,
         V: Clone,
 {
   let mut accepted = None;
   for nfa_state in nfa_states {
-    if let Some((p, v)) = nfa.accept_states.get(&NfaState(nfa_state)) {
+    if let Some((p, v)) = nfa.accept_states.get(&NfaState(nfa_state as u32)) {
       accepted = Some(if let Some((p0, v0)) = accepted {
         if p > p0 {
           (p, v)
@@ -127,12 +127,12 @@ fn epsilon_closure<A, P, V>(
   loop {
     let mut new = BitSet::new();
     for i in last.iter() {
-      for next in nfa.transitions.get(&(NfaState(i), None))
+      for next in nfa.transitions.get(&(NfaState(i as u32), None))
         .into_iter()
         .flat_map(|x| x)
       {
-        if !result.contains(next.0) {
-          new.insert(next.0);
+        if !result.contains(next.0 as usize) {
+          new.insert(next.0 as usize);
         }
       }
     }

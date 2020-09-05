@@ -3,12 +3,15 @@ use super::dfa::*;
 use crate::Map;
 
 pub struct DfaBuilder<A, V> {
-  counter: usize,
+  counter: u32,
   transitions: Map<(State, A), State>,
   accept_states: Map<State, V>,
 }
 
-impl<A: Eq + Hash, V> DfaBuilder<A, V> {
+impl<A, V> DfaBuilder<A, V>
+  where A: Eq + Hash + Clone,
+        V: Eq + Hash + Clone,
+{
   pub fn new() -> Self {
     Self {
       counter: 0,

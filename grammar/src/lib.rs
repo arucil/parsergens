@@ -21,7 +21,7 @@ use grammar_parser::UserParseError;
 use lexer::LexerError;
 
 #[cfg(not(debug_assertions))]
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 #[cfg(not(debug_assertions))]
 use bimap::BiHashMap;
 
