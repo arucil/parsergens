@@ -187,7 +187,7 @@ impl<'a> RegexParser<'a> {
 
     loop {
       let item = match self.chars.next() {
-        Some((_, ']')) => {
+        Some((_, ']')) if !items.is_empty() => {
           if pending_range {
             items.push(CharSetItem::Char('-'));
           }
@@ -448,6 +448,11 @@ mod tests {
     #[test]
     fn char_set_hyphen() {
       assert_debug_snapshot!(parse_regex(r"([-[-z ---_-] )", 100));
+    }
+
+    #[test]
+    fn char_set_right_bracket() {
+      assert_debug_snapshot!(parse_regex(r"([]a] )", 100));
     }
 
     #[test]

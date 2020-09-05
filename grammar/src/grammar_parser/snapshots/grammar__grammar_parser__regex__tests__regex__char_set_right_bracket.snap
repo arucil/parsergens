@@ -1,0 +1,23 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"([]a] )\", 100)"
+---
+Ok(
+    Concat(
+        [
+            CharSet(
+                [
+                    Char(
+                        ']',
+                    ),
+                    Char(
+                        'a',
+                    ),
+                ],
+            ),
+            Char(
+                ' ',
+            ),
+        ],
+    ),
+)
