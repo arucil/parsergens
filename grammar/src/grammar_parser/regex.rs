@@ -253,6 +253,9 @@ impl<'a> RegexParser<'a> {
       Some((_, 't')) => {
         Ok(Left('\t'))
       }
+      Some((_, '\\')) => {
+        Ok(Left('\\'))
+      }
       Some((_, 'd')) if enable_class => {
         Ok(Right(CharClass::Digit))
       }
