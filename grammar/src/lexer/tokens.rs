@@ -45,9 +45,6 @@ impl<'lexer, 'input> Iterator for Tokens<'lexer, 'input> {
         Some(&(i, c)) => {
           let char_interval = util::find_char_interval(
             c as u32, &self.lexer.char_intervals);
-            if c == '*' {
-              println!("{:?} {:?}", state, self.lexer.dfa.result(state));
-            }
 
           if let Some(next_state) = self.lexer.dfa.transition(state, char_interval) {
             self.chars.next();

@@ -38,6 +38,7 @@ impl<A, V> Dfa<A, V>
     DfaBuilder::new()
   }
 
+  /// Hopcroft's algorithm
   pub fn minimize<'a>(&'a self) -> Self {
     let mut states = self.accept_states.iter()
       .fold(Map::<&'a V, BitSet>::new(), |mut map, (state, value)| {
