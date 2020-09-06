@@ -6,18 +6,22 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
     [
         (
             0,
-            46,
+            0,
         ),
         (
             1,
-            47,
+            46,
         ),
         (
             2,
-            48,
+            47,
         ),
         (
             3,
+            48,
+        ),
+        (
+            4,
             58,
         ),
     ],
@@ -32,7 +36,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(1),
                 Some(
-                    2,
+                    3,
                 ),
             ): {
                 State(2),
@@ -47,7 +51,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(2),
                 Some(
-                    0,
+                    1,
                 ),
             ): {
                 State(3),
@@ -61,7 +65,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(4),
                 Some(
-                    2,
+                    3,
                 ),
             ): {
                 State(5),
@@ -75,13 +79,13 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
         },
         alphabets: {
             State(1): {
-                2,
+                3,
             },
             State(2): {
-                0,
+                1,
             },
             State(4): {
-                2,
+                3,
             },
         },
         accept_states: {
@@ -98,31 +102,31 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
         transitions: {
             (
                 State(0),
-                2,
+                3,
             ): State(1),
             (
                 State(1),
-                2,
+                3,
             ): State(2),
             (
                 State(1),
-                0,
+                1,
             ): State(3),
             (
                 State(2),
-                2,
+                3,
             ): State(2),
             (
                 State(2),
-                0,
+                1,
             ): State(3),
             (
                 State(3),
-                2,
+                3,
             ): State(4),
             (
                 State(4),
-                2,
+                3,
             ): State(4),
         },
         accept_states: {

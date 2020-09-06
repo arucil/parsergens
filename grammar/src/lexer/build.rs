@@ -174,6 +174,7 @@ fn compute_char_intervals(
   skips: &[&SkipDecl]
 ) -> Vec<u32> {
   let mut char_intervals = BTreeSet::new();
+  char_intervals.insert(0);
 
   for decl in decls {
     collect_char_intervals(&decl.pattern.regex, &mut char_intervals);

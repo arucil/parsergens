@@ -6,66 +6,70 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
     [
         (
             0,
-            48,
+            0,
         ),
         (
             1,
-            58,
+            48,
         ),
         (
             2,
-            65,
+            58,
         ),
         (
             3,
-            91,
+            65,
         ),
         (
             4,
-            95,
+            91,
         ),
         (
             5,
-            96,
+            95,
         ),
         (
             6,
-            97,
+            96,
         ),
         (
             7,
-            102,
+            97,
         ),
         (
             8,
-            103,
+            102,
         ),
         (
             9,
-            105,
+            103,
         ),
         (
             10,
-            106,
+            105,
         ),
         (
             11,
-            110,
+            106,
         ),
         (
             12,
-            111,
+            110,
         ),
         (
             13,
-            116,
+            111,
         ),
         (
             14,
-            117,
+            116,
         ),
         (
             15,
+            117,
+        ),
+        (
+            16,
             123,
         ),
     ],
@@ -74,7 +78,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(0),
                 Some(
-                    9,
+                    10,
                 ),
             ): {
                 State(1),
@@ -84,7 +88,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(1),
                 Some(
-                    7,
+                    8,
                 ),
             ): {
                 State(2),
@@ -92,7 +96,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(3),
                 Some(
-                    11,
+                    12,
                 ),
             ): {
                 State(4),
@@ -100,18 +104,10 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(4),
                 Some(
-                    13,
+                    14,
                 ),
             ): {
                 State(5),
-            },
-            (
-                State(0),
-                Some(
-                    6,
-                ),
-            ): {
-                State(6),
             },
             (
                 State(0),
@@ -132,7 +128,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(0),
                 Some(
-                    10,
+                    9,
                 ),
             ): {
                 State(6),
@@ -172,7 +168,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(0),
                 Some(
-                    2,
+                    15,
                 ),
             ): {
                 State(6),
@@ -180,7 +176,15 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(0),
                 Some(
-                    4,
+                    3,
+                ),
+            ): {
+                State(6),
+            },
+            (
+                State(0),
+                Some(
+                    5,
                 ),
             ): {
                 State(6),
@@ -194,15 +198,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(7),
                 Some(
-                    0,
-                ),
-            ): {
-                State(8),
-            },
-            (
-                State(7),
-                Some(
-                    6,
+                    1,
                 ),
             ): {
                 State(8),
@@ -274,7 +270,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(7),
                 Some(
-                    2,
+                    15,
                 ),
             ): {
                 State(8),
@@ -282,7 +278,15 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             (
                 State(7),
                 Some(
-                    4,
+                    3,
+                ),
+            ): {
+                State(8),
+            },
+            (
+                State(7),
+                Some(
+                    5,
                 ),
             ): {
                 State(8),
@@ -296,30 +300,29 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
         },
         alphabets: {
             State(0): {
-                9,
-                6,
+                10,
                 7,
                 8,
-                10,
+                9,
                 11,
                 12,
                 13,
                 14,
-                2,
-                4,
+                15,
+                3,
+                5,
             },
             State(1): {
-                7,
+                8,
             },
             State(3): {
-                11,
+                12,
             },
             State(4): {
-                13,
+                14,
             },
             State(7): {
-                0,
-                6,
+                1,
                 7,
                 8,
                 9,
@@ -328,8 +331,9 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
                 12,
                 13,
                 14,
-                2,
-                4,
+                15,
+                3,
+                5,
             },
         },
         accept_states: {
@@ -358,14 +362,10 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
         transitions: {
             (
                 State(0),
-                9,
+                10,
             ): State(1),
             (
                 State(0),
-                6,
-            ): State(2),
-            (
-                State(0),
                 7,
             ): State(2),
             (
@@ -374,7 +374,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             ): State(2),
             (
                 State(0),
-                10,
+                9,
             ): State(2),
             (
                 State(0),
@@ -394,31 +394,31 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             ): State(2),
             (
                 State(0),
-                2,
+                15,
             ): State(2),
             (
                 State(0),
-                4,
+                3,
+            ): State(2),
+            (
+                State(0),
+                5,
             ): State(2),
             (
                 State(1),
-                7,
+                8,
             ): State(3),
             (
                 State(1),
-                11,
+                12,
             ): State(4),
             (
                 State(1),
-                0,
+                1,
             ): State(5),
             (
                 State(1),
-                6,
-            ): State(5),
-            (
-                State(1),
-                8,
+                7,
             ): State(5),
             (
                 State(1),
@@ -430,7 +430,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             ): State(5),
             (
                 State(1),
-                12,
+                11,
             ): State(5),
             (
                 State(1),
@@ -442,19 +442,19 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             ): State(5),
             (
                 State(1),
-                2,
+                15,
             ): State(5),
             (
                 State(1),
-                4,
+                3,
+            ): State(5),
+            (
+                State(1),
+                5,
             ): State(5),
             (
                 State(2),
-                0,
-            ): State(5),
-            (
-                State(2),
-                6,
+                1,
             ): State(5),
             (
                 State(2),
@@ -490,19 +490,19 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             ): State(5),
             (
                 State(2),
-                2,
+                15,
             ): State(5),
             (
                 State(2),
-                4,
+                3,
+            ): State(5),
+            (
+                State(2),
+                5,
             ): State(5),
             (
                 State(3),
-                0,
-            ): State(5),
-            (
-                State(3),
-                6,
+                1,
             ): State(5),
             (
                 State(3),
@@ -538,23 +538,23 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             ): State(5),
             (
                 State(3),
-                2,
+                15,
             ): State(5),
             (
                 State(3),
-                4,
+                3,
+            ): State(5),
+            (
+                State(3),
+                5,
             ): State(5),
             (
                 State(4),
-                13,
+                14,
             ): State(6),
             (
                 State(4),
-                0,
-            ): State(5),
-            (
-                State(4),
-                6,
+                1,
             ): State(5),
             (
                 State(4),
@@ -582,23 +582,23 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             ): State(5),
             (
                 State(4),
-                14,
+                13,
             ): State(5),
             (
                 State(4),
-                2,
+                15,
             ): State(5),
             (
                 State(4),
-                4,
+                3,
+            ): State(5),
+            (
+                State(4),
+                5,
             ): State(5),
             (
                 State(5),
-                0,
-            ): State(5),
-            (
-                State(5),
-                6,
+                1,
             ): State(5),
             (
                 State(5),
@@ -634,19 +634,19 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             ): State(5),
             (
                 State(5),
-                2,
+                15,
             ): State(5),
             (
                 State(5),
-                4,
+                3,
+            ): State(5),
+            (
+                State(5),
+                5,
             ): State(5),
             (
                 State(6),
-                0,
-            ): State(5),
-            (
-                State(6),
-                6,
+                1,
             ): State(5),
             (
                 State(6),
@@ -682,11 +682,15 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
             ): State(5),
             (
                 State(6),
-                2,
+                15,
             ): State(5),
             (
                 State(6),
-                4,
+                3,
+            ): State(5),
+            (
+                State(6),
+                5,
             ): State(5),
         },
         accept_states: {
