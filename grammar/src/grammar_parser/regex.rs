@@ -184,6 +184,12 @@ impl<'a> RegexParser<'a> {
   fn parse_char_set(&mut self, _start: usize) -> Result {
     let mut pending_range = false;
     let mut items = vec![];
+    let negated = if let Some((_, '^')) = self.chars.peek() {
+      self.advance();
+      true
+    } else {
+      false
+    };
 
     loop {
       let item = match self.chars.next() {
@@ -191,7 +197,7 @@ impl<'a> RegexParser<'a> {
           if pending_range {
             items.push(CharSetItem::Char('-'));
           }
-          return Ok(Regex::CharSet(items));
+          return Ok(Regex::CharSet(items, negated));
         }
         Some((i, '\\')) => {
           match self.parse_escape(i, true)? {
@@ -453,6 +459,16 @@ mod tests {
     #[test]
     fn char_set_right_bracket() {
       assert_debug_snapshot!(parse_regex(r"([]a] )", 100));
+    }
+
+    #[test]
+    fn char_set_negated() {
+      assert_debug_snapshot!(parse_regex(r"[^\w]", 100));
+    }
+
+    #[test]
+    fn char_set_negated_caret() {
+      assert_debug_snapshot!(parse_regex(r"[^^]", 100));
     }
 
     #[test]

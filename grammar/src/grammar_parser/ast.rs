@@ -33,7 +33,7 @@ pub enum Regex {
   Empty,
   Any,
   Char(char),
-  CharSet(Vec<CharSetItem>),
+  CharSet(Vec<CharSetItem>, bool),
   CharClass(CharClass),
   Alt(Vec<Regex>),
   Concat(Vec<Regex>),
@@ -79,3 +79,18 @@ pub enum RuleAlt {
 
 #[derive(Debug)]
 pub struct Spanned<T>(pub (usize, usize), pub T);
+
+impl CharClass {
+  pub fn ranges(&self) -> impl Iterator<Item=(char, char)> {
+    let f = |&(a, b): &'static (char, char)| (a, b);
+
+    match self {
+      Self::Digit => {
+        [('0', '9')].iter().map(f)
+      }
+      Self::Word => {
+        [('0', '9'), ('a', 'z'), ('A', 'Z')].iter().map(f)
+      }
+    }
+  }
+}

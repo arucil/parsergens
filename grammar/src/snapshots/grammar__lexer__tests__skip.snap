@@ -23,16 +23,16 @@ expression: tokens
         Token {
             kind: "INT",
             text: "0127401",
-            start: 15,
-            end: 22,
+            start: 28,
+            end: 35,
         },
     ),
     Ok(
         Token {
             kind: "INT",
             text: "5768",
-            start: 26,
-            end: 30,
+            start: 41,
+            end: 45,
         },
     ),
 ]

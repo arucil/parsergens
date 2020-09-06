@@ -1,0 +1,14 @@
+---
+source: grammar/src/grammar_parser/regex.rs
+expression: "parse_regex(r\"[^^]\", 100)"
+---
+Ok(
+    CharSet(
+        [
+            Char(
+                '^',
+            ),
+        ],
+        true,
+    ),
+)

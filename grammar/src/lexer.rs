@@ -55,6 +55,7 @@ mod tests {
     let ast = grammar_parser::parse(r#"
 %token INT /\d+/
 %skip /[ \n]/
+%skip /#[^\n]*/
     "#).unwrap();
 
     let decls = ast.iter()
@@ -72,10 +73,11 @@ mod tests {
       .collect::<Vec<_>>();
 
     let lexer = Lexer::new(&decls, &skips).unwrap();
-    let tokens = lexer.lex(r"  123  456  
-  0127401  
- 5768   
-    ").collect::<Vec<_>>();
+    let tokens = lexer.lex(r"  123  456  # lorem ipsum
+  0127401  #
+
+ 5768   ##dolorsitamet##
+    #").collect::<Vec<_>>();
 
     assert_debug_snapshot!(tokens);
   }
