@@ -1,12 +1,9 @@
-use std::str::CharIndices;
-use std::iter::Peekable;
 use super::{Lexer, util};
 
 pub struct Tokens<'lexer, 'input> {
   lexer: &'lexer Lexer,
   input: &'input str,
-  chars: Peekable<CharIndices<'input>>,
-  error: bool,
+  pos: usize,
 }
 
 #[derive(Debug)]
@@ -17,65 +14,101 @@ pub struct Token<'lexer, 'input> {
   pub end: usize,
 }
 
+#[derive(Debug)]
+pub struct Error {
+  pub char: char,
+  pub start: usize,
+  pub end: usize,
+}
+
 impl<'lexer, 'input> Tokens<'lexer, 'input> {
   pub(super) fn new(lexer: &'lexer Lexer, input: &'input str) -> Self {
     Self {
       lexer,
       input,
-      chars: input.char_indices().peekable(),
-      error: false,
+      pos: 0,
+    }
+  }
+
+  fn peek_char(&mut self) -> Option<char> {
+    self.input[self.pos..].chars().next()
+  }
+
+  fn advance(&mut self) {
+    self.pos += 1;
+    while !self.input.is_char_boundary(self.pos) {
+      self.pos += 1;
     }
   }
 }
 
 impl<'lexer, 'input> Iterator for Tokens<'lexer, 'input> {
-  type Item = Result<Token<'lexer, 'input>, ()>;
+  type Item = Result<Token<'lexer, 'input>, Error>;
 
   fn next(&mut self) -> Option<Self::Item> {
-    if self.error {
+    if self.pos == self.input.len() {
       return None;
     }
 
     let mut state = self.lexer.dfa.start();
-    let mut start = self.chars.peek()?.0;
+    let mut start = self.pos;
+    let mut end = start;
+    let mut token_kind: Option<&'_ String> = None;
 
     loop {
-      let end;
-      match self.chars.peek() {
-        Some(&(i, c)) => {
+      let no_move;
+
+      match self.peek_char() {
+        Some(c) => {
           let char_interval = util::find_char_interval(
             c as u32, &self.lexer.char_intervals);
 
           if let Some(next_state) = self.lexer.dfa.transition(state, char_interval) {
-            self.chars.next();
+            self.advance();
             state = next_state;
-            continue;
+            no_move = false;
+          } else {
+            no_move = true;
           }
-
-          end = i;
         }
         None => {
-          end = self.input.len();
+          no_move = true;
         }
       }
 
-      if let Some(&id) = self.lexer.dfa.result(state) {
-        if let Some(kind) = self.lexer.token_names.get_by_left(&id) {
+      if no_move {
+        self.pos = end;
+
+        if end == start {
+          let char = self.peek_char().unwrap();
+          let start = self.pos;
+          self.advance();
+          let end = self.pos;
+
+          return Some(Err(Error {
+            char,
+            start,
+            end,
+          }));
+        } else if let Some(kind) = token_kind {
           return Some(Ok(Token {
             kind,
             text: &self.input[start..end],
             start,
             end,
           }));
-        } else if end < self.input.len() {
+        } else if end == self.input.len() {
+          return None;
+        } else {
           state = self.lexer.dfa.start();
           start = end;
-        } else {
-          return None;
+          continue;
         }
-      } else {
-        self.error = true;
-        return Some(Err(()));
+      }
+
+      if let Some(&id) = self.lexer.dfa.result(state) {
+        end = self.pos;
+        token_kind = self.lexer.token_names.get_by_left(&id);
       }
     }
   }

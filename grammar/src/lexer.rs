@@ -117,4 +117,32 @@ mod tests {
 
     assert_debug_snapshot!(tokens);
   }
+
+  #[test]
+  fn match_longest() {
+    let ast = grammar_parser::parse(r#"
+%token IN "in"
+%token INTEGER "integer"
+%token TEGE "tege"
+    "#).unwrap();
+
+    let decls = ast.iter()
+      .filter_map(|decl| match &decl.1 {
+        Decl::Token(decl) => Some(decl),
+        _ => None,
+      })
+      .collect::<Vec<_>>();
+
+    let skips = ast.iter()
+      .filter_map(|decl| match &decl.1 {
+        Decl::Skip(decl) => Some(decl),
+        _ => None,
+      })
+      .collect::<Vec<_>>();
+
+    let lexer = Lexer::new(&decls, &skips).unwrap();
+    let tokens = lexer.lex(r"integeintegerinteg").collect::<Vec<_>>();
+
+    assert_debug_snapshot!(tokens);
+  }
 }

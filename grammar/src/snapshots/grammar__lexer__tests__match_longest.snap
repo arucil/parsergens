@@ -1,0 +1,59 @@
+---
+source: grammar/src/lexer.rs
+expression: tokens
+---
+[
+    Ok(
+        Token {
+            kind: "IN",
+            text: "in",
+            start: 0,
+            end: 2,
+        },
+    ),
+    Ok(
+        Token {
+            kind: "TEGE",
+            text: "tege",
+            start: 2,
+            end: 6,
+        },
+    ),
+    Ok(
+        Token {
+            kind: "INTEGER",
+            text: "integer",
+            start: 6,
+            end: 13,
+        },
+    ),
+    Ok(
+        Token {
+            kind: "IN",
+            text: "in",
+            start: 13,
+            end: 15,
+        },
+    ),
+    Err(
+        Error {
+            char: 't',
+            start: 15,
+            end: 16,
+        },
+    ),
+    Err(
+        Error {
+            char: 'e',
+            start: 16,
+            end: 17,
+        },
+    ),
+    Err(
+        Error {
+            char: 'g',
+            start: 17,
+            end: 18,
+        },
+    ),
+]
