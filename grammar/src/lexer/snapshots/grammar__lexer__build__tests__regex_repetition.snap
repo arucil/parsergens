@@ -77,7 +77,7 @@ expression: "(char_intervals.iter().enumerate().collect::<Vec<_>>(), nfa, dfa)"
                 State(4),
             },
         },
-        alphabets: {
+        state_letters: {
             State(1): {
                 3,
             },

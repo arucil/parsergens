@@ -37,7 +37,7 @@ impl<V> TabularDfa<V> {
 
 impl<V> From<Dfa<u32, V>> for TabularDfa<V> {
   fn from(dfa: Dfa<u32, V>) -> Self {
-    let last_alphabet = dfa.transitions.keys()
+    let last_letter = dfa.transitions.keys()
       .map(|(_, c)| *c).max().unwrap();
     let last_state = dfa.transitions.iter()
       .map(|((s1, _), s2)| s1.0.max(s2.0))
@@ -46,15 +46,15 @@ impl<V> From<Dfa<u32, V>> for TabularDfa<V> {
 
     let mut state_base = vec![];
     let mut transitions = vec![];
-    let mut row_mask = bitvec![0; last_alphabet as usize + 1];
+    let mut row_mask = bitvec![0; last_letter as usize + 1];
     let mut base = 0;
 
     for state in 0..=last_state {
       let mut row_bits = BitVec::<LocalBits, usize>::with_capacity(
-        (last_alphabet + 1) as usize);
+        (last_letter + 1) as usize);
       let mut row = vec![];
 
-      for c in 0..=last_alphabet {
+      for c in 0..=last_letter {
         if let Some(&State(next)) = dfa.transitions.get(&(State(state), c)) {
           row.push(next + 1);
           row_bits.push(true);
@@ -78,7 +78,7 @@ impl<V> From<Dfa<u32, V>> for TabularDfa<V> {
 
       state_base.push(base);
 
-      transitions.resize(base + last_alphabet as usize + 1, (state, 0));
+      transitions.resize(base + last_letter as usize + 1, (state, 0));
 
       for (i, x) in row.into_iter().enumerate() {
         if x != 0 {

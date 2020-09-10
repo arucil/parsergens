@@ -5,7 +5,7 @@ use crate::{Map, Set};
 pub struct NfaBuilder<A, P, V> {
   counter: u32,
   transitions: Map<(State, Option<A>), Set<State>>,
-  alphabets: Map<State, Set<A>>,
+  state_letters: Map<State, Set<A>>,
   accept_states: Map<State, (P, V)>,
 }
 
@@ -17,7 +17,7 @@ impl<A, P, V> NfaBuilder<A, P, V>
     Self {
       counter: 0,
       transitions: Map::new(),
-      alphabets: Map::new(),
+      state_letters: Map::new(),
       accept_states: Map::new(),
     }
   }
@@ -25,7 +25,7 @@ impl<A, P, V> NfaBuilder<A, P, V>
   pub fn build(self) -> Nfa<A, P, V> {
     Nfa {
       transitions: self.transitions,
-      alphabets: self.alphabets,
+      state_letters: self.state_letters,
       accept_states: self.accept_states,
     }
   }
@@ -39,7 +39,7 @@ impl<A, P, V> NfaBuilder<A, P, V>
   pub fn transition(&mut self, src: State, dest: State, c: Option<A>) {
     self.transitions.entry((src, c)).or_default().insert(dest);
     if let Some(c) = c {
-      self.alphabets.entry(src).or_default().insert(c);
+      self.state_letters.entry(src).or_default().insert(c);
     }
   }
 

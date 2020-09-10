@@ -61,7 +61,7 @@ expression: "(nfa, dfa)"
                 State(2),
             },
         },
-        alphabets: {
+        state_letters: {
             State(1): {
                 '0',
                 '1',

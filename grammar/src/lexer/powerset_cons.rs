@@ -40,10 +40,10 @@ pub fn powerset<A, P, V>(
 
       for nfa_state in nfa_states {
         let nfa_state = NfaState(nfa_state as u32);
-        let alphabet = nfa.alphabets.get(&nfa_state)
+        let letters = nfa.state_letters.get(&nfa_state)
           .into_iter()
           .flat_map(|x| x);
-        for c in alphabet {
+        for c in letters {
           transitions.entry(c.clone()).or_default().extend(
             nfa.transitions.get(&(nfa_state, Some(c.clone())))
               .into_iter()

@@ -167,7 +167,7 @@ expression: "(nfa, dfa)"
                 State(12),
             },
         },
-        alphabets: {
+        state_letters: {
             State(1): {
                 'i',
             },

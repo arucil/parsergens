@@ -7,7 +7,7 @@ use crate::{Map, Set};
 #[derive(Debug)]
 pub struct Nfa<A, P, V> {
   pub transitions: Map<(State, Option<A>), Set<State>>,
-  pub alphabets: Map<State, Set<A>>,
+  pub state_letters: Map<State, Set<A>>,
   pub accept_states: Map<State, (P, V)>,
 }
 

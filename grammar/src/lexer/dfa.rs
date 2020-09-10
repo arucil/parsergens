@@ -70,13 +70,13 @@ impl<A, V> Dfa<A, V>
         to_states.entry((c.clone(), dest.0)).or_default().insert(src.0 as usize);
         to_states
       });
-    let alphabets = self.transitions.keys().map(|(_, c)| c.clone()).collect::<Set<_>>();
+    let alphabet = self.transitions.keys().map(|(_, c)| c.clone()).collect::<Set<_>>();
     let mut p = states.clone();
     let mut w = states;
 
     while !w.is_empty() {
       let a = w.pop().unwrap();
-      for c in &alphabets {
+      for c in &alphabet {
         let x = a.iter()
           .fold(BitSet::new(), |mut set, state| {
             to_states.get(&(c.clone(), state as u32)).iter().for_each(|states| {
