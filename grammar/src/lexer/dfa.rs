@@ -16,15 +16,18 @@ pub struct Dfa<A, V> {
 pub struct State(pub u32);
 
 impl<A: Eq + Hash + Clone, V> Dfa<A, V> {
+  #[allow(dead_code)]
   pub fn start(&self) -> State {
     State(self.start)
   }
 
+  #[allow(dead_code)]
   pub fn transition(&self, state: State, c: A) -> Option<State> {
     self.transitions.get(&(state, c)).cloned()
   }
 
   /// if the state is accepting state, return the value.
+  #[allow(dead_code)]
   pub fn result(&self, state: State) -> Option<&V> {
     self.accept_states.get(&state)
   }

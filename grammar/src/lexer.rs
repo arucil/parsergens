@@ -1,4 +1,4 @@
-use dfa::Dfa;
+use tabular_dfa::TabularDfa;
 use super::grammar_parser::ast::{TokenDecl, SkipDecl};
 use super::grammar_parser::regex::RegexError;
 use super::BiMap;
@@ -9,6 +9,7 @@ mod nfa;
 mod nfa_builder;
 mod dfa;
 mod dfa_builder;
+mod tabular_dfa;
 mod powerset_cons;
 mod util;
 pub mod build;
@@ -16,7 +17,7 @@ pub mod tokens;
 
 #[derive(Debug)]
 pub struct Lexer {
-  pub(crate) dfa: Dfa<u32, TokenId>,
+  pub(crate) dfa: TabularDfa<TokenId>,
   pub(crate) char_intervals: Vec<u32>,
   pub(crate) token_names: BiMap<TokenId, String>,
 }

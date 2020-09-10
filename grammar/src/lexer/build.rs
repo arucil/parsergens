@@ -40,6 +40,7 @@ pub fn build(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Lexer, LexerEr
 
   let nfa = nfa_builder.build();
   let dfa = nfa.to_dfa(start).minimize();
+  let dfa = dfa.into();
 
   Ok(Lexer {
     dfa,
