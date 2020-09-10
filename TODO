@@ -1,0 +1,3 @@
+- lexer mode
+- executable DFA instead of table-based
+- reduce the check of EOF in DFA: *RE2C: A more versatile scanner generator*.
