@@ -59,7 +59,7 @@ pub struct GrammarError {
 #[derive(Debug)]
 pub enum GrammarErrorKind {
   ParseError,
-  TermNotFound,
+  SymbolNotFound,
   NameConflict,
 }
 
@@ -110,8 +110,8 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     }
   })?;
 
-  let mut rule_id_gen = RuleIdGen::default();
-  let rule_names = rules.iter()
+  let mut nonterminal_id_gen = NonterminalIdGen::default();
+  let nonterminals = rules.iter()
     .map(|decl| {
       if lexer.token_names.get_by_right(&decl.name.1).is_some() {
         return Err(GrammarError {
@@ -121,61 +121,63 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         });
       }
 
-      let id = rule_id_gen.gen();
+      let id = nonterminal_id_gen.gen();
 
       Ok((id, decl.name.1.clone()))
     })
     .collect::<Result<BiMap<_, _>, GrammarError>>()?;
 
-  let start_rules = starts.iter()
+  let start_nonterminals = starts.iter()
     .map(|decl| {
-      if let Some(&id) = rule_names.get_by_right(&decl.name.1) {
+      if let Some(&id) = nonterminals.get_by_right(&decl.name.1) {
         Ok(id)
       } else {
         Err(GrammarError {
-          kind: GrammarErrorKind::TermNotFound,
-          message: format!("rule not found"),
+          kind: GrammarErrorKind::SymbolNotFound,
+          message: format!("nonterminal not found"),
           span: decl.name.0,
         })
       }
     })
     .collect::<Result<Set<_>, GrammarError>>()?;
 
-  let rules = rules.iter()
-    .map(|decl| {
-      Ok((
-        *rule_names.get_by_right(&decl.name.1).unwrap(),
-        Rule {
-          name: decl.name.1.clone(),
-          alts: decl.alts.iter().map(|alt| {
-            match &alt.1 {
-              ast::RuleAlt::Epsilon => Ok(vec![]),
-              ast::RuleAlt::Terms(terms) => {
-                Ok(terms.iter().map(|term| {
-                  if let Some(&id) = rule_names.get_by_right(&term.1) {
-                    Ok(Term::Rule(id))
-                  } else if let Some(&id) = lexer.token_names.get_by_right(&term.1) {
-                    Ok(Term::Token(id))
-                  } else {
-                    Err(GrammarError {
-                      kind: GrammarErrorKind::TermNotFound,
-                      message: format!("rule or token not found"),
-                      span: term.0,
-                    })
-                  }
-                }).collect::<Result<Vec<_>, GrammarError>>()?)
-              }
+  let mut productions = vec![];
+
+  for rule in &rules {
+    let nonterminal = *nonterminals.get_by_right(&rule.name.1).unwrap();
+
+    for alt in &rule.alts {
+      let mut items = vec![];
+      match &alt.1 {
+        ast::RuleAlt::Epsilon => {}
+        ast::RuleAlt::Terms(terms) => {
+          for term in terms {
+            if let Some(&id) = nonterminals.get_by_right(&term.1) {
+              items.push(Item::Nonterminal(id));
+            } else if let Some(&id) = lexer.token_names.get_by_right(&term.1) {
+              items.push(Item::Token(id));
+            } else {
+              return Err(GrammarError {
+                kind: GrammarErrorKind::SymbolNotFound,
+                message: format!("nonterminal or token not found"),
+                span: term.0,
+              });
             }
-          }).collect::<Result<Vec<_>, GrammarError>>()?,
+          }
         }
-      ))
-    })
-    .collect::<Result<Map<_, _>, GrammarError>>()?;
+      }
+
+      productions.push(Production {
+        nonterminal,
+        items,
+      });
+    }
+  }
 
   Ok(Grammar {
-    rules,
-    start_rules,
-    rule_names,
+    productions,
+    start_nonterminals,
+    nonterminals,
     lexer,
   })
 }
@@ -193,8 +195,8 @@ pub fn report_error(input: &str, error: &GrammarError) {
     GrammarErrorKind::NameConflict => {
       diagnostic.with_message("name conflict")
     }
-    GrammarErrorKind::TermNotFound => {
-      diagnostic.with_message("term not found")
+    GrammarErrorKind::SymbolNotFound => {
+      diagnostic.with_message("symbol not found")
     }
   };
   let diagnostic = diagnostic.with_labels(vec![

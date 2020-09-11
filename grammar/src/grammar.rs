@@ -1,38 +1,39 @@
 use super::lexer::{Lexer, TokenId};
-use crate::{Map, Set, BiMap};
+use crate::{Set, BiMap};
 
 #[derive(Debug)]
 pub struct Grammar {
-  pub rules: Map<RuleId, Rule>,
-  pub start_rules: Set<RuleId>,
-  pub rule_names: BiMap<RuleId, String>,
+  /// productions of the same nonterminals are consecutive.
+  pub productions: Vec<Production>,
+  pub start_nonterminals: Set<NonterminalId>,
+  pub nonterminals: BiMap<NonterminalId, String>,
   pub lexer: Lexer,
 }
 
 #[derive(Debug)]
-pub struct Rule {
-  pub name: String,
-  pub alts: Vec<RuleAlt>,
+pub struct Production {
+  pub nonterminal: NonterminalId,
+  pub items: Vec<Item>,
 }
 
-pub type RuleAlt = Vec<Term>;
-
-#[derive(PartialEq, Eq, Hash, Debug)]
-pub enum Term {
-  Rule(RuleId),
+#[derive(Debug)]
+pub enum Item {
+  Nonterminal(NonterminalId),
   Token(TokenId),
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
-pub struct RuleId(u32);
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+pub struct NonterminalId(u32);
+
+#[derive(Debug)]
 
 #[derive(Default)]
-pub(crate) struct RuleIdGen(u32);
+pub(crate) struct NonterminalIdGen(u32);
 
-impl RuleIdGen {
-  pub fn gen(&mut self) -> RuleId {
+impl NonterminalIdGen {
+  pub fn gen(&mut self) -> NonterminalId {
     let i = self.0;
     self.0 += 1;
-    RuleId(i)
+    NonterminalId(i)
   }
 }

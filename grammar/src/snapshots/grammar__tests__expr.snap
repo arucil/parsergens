@@ -4,216 +4,260 @@ expression: build(input)
 ---
 Ok(
     Grammar {
-        rules: {
-            RuleId(
-                0,
-            ): Rule {
-                name: "expr",
-                alts: [
-                    [
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
+        productions: [
+            Production {
+                nonterminal: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
                         ),
-                        Token(
-                            TokenId(
-                                0,
-                            ),
+                    ),
+                    Token(
+                        TokenId(
+                            0,
                         ),
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
                         ),
-                    ],
-                    [
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
-                        ),
-                        Token(
-                            TokenId(
-                                1,
-                            ),
-                        ),
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
-                        ),
-                    ],
-                    [
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
-                        ),
-                        Token(
-                            TokenId(
-                                2,
-                            ),
-                        ),
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
-                        ),
-                    ],
-                    [
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
-                        ),
-                        Token(
-                            TokenId(
-                                3,
-                            ),
-                        ),
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
-                        ),
-                    ],
-                    [
-                        Rule(
-                            RuleId(
-                                1,
-                            ),
-                        ),
-                    ],
+                    ),
                 ],
             },
-            RuleId(
-                1,
-            ): Rule {
-                name: "factor",
-                alts: [
-                    [
-                        Token(
-                            TokenId(
-                                7,
-                            ),
+            Production {
+                nonterminal: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
                         ),
-                    ],
-                    [
-                        Token(
-                            TokenId(
-                                4,
-                            ),
+                    ),
+                    Token(
+                        TokenId(
+                            1,
                         ),
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
                         ),
-                        Token(
-                            TokenId(
-                                5,
-                            ),
-                        ),
-                    ],
-                    [
-                        Token(
-                            TokenId(
-                                1,
-                            ),
-                        ),
-                        Rule(
-                            RuleId(
-                                1,
-                            ),
-                        ),
-                    ],
-                    [
-                        Token(
-                            TokenId(
-                                8,
-                            ),
-                        ),
-                    ],
-                    [
-                        Token(
-                            TokenId(
-                                8,
-                            ),
-                        ),
-                        Token(
-                            TokenId(
-                                4,
-                            ),
-                        ),
-                        Rule(
-                            RuleId(
-                                2,
-                            ),
-                        ),
-                        Token(
-                            TokenId(
-                                5,
-                            ),
-                        ),
-                    ],
-                    [
-                        Token(
-                            TokenId(
-                                8,
-                            ),
-                        ),
-                        Token(
-                            TokenId(
-                                4,
-                            ),
-                        ),
-                        Token(
-                            TokenId(
-                                5,
-                            ),
-                        ),
-                    ],
+                    ),
                 ],
             },
-            RuleId(
-                2,
-            ): Rule {
-                name: "param_list",
-                alts: [
-                    [
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
+            Production {
+                nonterminal: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
                         ),
-                    ],
-                    [
-                        Rule(
-                            RuleId(
-                                2,
-                            ),
+                    ),
+                    Token(
+                        TokenId(
+                            2,
                         ),
-                        Token(
-                            TokenId(
-                                6,
-                            ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
                         ),
-                        Rule(
-                            RuleId(
-                                0,
-                            ),
-                        ),
-                    ],
+                    ),
                 ],
             },
-        },
-        start_rules: {
-            RuleId(
+            Production {
+                nonterminal: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            3,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                ],
+            },
+            Production {
+                nonterminal: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            1,
+                        ),
+                    ),
+                ],
+            },
+            Production {
+                nonterminal: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            7,
+                        ),
+                    ),
+                ],
+            },
+            Production {
+                nonterminal: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            4,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            5,
+                        ),
+                    ),
+                ],
+            },
+            Production {
+                nonterminal: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            1,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            1,
+                        ),
+                    ),
+                ],
+            },
+            Production {
+                nonterminal: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            8,
+                        ),
+                    ),
+                ],
+            },
+            Production {
+                nonterminal: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            8,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            4,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            2,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            5,
+                        ),
+                    ),
+                ],
+            },
+            Production {
+                nonterminal: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            8,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            4,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            5,
+                        ),
+                    ),
+                ],
+            },
+            Production {
+                nonterminal: NonterminalId(
+                    2,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                ],
+            },
+            Production {
+                nonterminal: NonterminalId(
+                    2,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            2,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            6,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                ],
+            },
+        ],
+        start_nonterminals: {
+            NonterminalId(
                 0,
             ),
         },
-        rule_names: {RuleId(0) <> "expr", RuleId(1) <> "factor", RuleId(2) <> "param_list"},
+        nonterminals: {NonterminalId(0) <> "expr", NonterminalId(1) <> "factor", NonterminalId(2) <> "param_list"},
         lexer: Lexer {
             dfa: TabularDfa {
                 start: 11,
