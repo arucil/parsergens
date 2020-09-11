@@ -33,11 +33,18 @@ rule_decl: RuleDecl =
   }; 
 
 production: Spanned<RuleAlt> = {
-  <l:@L> <terms:ident+> <r:@L> => Spanned((l, r), RuleAlt::Terms(terms)),
+  <l:@L> <terms:term+> <r:@L> => Spanned((l, r), RuleAlt::Terms(terms)),
   <l:@L> epsilon <r:@L> => Spanned((l, r), RuleAlt::Epsilon),
 };
 
 epsilon: () = LParen RParen;
+
+term: Term = {
+  ident => Term::Symbol(<>),
+  LParen <terms:term+> RParen QuestionMark => Term::Optional(terms),
+  LParen <terms:term+> RParen Asterisk => Term::Many(terms),
+  LParen <terms:term+> RParen Plus => Term::Many1(terms),
+}
 
 start_decl: StartDecl = Percent Start <name:ident> Newline
   => {
@@ -112,6 +119,9 @@ extern {
     LParen => lex::Token { kind: lex::TokenKind::LParen, .. },
     RParen => lex::Token { kind: lex::TokenKind::RParen, .. },
     Comma => lex::Token { kind: lex::TokenKind::Comma, .. },
+    Asterisk => lex::Token { kind: lex::TokenKind::Asterisk, .. },
+    QuestionMark => lex::Token { kind: lex::TokenKind::QuestionMark, .. },
+    Plus => lex::Token { kind: lex::TokenKind::Plus, .. },
 
     Indent => lex::Token { kind: lex::TokenKind::Indent, .. },
     Newline => lex::Token { kind: lex::TokenKind::Newline, .. },

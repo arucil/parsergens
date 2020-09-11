@@ -20,12 +20,19 @@ pub struct Production {
 pub enum Item {
   Nonterminal(NonterminalId),
   Token(TokenId),
+  Optional(Vec<Item>),
+  Many(Vec<Item>),
+  Many1(Vec<Item>),
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub struct NonterminalId(u32);
 
-#[derive(Debug)]
+impl NonterminalId {
+  pub fn id(&self) -> u32 {
+    self.0
+  }
+}
 
 #[derive(Default)]
 pub(crate) struct NonterminalIdGen(u32);

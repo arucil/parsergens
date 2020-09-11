@@ -74,7 +74,15 @@ pub struct RuleDecl {
 #[derive(Debug)]
 pub enum RuleAlt {
   Epsilon,
-  Terms(Vec<Spanned<String>>),
+  Terms(Vec<Term>),
+}
+
+#[derive(Debug)]
+pub enum Term {
+  Symbol(Spanned<String>),
+  Optional(Vec<Term>),
+  Many(Vec<Term>),
+  Many1(Vec<Term>),
 }
 
 #[derive(Debug)]

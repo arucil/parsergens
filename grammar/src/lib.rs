@@ -11,8 +11,8 @@ mod grammar_parser;
 pub mod lexer;
 pub mod grammar;
 
-use self::grammar::*;
-pub use lexer::Lexer;
+pub use grammar::*;
+pub use lexer::{Lexer, TokenId};
 
 use grammar_parser::ast;
 use grammar_parser::lex::{Token, LexErrorKind, LexError};
@@ -113,7 +113,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
   let mut nonterminal_id_gen = NonterminalIdGen::default();
   let nonterminals = rules.iter()
     .map(|decl| {
-      if lexer.token_names.get_by_right(&decl.name.1).is_some() {
+      if lexer.tokens.get_by_right(&decl.name.1).is_some() {
         return Err(GrammarError {
           kind: GrammarErrorKind::NameConflict,
           message: format!("rule name collides with token name"),
@@ -147,25 +147,12 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     let nonterminal = *nonterminals.get_by_right(&rule.name.1).unwrap();
 
     for alt in &rule.alts {
-      let mut items = vec![];
-      match &alt.1 {
-        ast::RuleAlt::Epsilon => {}
+      let items = match &alt.1 {
+        ast::RuleAlt::Epsilon => vec![],
         ast::RuleAlt::Terms(terms) => {
-          for term in terms {
-            if let Some(&id) = nonterminals.get_by_right(&term.1) {
-              items.push(Item::Nonterminal(id));
-            } else if let Some(&id) = lexer.token_names.get_by_right(&term.1) {
-              items.push(Item::Token(id));
-            } else {
-              return Err(GrammarError {
-                kind: GrammarErrorKind::SymbolNotFound,
-                message: format!("nonterminal or token not found"),
-                span: term.0,
-              });
-            }
-          }
+          convert_terms(terms, &nonterminals, &lexer.tokens)?
         }
-      }
+      };
 
       productions.push(Production {
         nonterminal,
@@ -180,6 +167,43 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     nonterminals,
     lexer,
   })
+}
+
+fn convert_terms(
+  terms: &[ast::Term],
+  nonterminals: &BiMap<NonterminalId, String>,
+  tokens: &BiMap<TokenId, String>,
+) -> Result<Vec<Item>, GrammarError> {
+  let mut items = vec![];
+
+  for term in terms {
+    match term {
+      ast::Term::Symbol(sym) => {
+        if let Some(&id) = nonterminals.get_by_right(&sym.1) {
+          items.push(Item::Nonterminal(id));
+        } else if let Some(&id) = tokens.get_by_right(&sym.1) {
+          items.push(Item::Token(id));
+        } else {
+          return Err(GrammarError {
+            kind: GrammarErrorKind::SymbolNotFound,
+            message: format!("nonterminal or token not found"),
+            span: sym.0,
+          });
+        }
+      }
+      ast::Term::Optional(terms) => {
+        items.push(Item::Optional(convert_terms(terms, nonterminals, tokens)?));
+      }
+      ast::Term::Many(terms) => {
+        items.push(Item::Many(convert_terms(terms, nonterminals, tokens)?));
+      }
+      ast::Term::Many1(terms) => {
+        items.push(Item::Many1(convert_terms(terms, nonterminals, tokens)?));
+      }
+    }
+  }
+
+  Ok(items)
 }
 
 pub fn report_error(input: &str, error: &GrammarError) {

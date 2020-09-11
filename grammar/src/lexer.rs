@@ -19,7 +19,7 @@ pub mod tokens;
 pub struct Lexer {
   pub(crate) dfa: TabularDfa<TokenId>,
   pub(crate) char_intervals: Vec<u32>,
-  pub(crate) token_names: BiMap<TokenId, String>,
+  pub(crate) tokens: BiMap<TokenId, String>,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
@@ -29,6 +29,12 @@ pub struct TokenId(u32);
 pub enum LexerError {
   NoTokens,
   RegexError(RegexError),
+}
+
+impl TokenId {
+  pub fn id(&self) -> u32 {
+    self.0
+  }
 }
 
 impl Lexer {

@@ -19,13 +19,13 @@ pub fn build(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Lexer, LexerEr
   let mut nfa_builder = Nfa::builder();
   let start = nfa_builder.state();
   let mut token_gen = TokenGen::default();
-  let mut token_names = BiMap::new();
+  let mut tokens = BiMap::new();
 
   for decl in decls {
     let accept = add_regex_to_nfa(
       &mut nfa_builder, &decl.pattern.regex, start, &char_intervals);
     let token = token_gen.gen();
-    token_names.insert(token, decl.name.1.clone());
+    tokens.insert(token, decl.name.1.clone());
 
     nfa_builder.accept(accept, decl.pattern.source.0 .0, token);
   }
@@ -45,7 +45,7 @@ pub fn build(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Lexer, LexerEr
   Ok(Lexer {
     dfa,
     char_intervals,
-    token_names,
+    tokens,
   })
 }
 

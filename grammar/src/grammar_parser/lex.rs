@@ -22,6 +22,9 @@ pub enum TokenKind {
   LParen,
   RParen,
   Comma,
+  Asterisk,
+  QuestionMark,
+  Plus,
 
   Indent,
   Newline,
@@ -167,6 +170,9 @@ impl<'a> Iterator for Lexer<'a> {
       '=' => return self.single_char_token(TokenKind::Assign, j),
       '|' => return self.single_char_token(TokenKind::Or, j),
       ',' => return self.single_char_token(TokenKind::Comma, j),
+      '*' => return self.single_char_token(TokenKind::Asterisk, j),
+      '+' => return self.single_char_token(TokenKind::Plus, j),
+      '?' => return self.single_char_token(TokenKind::QuestionMark, j),
       '(' => return self.single_char_token(TokenKind::LParen, j),
       ')' => return self.single_char_token(TokenKind::RParen, j),
       _ if c.is_ascii_alphabetic() => {

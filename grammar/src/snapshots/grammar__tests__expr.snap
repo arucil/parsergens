@@ -501,7 +501,7 @@ Ok(
                 97,
                 123,
             ],
-            token_names: {TokenId(0) <> "PLUS", TokenId(1) <> "MINUS", TokenId(2) <> "MUL", TokenId(3) <> "DIV", TokenId(4) <> "LPAREN", TokenId(5) <> "RPAREN", TokenId(6) <> "COMMA", TokenId(7) <> "NUMBER", TokenId(8) <> "IDENT"},
+            tokens: {TokenId(0) <> "PLUS", TokenId(1) <> "MINUS", TokenId(2) <> "MUL", TokenId(3) <> "DIV", TokenId(4) <> "LPAREN", TokenId(5) <> "RPAREN", TokenId(6) <> "COMMA", TokenId(7) <> "NUMBER", TokenId(8) <> "IDENT"},
         },
     },
 )
