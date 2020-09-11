@@ -197,25 +197,9 @@ Ok(
             },
             Production {
                 nonterminal: NonterminalId(
-                    1,
+                    2,
                 ),
-                items: [
-                    Token(
-                        TokenId(
-                            8,
-                        ),
-                    ),
-                    Token(
-                        TokenId(
-                            4,
-                        ),
-                    ),
-                    Token(
-                        TokenId(
-                            5,
-                        ),
-                    ),
-                ],
+                items: [],
             },
             Production {
                 nonterminal: NonterminalId(
@@ -227,27 +211,19 @@ Ok(
                             0,
                         ),
                     ),
-                ],
-            },
-            Production {
-                nonterminal: NonterminalId(
-                    2,
-                ),
-                items: [
-                    Nonterminal(
-                        NonterminalId(
-                            2,
-                        ),
-                    ),
-                    Token(
-                        TokenId(
-                            6,
-                        ),
-                    ),
-                    Nonterminal(
-                        NonterminalId(
-                            0,
-                        ),
+                    Many(
+                        [
+                            Token(
+                                TokenId(
+                                    6,
+                                ),
+                            ),
+                            Nonterminal(
+                                NonterminalId(
+                                    0,
+                                ),
+                            ),
+                        ],
                     ),
                 ],
             },

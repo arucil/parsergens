@@ -361,11 +361,10 @@ factor =
   | MINUS factor
   | IDENT
   | IDENT LPAREN param_list RPAREN
-  | IDENT LPAREN RPAREN
 
 param_list =
-    expr
-  | param_list COMMA expr
+    ()
+  | expr ( COMMA expr )*
     "#;
 
     assert_debug_snapshot!(build(input));
