@@ -10,3 +10,7 @@ edition = "2018"
 grammar = { path = "../grammar" }
 bit-set = "0.5.2"
 indexmap = "1.6.0"
+bimap = "0.5.2"
+
+[dev-dependencies]
+insta = "0.16.1"

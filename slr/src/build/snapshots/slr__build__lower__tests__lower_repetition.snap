@@ -1,0 +1,209 @@
+---
+source: slr/src/build/lower.rs
+expression: lowered
+---
+LoweredGrammar {
+    productions: [
+        Production {
+            nonterminal: NonterminalId(
+                2,
+            ),
+            action: None,
+            symbols: [],
+        },
+        Production {
+            nonterminal: NonterminalId(
+                2,
+            ),
+            action: None,
+            symbols: [
+                Token(
+                    TokenId(
+                        0,
+                    ),
+                ),
+            ],
+        },
+        Production {
+            nonterminal: NonterminalId(
+                3,
+            ),
+            action: RepetitionFirst,
+            symbols: [],
+        },
+        Production {
+            nonterminal: NonterminalId(
+                3,
+            ),
+            action: RepetitionRest,
+            symbols: [
+                Nonterminal(
+                    NonterminalId(
+                        3,
+                    ),
+                ),
+                Nonterminal(
+                    NonterminalId(
+                        1,
+                    ),
+                ),
+                Nonterminal(
+                    NonterminalId(
+                        2,
+                    ),
+                ),
+            ],
+        },
+        Production {
+            nonterminal: NonterminalId(
+                4,
+            ),
+            action: RepetitionFirst,
+            symbols: [
+                Token(
+                    TokenId(
+                        0,
+                    ),
+                ),
+                Nonterminal(
+                    NonterminalId(
+                        1,
+                    ),
+                ),
+            ],
+        },
+        Production {
+            nonterminal: NonterminalId(
+                4,
+            ),
+            action: RepetitionRest,
+            symbols: [
+                Nonterminal(
+                    NonterminalId(
+                        4,
+                    ),
+                ),
+                Token(
+                    TokenId(
+                        0,
+                    ),
+                ),
+                Nonterminal(
+                    NonterminalId(
+                        1,
+                    ),
+                ),
+            ],
+        },
+        Production {
+            nonterminal: NonterminalId(
+                0,
+            ),
+            action: None,
+            symbols: [
+                Token(
+                    TokenId(
+                        0,
+                    ),
+                ),
+                Nonterminal(
+                    NonterminalId(
+                        3,
+                    ),
+                ),
+                Token(
+                    TokenId(
+                        0,
+                    ),
+                ),
+            ],
+        },
+        Production {
+            nonterminal: NonterminalId(
+                0,
+            ),
+            action: None,
+            symbols: [
+                Nonterminal(
+                    NonterminalId(
+                        4,
+                    ),
+                ),
+            ],
+        },
+        Production {
+            nonterminal: NonterminalId(
+                1,
+            ),
+            action: None,
+            symbols: [
+                Token(
+                    TokenId(
+                        0,
+                    ),
+                ),
+            ],
+        },
+        Production {
+            nonterminal: NonterminalId(
+                1,
+            ),
+            action: None,
+            symbols: [],
+        },
+    ],
+    start_nonterminals: {
+        NonterminalId(
+            0,
+        ),
+    },
+    nonterminals: {NonterminalId(0) <> "top", NonterminalId(1) <> "atom", NonterminalId(2) <> "(A)?", NonterminalId(3) <> "(atom (A)?)*", NonterminalId(4) <> "(A atom)+"},
+    nonterminal_productions: {
+        NonterminalId(
+            2,
+        ): 0..2,
+        NonterminalId(
+            3,
+        ): 2..4,
+        NonterminalId(
+            4,
+        ): 4..6,
+        NonterminalId(
+            0,
+        ): 6..8,
+        NonterminalId(
+            1,
+        ): 8..10,
+    },
+    lexer: Lexer {
+        dfa: TabularDfa {
+            start: 0,
+            state_base: [
+                0,
+                0,
+                0,
+            ],
+            transitions: [
+                (
+                    0,
+                    0,
+                ),
+                (
+                    0,
+                    2,
+                ),
+            ],
+            accept_states: {
+                State(1): TokenId(
+                    0,
+                ),
+            },
+        },
+        char_intervals: [
+            0,
+            97,
+            98,
+        ],
+        tokens: {TokenId(0) <> "A"},
+    },
+}

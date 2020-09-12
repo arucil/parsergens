@@ -1,5 +1,6 @@
+use std::ops::Range;
 use super::lexer::{Lexer, TokenId};
-use crate::{Set, BiMap};
+use crate::{Set, BiMap, Map};
 
 #[derive(Debug)]
 pub struct Grammar {
@@ -7,6 +8,7 @@ pub struct Grammar {
   pub productions: Vec<Production>,
   pub start_nonterminals: Set<NonterminalId>,
   pub nonterminals: BiMap<NonterminalId, String>,
+  pub nonterminal_productions: Map<NonterminalId, Range<usize>>,
   pub lexer: Lexer,
 }
 
@@ -35,12 +37,16 @@ impl NonterminalId {
 }
 
 #[derive(Default)]
-pub(crate) struct NonterminalIdGen(u32);
+pub struct NonterminalIdGen(u32);
 
 impl NonterminalIdGen {
   pub fn gen(&mut self) -> NonterminalId {
     let i = self.0;
     self.0 += 1;
     NonterminalId(i)
+  }
+
+  pub fn from(start: u32) -> Self {
+    Self(start + 1)
   }
 }

@@ -17,9 +17,9 @@ pub mod tokens;
 
 #[derive(Debug)]
 pub struct Lexer {
-  pub(crate) dfa: TabularDfa<TokenId>,
-  pub(crate) char_intervals: Vec<u32>,
-  pub(crate) tokens: BiMap<TokenId, String>,
+  pub dfa: TabularDfa<TokenId>,
+  pub char_intervals: Vec<u32>,
+  pub tokens: BiMap<TokenId, String>,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]

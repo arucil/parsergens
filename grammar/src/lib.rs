@@ -142,9 +142,11 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     .collect::<Result<Set<_>, GrammarError>>()?;
 
   let mut productions = vec![];
+  let mut nonterminal_productions = Map::new();
 
   for rule in &rules {
     let nonterminal = *nonterminals.get_by_right(&rule.name.1).unwrap();
+    let start = productions.len();
 
     for alt in &rule.alts {
       let items = match &alt.1 {
@@ -159,12 +161,15 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         items,
       });
     }
+
+    nonterminal_productions.insert(nonterminal, start..productions.len());
   }
 
   Ok(Grammar {
     productions,
     start_nonterminals,
     nonterminals,
+    nonterminal_productions,
     lexer,
   })
 }
