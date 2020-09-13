@@ -5,16 +5,18 @@ use crate::{Set, BiMap, Map};
 #[derive(Debug)]
 pub struct Grammar {
   /// productions of the same nonterminals are consecutive.
-  pub productions: Vec<Production>,
-  pub start_nonterminals: Set<NonterminalId>,
-  pub nonterminals: BiMap<NonterminalId, String>,
-  pub nonterminal_productions: Map<NonterminalId, Range<usize>>,
+  pub prods: Vec<Production>,
+  /// starting non-terminals
+  pub start_nts: Set<NonterminalId>,
+  /// non-terminals
+  pub nts: BiMap<NonterminalId, String>,
+  pub nt_prods: Map<NonterminalId, Range<usize>>,
   pub lexer: Lexer,
 }
 
 #[derive(Debug)]
 pub struct Production {
-  pub nonterminal: NonterminalId,
+  pub nt: NonterminalId,
   pub items: Vec<Item>,
 }
 

@@ -110,8 +110,8 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     }
   })?;
 
-  let mut nonterminal_id_gen = NonterminalIdGen::default();
-  let nonterminals = rules.iter()
+  let mut nt_id_gen = NonterminalIdGen::default();
+  let nts = rules.iter()
     .map(|decl| {
       if lexer.tokens.get_by_right(&decl.name.1).is_some() {
         return Err(GrammarError {
@@ -121,15 +121,15 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         });
       }
 
-      let id = nonterminal_id_gen.gen();
+      let id = nt_id_gen.gen();
 
       Ok((id, decl.name.1.clone()))
     })
     .collect::<Result<BiMap<_, _>, GrammarError>>()?;
 
-  let start_nonterminals = starts.iter()
+  let start_nts = starts.iter()
     .map(|decl| {
-      if let Some(&id) = nonterminals.get_by_right(&decl.name.1) {
+      if let Some(&id) = nts.get_by_right(&decl.name.1) {
         Ok(id)
       } else {
         Err(GrammarError {
@@ -141,42 +141,42 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     })
     .collect::<Result<Set<_>, GrammarError>>()?;
 
-  let mut productions = vec![];
-  let mut nonterminal_productions = Map::new();
+  let mut prods = vec![];
+  let mut nt_prods = Map::new();
 
   for rule in &rules {
-    let nonterminal = *nonterminals.get_by_right(&rule.name.1).unwrap();
-    let start = productions.len();
+    let nt = *nts.get_by_right(&rule.name.1).unwrap();
+    let start = prods.len();
 
     for alt in &rule.alts {
       let items = match &alt.1 {
         ast::RuleAlt::Epsilon => vec![],
         ast::RuleAlt::Terms(terms) => {
-          convert_terms(terms, &nonterminals, &lexer.tokens)?
+          convert_terms(terms, &nts, &lexer.tokens)?
         }
       };
 
-      productions.push(Production {
-        nonterminal,
+      prods.push(Production {
+        nt,
         items,
       });
     }
 
-    nonterminal_productions.insert(nonterminal, start..productions.len());
+    nt_prods.insert(nt, start..prods.len());
   }
 
   Ok(Grammar {
-    productions,
-    start_nonterminals,
-    nonterminals,
-    nonterminal_productions,
+    prods,
+    start_nts,
+    nts,
+    nt_prods,
     lexer,
   })
 }
 
 fn convert_terms(
   terms: &[ast::Term],
-  nonterminals: &BiMap<NonterminalId, String>,
+  nts: &BiMap<NonterminalId, String>,
   tokens: &BiMap<TokenId, String>,
 ) -> Result<Vec<Item>, GrammarError> {
   let mut items = vec![];
@@ -184,7 +184,7 @@ fn convert_terms(
   for term in terms {
     match term {
       ast::Term::Symbol(sym) => {
-        if let Some(&id) = nonterminals.get_by_right(&sym.1) {
+        if let Some(&id) = nts.get_by_right(&sym.1) {
           items.push(Item::Nonterminal(id));
         } else if let Some(&id) = tokens.get_by_right(&sym.1) {
           items.push(Item::Token(id));
@@ -197,13 +197,13 @@ fn convert_terms(
         }
       }
       ast::Term::Optional(terms) => {
-        items.push(Item::Optional(convert_terms(terms, nonterminals, tokens)?));
+        items.push(Item::Optional(convert_terms(terms, nts, tokens)?));
       }
       ast::Term::Many(terms) => {
-        items.push(Item::Many(convert_terms(terms, nonterminals, tokens)?));
+        items.push(Item::Many(convert_terms(terms, nts, tokens)?));
       }
       ast::Term::Many1(terms) => {
-        items.push(Item::Many1(convert_terms(terms, nonterminals, tokens)?));
+        items.push(Item::Many1(convert_terms(terms, nts, tokens)?));
       }
     }
   }

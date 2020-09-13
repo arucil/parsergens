@@ -1,19 +1,21 @@
 use std::ops::Range;
-use grammar::{NonterminalId, Grammar, Lexer, TokenId, NonterminalIdGen, Item};
+use grammar::{Grammar, NonterminalIdGen, Item};
 use crate::{Set, BiMap, Map};
+
+pub use grammar::{NonterminalId, Lexer, TokenId};
 
 #[derive(Debug)]
 pub struct LoweredGrammar {
-  pub productions: Vec<Production>,
-  pub start_nonterminals: Set<NonterminalId>,
-  pub nonterminals: BiMap<NonterminalId, String>,
-  pub nonterminal_productions: Map<NonterminalId, Range<usize>>,
+  pub prods: Vec<Production>,
+  pub start_nts: Set<NonterminalId>,
+  pub nts: BiMap<NonterminalId, String>,
+  pub nt_prods: Map<NonterminalId, Range<usize>>,
   pub lexer: Lexer,
 }
 
 #[derive(Debug)]
 pub struct Production {
-  pub nonterminal: NonterminalId,
+  pub nt: NonterminalId,
   pub action: ProductionAction,
   pub symbols: Vec<Symbol>,
 }
@@ -31,43 +33,43 @@ pub enum Symbol {
   Token(TokenId),
 }
 
-fn lower(grammar: Grammar) -> LoweredGrammar {
-  let max_nonterminal_id = grammar.nonterminals
+pub fn lower(grammar: Grammar) -> LoweredGrammar {
+  let max_nt_id = grammar.nts
     .left_values()
     .map(|x| x.id())
     .max()
     .unwrap();
-  let mut nonterminal_id_gen = NonterminalIdGen::from(max_nonterminal_id);
+  let mut nt_id_gen = NonterminalIdGen::from(max_nt_id);
 
   let mut lowered = LoweredGrammar {
-    productions: vec![],
-    start_nonterminals: grammar.start_nonterminals,
-    nonterminals: grammar.nonterminals,
-    nonterminal_productions: Map::new(),
+    prods: vec![],
+    start_nts: grammar.start_nts,
+    nts: grammar.nts,
+    nt_prods: Map::new(),
     lexer: grammar.lexer,
   };
 
-  for (nonterminal, range) in grammar.nonterminal_productions {
-    let mut production_symbols = vec![];
+  for (nt, range) in grammar.nt_prods {
+    let mut prod_symbols = vec![];
 
-    for production in &grammar.productions[range] {
-      production_symbols.push(
-        lower_items(&production.items, &mut lowered, &mut nonterminal_id_gen));
+    for prod in &grammar.prods[range] {
+      prod_symbols.push(
+        lower_items(&prod.items, &mut lowered, &mut nt_id_gen));
     }
 
-    let start = lowered.productions.len();
+    let start = lowered.prods.len();
 
-    for symbols in production_symbols {
-      lowered.productions.push(Production {
-        nonterminal,
+    for symbols in prod_symbols {
+      lowered.prods.push(Production {
+        nt,
         action: ProductionAction::None,
         symbols,
       });
     }
 
-    let end = lowered.productions.len();
+    let end = lowered.prods.len();
 
-    lowered.nonterminal_productions.insert(nonterminal, start..end);
+    lowered.nt_prods.insert(nt, start..end);
   }
 
   lowered
@@ -76,87 +78,87 @@ fn lower(grammar: Grammar) -> LoweredGrammar {
 fn lower_items(
   items: &[Item],
   lowered: &mut LoweredGrammar,
-  nonterminal_id_gen: &mut NonterminalIdGen,
+  nt_id_gen: &mut NonterminalIdGen,
 ) -> Vec<Symbol> {
   items.iter().map(|item| {
     match item {
-      Item::Nonterminal(nonterminal) => Symbol::Nonterminal(*nonterminal),
+      Item::Nonterminal(nt) => Symbol::Nonterminal(*nt),
       Item::Token(token) => Symbol::Token(*token),
       Item::Optional(items) => {
-        let symbols = lower_items(items, lowered, nonterminal_id_gen);
-        let start = lowered.productions.len();
-        let nonterminal = nonterminal_id_gen.gen();
+        let symbols = lower_items(items, lowered, nt_id_gen);
+        let start = lowered.prods.len();
+        let nt = nt_id_gen.gen();
         let name = make_production_name(&symbols, lowered, '?');
-        lowered.nonterminals.insert(nonterminal, name);
+        lowered.nts.insert(nt, name);
 
-        lowered.productions.push(Production {
-          nonterminal,
+        lowered.prods.push(Production {
+          nt,
           action: ProductionAction::None,
           symbols: vec![],
         });
-        lowered.productions.push(Production {
-          nonterminal,
+        lowered.prods.push(Production {
+          nt,
           action: ProductionAction::None,
           symbols,
         });
 
-        let end = lowered.productions.len();
+        let end = lowered.prods.len();
 
-        lowered.nonterminal_productions.insert(nonterminal, start..end);
+        lowered.nt_prods.insert(nt, start..end);
 
-        Symbol::Nonterminal(nonterminal)
+        Symbol::Nonterminal(nt)
       }
       Item::Many(items) => {
-        let mut symbols = lower_items(items, lowered, nonterminal_id_gen);
-        let start = lowered.productions.len();
-        let nonterminal = nonterminal_id_gen.gen();
+        let mut symbols = lower_items(items, lowered, nt_id_gen);
+        let start = lowered.prods.len();
+        let nt = nt_id_gen.gen();
         let name = make_production_name(&symbols, lowered, '*');
-        lowered.nonterminals.insert(nonterminal, name);
+        lowered.nts.insert(nt, name);
 
-        lowered.productions.push(Production {
-          nonterminal,
+        lowered.prods.push(Production {
+          nt,
           action: ProductionAction::RepetitionFirst,
           symbols: vec![],
         });
 
-        symbols.insert(0, Symbol::Nonterminal(nonterminal));
-        lowered.productions.push(Production {
-          nonterminal,
+        symbols.insert(0, Symbol::Nonterminal(nt));
+        lowered.prods.push(Production {
+          nt,
           action: ProductionAction::RepetitionRest,
           symbols,
         });
 
-        let end = lowered.productions.len();
+        let end = lowered.prods.len();
 
-        lowered.nonterminal_productions.insert(nonterminal, start..end);
+        lowered.nt_prods.insert(nt, start..end);
 
-        Symbol::Nonterminal(nonterminal)
+        Symbol::Nonterminal(nt)
       }
       Item::Many1(items) => {
-        let mut symbols = lower_items(items, lowered, nonterminal_id_gen);
-        let start = lowered.productions.len();
-        let nonterminal = nonterminal_id_gen.gen();
+        let mut symbols = lower_items(items, lowered, nt_id_gen);
+        let start = lowered.prods.len();
+        let nt = nt_id_gen.gen();
         let name = make_production_name(&symbols, lowered, '+');
-        lowered.nonterminals.insert(nonterminal, name);
+        lowered.nts.insert(nt, name);
 
-        lowered.productions.push(Production {
-          nonterminal,
+        lowered.prods.push(Production {
+          nt,
           action: ProductionAction::RepetitionFirst,
           symbols: symbols.clone(),
         });
 
-        symbols.insert(0, Symbol::Nonterminal(nonterminal));
-        lowered.productions.push(Production {
-          nonterminal,
+        symbols.insert(0, Symbol::Nonterminal(nt));
+        lowered.prods.push(Production {
+          nt,
           action: ProductionAction::RepetitionRest,
           symbols,
         });
 
-        let end = lowered.productions.len();
+        let end = lowered.prods.len();
 
-        lowered.nonterminal_productions.insert(nonterminal, start..end);
+        lowered.nt_prods.insert(nt, start..end);
 
-        Symbol::Nonterminal(nonterminal)
+        Symbol::Nonterminal(nt)
       }
     }
   }).collect()
@@ -176,8 +178,8 @@ fn make_production_name(
     }
 
     match symbol {
-      Symbol::Nonterminal(nonterminal) => {
-        buf.push_str(lowered.nonterminals.get_by_left(nonterminal).unwrap());
+      Symbol::Nonterminal(nt) => {
+        buf.push_str(lowered.nts.get_by_left(nt).unwrap());
       }
       Symbol::Token(token) => {
         buf.push_str(lowered.lexer.tokens.get_by_left(token).unwrap());

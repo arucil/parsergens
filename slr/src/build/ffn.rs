@@ -1,69 +1,256 @@
 //! compute FIRST, FOLLOW, and NULLABLE sets.
 
 use bit_set::BitSet;
-use grammar::{Grammar, NonterminalId, Item};
-use crate::{Map, Set};
+use bitvec::prelude::*;
+use super::lower::{LoweredGrammar, NonterminalId, Symbol};
+use crate::Map;
 
+#[derive(Default, Debug)]
 pub struct FfnResult {
   first: Map<NonterminalId, BitSet>,
   follow: Map<NonterminalId, BitSet>,
-  nullable: Set<NonterminalId>,
+  nullable: BitSet,
 }
 
-pub fn compute(grammar: &Grammar) -> FfnResult {
+pub fn compute(grammar: &LoweredGrammar) -> FfnResult {
   let nullable = compute_nullable(grammar);
-  todo!()
+  let first = compute_first(grammar, &nullable);
+  let follow = compute_follow(grammar, &nullable, &first);
+
+  FfnResult {
+    nullable,
+    first,
+    follow
+  }
 }
 
-fn compute_nullable(grammar: &Grammar) -> Set<NonterminalId> {
-  let mut nullable = Set::new();
-  let mut visited = Set::new();
-  for &nonterminal in grammar.nonterminals.left_values() {
-    compute_nullable_help(grammar, nonterminal, &mut nullable, &mut visited);
-  }
-  nullable
-}
+fn compute_follow(
+  grammar: &LoweredGrammar,
+  nullable: &BitSet,
+  first: &Map<NonterminalId, BitSet>,
+) -> Map<NonterminalId, BitSet> {
+  let mut follow = Map::<NonterminalId, BitSet>::new();
 
-fn compute_nullable_help(
-  grammar: &Grammar,
-  nonterminal: NonterminalId,
-  nullable: &mut Set<NonterminalId>,
-  visited: &mut Set<NonterminalId>,
-) -> bool {
-  if visited.contains(&nonterminal) {
-    return nullable.contains(&nonterminal);
-  }
+  loop {
+    let mut changed = false;
 
-  let range = grammar.nonterminal_productions
-    .get(&nonterminal).unwrap().clone();
+    for prod in &grammar.prods {
+      let mut sym_follow = None;
+      for symbol in prod.symbols.iter().rev() {
+        match symbol {
+          Symbol::Token(token) => {
+            sym_follow = Some({
+              let mut set = BitSet::new();
+              set.insert(token.id() as usize);
+              set
+            });
+          }
+          Symbol::Nonterminal(nt) => {
+            if sym_follow.is_none() {
+              sym_follow = Some(follow.get(&prod.nt).cloned().unwrap_or_default());
+            }
 
-  for production in &grammar.productions[range] {
-    if compute_items_nullable_help(grammar, &production.items, nullable, visited) {
-      nullable.insert(nonterminal);
-      return true;
+            let nt_follow = follow.entry(*nt).or_default();
+            let old = (*nt_follow).clone();
+
+            match sym_follow {
+              None => unreachable!(),
+              Some(mut sf) => {
+                nt_follow.union_with(&sf);
+                if *nt_follow != old {
+                  changed = true;
+                }
+
+                sym_follow = Some(if nullable.contains(nt.id() as usize) {
+                  sf.union_with(first.get(nt).unwrap());
+                  sf
+                } else {
+                  first.get(nt).unwrap().clone()
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if !changed {
+      break;
     }
   }
 
-  false
+  follow
 }
 
-fn compute_items_nullable_help(
-  grammar: &Grammar,
-  items: &[Item],
-  nullable: &mut Set<NonterminalId>,
-  visited: &mut Set<NonterminalId>,
-) -> bool {
-  items.iter().all(|item| {
-    match item {
-      Item::Nonterminal(nonterminal) => {
-        compute_nullable_help(grammar, *nonterminal, nullable, visited)
-      }
-      Item::Token(_) => false,
-      Item::Optional(_) => true,
-      Item::Many(_) => true,
-      Item::Many1(items) => {
-        compute_items_nullable_help(grammar, items, nullable, visited)
+fn compute_first(
+  grammar: &LoweredGrammar,
+  nullable: &BitSet
+) -> Map<NonterminalId, BitSet> {
+  let mut first = Map::<NonterminalId, BitSet>::new();
+
+  for &nt in grammar.nts.left_values() {
+    compute_nonterminal_first(grammar, nullable, &mut first, &mut BitSet::new(), nt);
+  }
+
+  first
+}
+
+fn compute_nonterminal_first(
+  grammar: &LoweredGrammar,
+  nullable: &BitSet,
+  first: &mut Map<NonterminalId, BitSet>,
+  visiting: &mut BitSet,
+  nt: NonterminalId,
+) {
+  if first.contains_key(&nt) || visiting.contains(nt.id() as usize) {
+    return;
+  }
+
+  let range = grammar.nt_prods.get(&nt).unwrap().clone();
+  let mut nt_first = BitSet::new();
+
+  for prod in &grammar.prods[range] {
+    for symbol in &prod.symbols {
+      match symbol {
+        Symbol::Token(token) => {
+          nt_first.insert(token.id() as usize);
+          break;
+        }
+        Symbol::Nonterminal(nt_sym) => {
+          let v = visiting.insert(nt.id() as usize);
+          compute_nonterminal_first(grammar, nullable, first, visiting, *nt_sym);
+          if !v {
+            visiting.remove(nt.id() as usize);
+          }
+
+          if let Some(nt_sym_first) = first.get(nt_sym) {
+            nt_first.union_with(nt_sym_first);
+          }
+
+          if !nullable.contains(nt_sym.id() as usize) {
+            break;
+          }
+        }
       }
     }
-  })
+  }
+
+  first.insert(nt, nt_first);
+}
+
+fn compute_nullable(grammar: &LoweredGrammar) -> BitSet {
+  let mut prods_nullable = bitvec![0; grammar.prods.len()];
+  let mut prods_completed = bitvec![0; grammar.prods.len()];
+
+  loop {
+    let mut changed = false;
+
+    'outer: for (i, prod) in grammar.prods.iter().enumerate() {
+      if prods_completed[i] {
+        continue;
+      }
+
+      let mut prod_nullable = true;
+      for sym in &prod.symbols {
+        match sym {
+          Symbol::Token(_) => {
+            prod_nullable = false;
+            break;
+          }
+          Symbol::Nonterminal(nt) => {
+            let nt_range = grammar.nt_prods.get(nt).unwrap();
+            if BitSlice::all(&prods_completed[nt_range.clone()]) {
+              if !prods_nullable[nt_range.start] {
+                prod_nullable = false;
+                break;
+              }
+            } else {
+              continue 'outer;
+            }
+          }
+        }
+      }
+
+      prods_nullable.set(i, prod_nullable);
+      prods_completed.set(i, true);
+      changed = true;
+    }
+
+    if !changed {
+      break;
+    }
+  }
+
+  grammar.nt_prods.iter().filter_map(|(nt, range)| {
+    if prods_nullable[range.start] {
+      Some(nt.id() as usize)
+    } else {
+      None
+    }
+  }).collect()
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use insta::assert_debug_snapshot;
+
+  #[test]
+  fn ffn_simple() {
+    let grammar = grammar::build(r#"
+%token a "a"
+%token c "c"
+%token d "d"
+
+%start Z
+
+Z = d
+  | X Y Z
+
+Y = ()
+  | c
+
+X = Y
+  | a
+    "#).unwrap();
+
+    let lowered = super::super::lower::lower(grammar);
+    let ffn = compute(&lowered);
+
+    assert_debug_snapshot!(ffn);
+  }
+
+  #[test]
+  fn ffn_recursive() {
+    let grammar = grammar::build(r#"
+%token int "1"
+%token id "a"
+%token lparen "("
+%token rparen ")"
+%token plus "+"
+%token mult "*"
+%token comma ","
+
+%start E
+
+E = E plus E
+  | E mult E
+  | lparen E rparen
+  | plus E
+  | int
+  | id
+  | id lparen PARAM_LIST rparen
+
+PARAM_LIST = ()
+  | E PARAM_LIST_
+
+PARAM_LIST_ = ()
+  | PARAM_LIST_ comma E
+    "#).unwrap();
+
+    let lowered = super::super::lower::lower(grammar);
+    let ffn = compute(&lowered);
+
+    assert_debug_snapshot!(ffn);
+  }
 }

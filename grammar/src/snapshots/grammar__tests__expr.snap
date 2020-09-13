@@ -4,9 +4,9 @@ expression: build(input)
 ---
 Ok(
     Grammar {
-        productions: [
+        prods: [
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     0,
                 ),
                 items: [
@@ -28,7 +28,7 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     0,
                 ),
                 items: [
@@ -50,7 +50,7 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     0,
                 ),
                 items: [
@@ -72,7 +72,7 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     0,
                 ),
                 items: [
@@ -94,7 +94,7 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     0,
                 ),
                 items: [
@@ -106,7 +106,7 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     1,
                 ),
                 items: [
@@ -118,7 +118,7 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     1,
                 ),
                 items: [
@@ -140,7 +140,7 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     1,
                 ),
                 items: [
@@ -157,7 +157,7 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     1,
                 ),
                 items: [
@@ -169,7 +169,7 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     1,
                 ),
                 items: [
@@ -196,13 +196,13 @@ Ok(
                 ],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     2,
                 ),
                 items: [],
             },
             Production {
-                nonterminal: NonterminalId(
+                nt: NonterminalId(
                     2,
                 ),
                 items: [
@@ -228,12 +228,23 @@ Ok(
                 ],
             },
         ],
-        start_nonterminals: {
+        start_nts: {
             NonterminalId(
                 0,
             ),
         },
-        nonterminals: {NonterminalId(0) <> "expr", NonterminalId(1) <> "factor", NonterminalId(2) <> "param_list"},
+        nts: {NonterminalId(0) <> "expr", NonterminalId(1) <> "factor", NonterminalId(2) <> "param_list"},
+        nt_prods: {
+            NonterminalId(
+                0,
+            ): 0..5,
+            NonterminalId(
+                1,
+            ): 5..10,
+            NonterminalId(
+                2,
+            ): 10..12,
+        },
         lexer: Lexer {
             dfa: TabularDfa {
                 start: 11,

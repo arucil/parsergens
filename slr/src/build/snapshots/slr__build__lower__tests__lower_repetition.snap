@@ -3,16 +3,16 @@ source: slr/src/build/lower.rs
 expression: lowered
 ---
 LoweredGrammar {
-    productions: [
+    prods: [
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 2,
             ),
             action: None,
             symbols: [],
         },
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 2,
             ),
             action: None,
@@ -25,14 +25,14 @@ LoweredGrammar {
             ],
         },
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 3,
             ),
             action: RepetitionFirst,
             symbols: [],
         },
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 3,
             ),
             action: RepetitionRest,
@@ -55,7 +55,7 @@ LoweredGrammar {
             ],
         },
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 4,
             ),
             action: RepetitionFirst,
@@ -73,7 +73,7 @@ LoweredGrammar {
             ],
         },
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 4,
             ),
             action: RepetitionRest,
@@ -96,7 +96,7 @@ LoweredGrammar {
             ],
         },
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 0,
             ),
             action: None,
@@ -119,7 +119,7 @@ LoweredGrammar {
             ],
         },
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 0,
             ),
             action: None,
@@ -132,7 +132,7 @@ LoweredGrammar {
             ],
         },
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 1,
             ),
             action: None,
@@ -145,20 +145,20 @@ LoweredGrammar {
             ],
         },
         Production {
-            nonterminal: NonterminalId(
+            nt: NonterminalId(
                 1,
             ),
             action: None,
             symbols: [],
         },
     ],
-    start_nonterminals: {
+    start_nts: {
         NonterminalId(
             0,
         ),
     },
-    nonterminals: {NonterminalId(0) <> "top", NonterminalId(1) <> "atom", NonterminalId(2) <> "(A)?", NonterminalId(3) <> "(atom (A)?)*", NonterminalId(4) <> "(A atom)+"},
-    nonterminal_productions: {
+    nts: {NonterminalId(0) <> "top", NonterminalId(1) <> "atom", NonterminalId(2) <> "(A)?", NonterminalId(3) <> "(atom (A)?)*", NonterminalId(4) <> "(A atom)+"},
+    nt_prods: {
         NonterminalId(
             2,
         ): 0..2,
