@@ -1,4 +1,5 @@
 use std::ops::Range;
+use std::borrow::Borrow;
 use super::lexer::{Lexer, TokenId};
 use crate::{Set, BiMap, Map};
 
@@ -35,6 +36,12 @@ pub struct NonterminalId(u32);
 impl NonterminalId {
   pub fn id(&self) -> u32 {
     self.0
+  }
+}
+
+impl Borrow<u32> for NonterminalId {
+  fn borrow(&self) -> &u32 {
+    &self.0
   }
 }
 

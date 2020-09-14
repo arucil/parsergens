@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use tabular_dfa::TabularDfa;
 use super::grammar_parser::ast::{TokenDecl, SkipDecl};
 use super::grammar_parser::regex::RegexError;
@@ -57,6 +58,12 @@ pub enum LexerError {
 impl TokenId {
   pub fn id(&self) -> u32 {
     self.0
+  }
+}
+
+impl Borrow<u32> for TokenId {
+  fn borrow(&self) -> &u32 {
+    &self.0
   }
 }
 
