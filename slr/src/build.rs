@@ -226,10 +226,9 @@ impl<'a> Builder<'a> {
     for token in self.ffn.follow[&nt].iter() {
       let old = self.action[from_state][token];
       if old < 0 {
-        //return Err(Error::ReduceReduceConflict);
-        println!(">>>>>>>>>>>>>>> reduce-reduce");
+        return Err(Error::ReduceReduceConflict);
       }
-      //assert!(old == 0);
+      assert!(old == 0);
 
       self.action[from_state][token] = !(prod_ix as i32);
     }
