@@ -20,7 +20,7 @@ pub struct Production {
   pub symbols: Vec<Symbol>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ProductionAction {
   None,
   RepetitionFirst,

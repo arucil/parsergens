@@ -6,7 +6,7 @@ use lower::{LoweredGrammar, Symbol};
 use ffn::Ffn;
 
 mod ffn;
-mod lower;
+pub(crate) mod lower;
 mod augment;
 
 #[derive(Debug)]
@@ -27,7 +27,7 @@ pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
   builder.build()?;
 
   let prods = grammar.prods.iter().map(|prod| {
-    (prod.symbols.len(), prod.nt.id())
+    (prod.symbols.len(), prod.nt.id(), prod.action)
   }).collect();
 
   let nt_names = (0..grammar.nts.len()).scan(

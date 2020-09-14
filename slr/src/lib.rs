@@ -1,3 +1,5 @@
+use build::lower::ProductionAction;
+
 mod build;
 
 #[cfg(not(debug_assertions))]
@@ -29,7 +31,7 @@ struct SlrParser {
   /// zero: error
   goto: Vec<Vec<u32>>,
   /// (length of RHS of the production, non-terminal id)
-  prods: Vec<(usize, u32)>,
+  prods: Vec<(usize, u32, ProductionAction)>,
   nt_names: Vec<String>,
   /// (non-terminal name, starting state)
   start: Map<String, u32>,
