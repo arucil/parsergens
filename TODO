@@ -8,4 +8,4 @@ grammar:
 - production action: anonymous (merge children into parent)
 - alt operator in production
 - identifier support ' -, remove support of _
-- semantic action
+- semantic action (plus user import part)
