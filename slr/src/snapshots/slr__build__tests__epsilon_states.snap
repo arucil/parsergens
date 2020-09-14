@@ -1,0 +1,74 @@
+---
+source: slr/src/build.rs
+expression: builder.states()
+---
+State 0 (start)
+_E -> . E $
+E -> . T E_
+T -> . F T_
+F -> . num
+F -> . lparen E rparen
+
+State 1
+_E -> E . $
+
+State 2
+E -> T . E_
+E_ -> . plus T E_
+E_ -> .
+
+State 3
+T -> F . T_
+T_ -> . mult F T_
+T_ -> .
+
+State 4
+F -> num .
+
+State 5
+E -> . T E_
+T -> . F T_
+F -> . num
+F -> . lparen E rparen
+F -> lparen . E rparen
+
+State 6
+E -> T E_ .
+
+State 7
+T -> . F T_
+F -> . num
+F -> . lparen E rparen
+E_ -> plus . T E_
+
+State 8
+T -> F T_ .
+
+State 9
+F -> . num
+F -> . lparen E rparen
+T_ -> mult . F T_
+
+State 10
+F -> lparen E . rparen
+
+State 11
+E_ -> . plus T E_
+E_ -> .
+E_ -> plus T . E_
+
+State 12
+T_ -> . mult F T_
+T_ -> .
+T_ -> mult F . T_
+
+State 13
+F -> lparen E rparen .
+
+State 14
+E_ -> plus T E_ .
+
+State 15
+T_ -> mult F T_ .
+
+

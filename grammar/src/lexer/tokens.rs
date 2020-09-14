@@ -1,17 +1,9 @@
-use super::{Lexer, util};
+use super::{Lexer, util, Token, TokenId};
 
 pub struct Tokens<'lexer, 'input> {
   lexer: &'lexer Lexer,
   input: &'input str,
   pos: usize,
-}
-
-#[derive(Debug)]
-pub struct Token<'lexer, 'input> {
-  pub kind: &'lexer str,
-  pub text: &'input str,
-  pub start: usize,
-  pub end: usize,
 }
 
 #[derive(Debug)]
@@ -43,7 +35,7 @@ impl<'lexer, 'input> Tokens<'lexer, 'input> {
 }
 
 impl<'lexer, 'input> Iterator for Tokens<'lexer, 'input> {
-  type Item = Result<Token<'lexer, 'input>, Error>;
+  type Item = Result<Token<'input>, Error>;
 
   fn next(&mut self) -> Option<Self::Item> {
     if self.pos == self.input.len() {
@@ -53,7 +45,7 @@ impl<'lexer, 'input> Iterator for Tokens<'lexer, 'input> {
     let mut state = self.lexer.dfa.start();
     let mut start = self.pos;
     let mut end = start;
-    let mut token_kind: Option<&'_ String> = None;
+    let mut token_kind: Option<TokenId> = None;
 
     loop {
       let no_move;
@@ -108,7 +100,12 @@ impl<'lexer, 'input> Iterator for Tokens<'lexer, 'input> {
 
       if let Some(&id) = self.lexer.dfa.result(state) {
         end = self.pos;
-        token_kind = self.lexer.tokens.get_by_left(&id);
+
+        token_kind = if self.lexer.tokens.contains_left(&id) {
+          Some(id)
+        } else {
+          None
+        };
       }
     }
   }

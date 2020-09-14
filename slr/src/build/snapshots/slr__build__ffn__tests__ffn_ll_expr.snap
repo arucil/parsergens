@@ -1,0 +1,77 @@
+---
+source: slr/src/build/ffn.rs
+expression: ffn
+---
+Ffn {
+    first: {
+        NonterminalId(
+            5,
+        ): {
+            2,
+            3,
+        },
+        NonterminalId(
+            3,
+        ): {
+            2,
+            3,
+        },
+        NonterminalId(
+            1,
+        ): {
+            2,
+            3,
+        },
+        NonterminalId(
+            0,
+        ): {
+            2,
+            3,
+        },
+        NonterminalId(
+            2,
+        ): {
+            0,
+        },
+        NonterminalId(
+            4,
+        ): {
+            1,
+        },
+    },
+    follow: {
+        NonterminalId(
+            1,
+        ): {
+            4,
+        },
+        NonterminalId(
+            2,
+        ): {
+            4,
+        },
+        NonterminalId(
+            3,
+        ): {
+            0,
+            4,
+        },
+        NonterminalId(
+            4,
+        ): {
+            0,
+            4,
+        },
+        NonterminalId(
+            5,
+        ): {
+            0,
+            1,
+            4,
+        },
+    },
+    nullable: {
+        2,
+        4,
+    },
+}

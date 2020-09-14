@@ -11,8 +11,8 @@ mod grammar_parser;
 pub mod lexer;
 pub mod grammar;
 
-pub use grammar::*;
-pub use lexer::{Lexer, TokenId};
+pub use crate::grammar::*;
+pub use lexer::{Lexer, TokenId, TokenIdGen};
 
 use grammar_parser::ast;
 use grammar_parser::lex::{Token, LexErrorKind, LexError};

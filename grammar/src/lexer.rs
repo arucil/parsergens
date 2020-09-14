@@ -25,6 +25,29 @@ pub struct Lexer {
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct TokenId(u32);
 
+#[derive(Default)]
+pub struct TokenIdGen(u32);
+
+#[derive(Debug)]
+pub struct Token<'input> {
+  pub kind: TokenId,
+  pub text: &'input str,
+  pub start: usize,
+  pub end: usize,
+}
+
+impl TokenIdGen {
+  pub fn gen(&mut self) -> TokenId {
+    let i = self.0;
+    self.0 += 1;
+    TokenId(i)
+  }
+
+  pub fn from(start: u32) -> Self {
+    Self(start + 1)
+  }
+}
+
 #[derive(Debug)]
 pub enum LexerError {
   NoTokens,

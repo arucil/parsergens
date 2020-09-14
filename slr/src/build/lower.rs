@@ -27,7 +27,7 @@ pub enum ProductionAction {
   RepetitionRest,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Symbol {
   Nonterminal(NonterminalId),
   Token(TokenId),

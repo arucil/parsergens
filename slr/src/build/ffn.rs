@@ -6,18 +6,18 @@ use super::lower::{LoweredGrammar, NonterminalId, Symbol};
 use crate::Map;
 
 #[derive(Default, Debug)]
-pub struct FfnResult {
-  first: Map<NonterminalId, BitSet>,
-  follow: Map<NonterminalId, BitSet>,
-  nullable: BitSet,
+pub struct Ffn {
+  pub first: Map<NonterminalId, BitSet>,
+  pub follow: Map<NonterminalId, BitSet>,
+  pub nullable: BitSet,
 }
 
-pub fn compute(grammar: &LoweredGrammar) -> FfnResult {
+pub fn compute(grammar: &LoweredGrammar) -> Ffn {
   let nullable = compute_nullable(grammar);
   let first = compute_first(grammar, &nullable);
   let follow = compute_follow(grammar, &nullable, &first);
 
-  FfnResult {
+  Ffn {
     nullable,
     first,
     follow
@@ -62,10 +62,10 @@ fn compute_follow(
                 }
 
                 sym_follow = Some(if nullable.contains(nt.id() as usize) {
-                  sf.union_with(first.get(nt).unwrap());
+                  sf.union_with(&first[nt]);
                   sf
                 } else {
-                  first.get(nt).unwrap().clone()
+                  first[nt].clone()
                 });
               }
             }
@@ -106,7 +106,7 @@ fn compute_nonterminal_first(
     return;
   }
 
-  let range = grammar.nt_prods.get(&nt).unwrap().clone();
+  let range = grammar.nt_prods[&nt].clone();
   let mut nt_first = BitSet::new();
 
   for prod in &grammar.prods[range] {
@@ -158,9 +158,9 @@ fn compute_nullable(grammar: &LoweredGrammar) -> BitSet {
             break;
           }
           Symbol::Nonterminal(nt) => {
-            let nt_range = grammar.nt_prods.get(nt).unwrap();
+            let nt_range = &grammar.nt_prods[nt];
             if BitSlice::all(&prods_completed[nt_range.clone()]) {
-              if !prods_nullable[nt_range.start] {
+              if !prods_nullable[nt_range.clone()].some() {
                 prod_nullable = false;
                 break;
               }
@@ -182,7 +182,7 @@ fn compute_nullable(grammar: &LoweredGrammar) -> BitSet {
   }
 
   grammar.nt_prods.iter().filter_map(|(nt, range)| {
-    if prods_nullable[range.start] {
+    if prods_nullable[range.clone()].some() {
       Some(nt.id() as usize)
     } else {
       None
@@ -246,6 +246,39 @@ PARAM_LIST = ()
 
 PARAM_LIST_ = ()
   | PARAM_LIST_ comma E
+    "#).unwrap();
+
+    let lowered = super::super::lower::lower(grammar);
+    let ffn = compute(&lowered);
+
+    assert_debug_snapshot!(ffn);
+  }
+
+  #[test]
+  fn ffn_ll_expr() {
+    let grammar = grammar::build(r#"
+%token plus "+"
+%token mult "*"
+%token num "1"
+%token lparen "("
+%token rparen ")"
+
+%start S
+
+S = E
+
+E = T E_
+
+E_ = plus T E_
+   | ()
+
+T = F T_
+
+T_ = mult F T_
+   | ()
+
+F = num
+  | lparen E rparen
     "#).unwrap();
 
     let lowered = super::super::lower::lower(grammar);

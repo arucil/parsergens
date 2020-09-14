@@ -2,7 +2,7 @@
 source: slr/src/build/ffn.rs
 expression: ffn
 ---
-FfnResult {
+Ffn {
     first: {
         NonterminalId(
             1,

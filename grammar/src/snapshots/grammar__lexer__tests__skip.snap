@@ -5,7 +5,9 @@ expression: tokens
 [
     Ok(
         Token {
-            kind: "INT",
+            kind: TokenId(
+                0,
+            ),
             text: "123",
             start: 2,
             end: 5,
@@ -13,7 +15,9 @@ expression: tokens
     ),
     Ok(
         Token {
-            kind: "INT",
+            kind: TokenId(
+                0,
+            ),
             text: "456",
             start: 7,
             end: 10,
@@ -21,7 +25,9 @@ expression: tokens
     ),
     Ok(
         Token {
-            kind: "INT",
+            kind: TokenId(
+                0,
+            ),
             text: "0127401",
             start: 28,
             end: 35,
@@ -29,7 +35,9 @@ expression: tokens
     ),
     Ok(
         Token {
-            kind: "INT",
+            kind: TokenId(
+                0,
+            ),
             text: "5768",
             start: 41,
             end: 45,

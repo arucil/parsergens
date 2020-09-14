@@ -1,0 +1,30 @@
+---
+source: slr/src/build.rs
+expression: builder.states()
+---
+State 0 (start)
+_E -> . E $
+E -> . T plus E
+E -> . T
+T -> . x
+
+State 1
+_E -> E . $
+
+State 2
+E -> T . plus E
+E -> T .
+
+State 3
+T -> x .
+
+State 4
+E -> . T plus E
+E -> . T
+T -> . x
+E -> T plus . E
+
+State 5
+E -> T plus E .
+
+

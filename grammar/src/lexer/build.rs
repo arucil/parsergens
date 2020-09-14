@@ -3,7 +3,7 @@ use super::super::grammar_parser::ast::*;
 use super::super::grammar_parser::regex::{RegexError, RegexErrorKind};
 use super::nfa::{State, Nfa};
 use super::nfa_builder::NfaBuilder;
-use super::{Lexer, TokenId, LexerError};
+use super::{Lexer, TokenId, LexerError, TokenIdGen};
 use super::util;
 use crate::{Set, BiMap};
 
@@ -18,7 +18,7 @@ pub fn build(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Lexer, LexerEr
 
   let mut nfa_builder = Nfa::builder();
   let start = nfa_builder.state();
-  let mut token_gen = TokenGen::default();
+  let mut token_gen = TokenIdGen::default();
   let mut tokens = BiMap::new();
 
   for decl in decls {
@@ -317,17 +317,6 @@ fn char_set_accepts_empty_string(set: &[CharSetItem]) -> bool {
     })
 }
 
-#[derive(Default)]
-struct TokenGen(u32);
-
-impl TokenGen {
-  fn gen(&mut self) -> TokenId {
-    let i = self.0;
-    self.0 += 1;
-    TokenId(i)
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -353,7 +342,7 @@ mod tests {
 
     let mut nfa_builder = NfaBuilder::new();
     let start = nfa_builder.state();
-    let mut token_gen = TokenGen::default();
+    let mut token_gen = TokenIdGen::default();
 
     for decl in decls {
       let accept = add_regex_to_nfa(
@@ -390,7 +379,7 @@ mod tests {
 
     let mut nfa_builder = NfaBuilder::new();
     let start = nfa_builder.state();
-    let mut token_gen = TokenGen::default();
+    let mut token_gen = TokenIdGen::default();
 
     for decl in decls {
       let accept = add_regex_to_nfa(
@@ -427,7 +416,7 @@ mod tests {
 
     let mut nfa_builder = NfaBuilder::new();
     let start = nfa_builder.state();
-    let mut token_gen = TokenGen::default();
+    let mut token_gen = TokenIdGen::default();
 
     for decl in decls {
       let accept = add_regex_to_nfa(
