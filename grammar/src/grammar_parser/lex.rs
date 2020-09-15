@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::str::CharIndices;
 use std::iter::Peekable;
 use std::fmt::Display;
@@ -22,12 +23,14 @@ pub enum TokenKind {
   LParen,
   RParen,
   Comma,
+  Colon,
   Asterisk,
   QuestionMark,
   Plus,
 
-  Indent,
-  Newline,
+  Enter,
+  Leave,
+  Separator,
 }
 
 #[derive(Clone, Debug)]
@@ -47,12 +50,16 @@ pub enum LexErrorKind {
   UnclosedRegex,
   InvalidChar,
   UnclosedString,
+  InvalidIndent,
 }
 
 pub struct Lexer<'a> {
   input: &'a str,
   chars: Peekable<CharIndices<'a>>,
-  bol: bool,
+  layout_stack: Vec<usize>,
+  layout_base_indent: Option<usize>,
+  buffer: VecDeque<<Self as Iterator>::Item>,
+  cur_line_indent: usize,
 }
 
 impl<'a> Lexer<'a> {
@@ -60,8 +67,21 @@ impl<'a> Lexer<'a> {
     Self {
       input,
       chars: input.char_indices().peekable(),
-      bol: true
+      layout_stack: vec![],
+      layout_base_indent: None,
+      buffer: VecDeque::new(),
+      cur_line_indent: 0,
     }
+  }
+
+  fn advance(&mut self) -> Option<(usize, char)> {
+    let (i, c) = self.chars.next()?;
+    if c == '\n' {
+      self.cur_line_indent = 0;
+    } else {
+      self.cur_line_indent += 1;
+    }
+    Some((i, c))
   }
 
   fn single_char_token(
@@ -80,96 +100,111 @@ impl<'a> Lexer<'a> {
     quote: char,
     kind: TokenKind,
     unclosed_err_kind: LexErrorKind,
-  ) -> Option<<Self as Iterator>::Item> {
+  ) {
     let mut unescaped = true;
     let mut end = start;
-    loop {
-      match self.chars.next() {
+    let tok = loop {
+      match self.advance() {
         Some((t, '\\')) => {
           unescaped = !unescaped;
           end += t + 1;
         }
         Some((k, c)) if c == quote && unescaped => {
-          self.chars.next();
+          self.advance();
           let token = Token {
             kind,
             text: &self.input[start..k + 1],
           };
-          return Some(Ok((start, token, k + 1)));
+          break Ok((start, token, k + 1));
         }
         Some((_, '\n')) | None => {
-          return Some(Err(UserParseError::LexError(LexError {
+          break Err(UserParseError::LexError(LexError {
             kind: unclosed_err_kind,
             span: (start, end),
-          })))
+          }));
         }
         Some((t, c)) => {
           unescaped = true;
           end += t + c.len_utf8();
         }
       }
-    }
+    };
+
+    self.buffer.push_back(tok);
   }
-}
 
-impl<'a> Iterator for Lexer<'a> {
-  type Item = Spanned<Token<'a>, usize, UserParseError>;
+  fn gen_tokens(&mut self) -> Option<()> {
+    self.chars.peek()?;
 
-  fn next(&mut self) -> Option<Self::Item> {
-    let &(i, _) = self.chars.peek()?;
-
-    while let Some((_, ' ')) = self.chars.peek() {
-      self.chars.next();
+    // skip whitespace
+    while let Some(&(_, ' ' | '\n')) = self.chars.peek() {
+      self.advance();
     }
 
-    let &(j, c) = self.chars.peek()?;
-    if j > i && self.bol {
-      if c != '\n' && &self.input[j..j + 2] != "//" {
-        let tok = Token {
-          kind: TokenKind::Indent,
-          text: &self.input[i..j],
-        };
-        return Some(Ok((i, tok, j)));
-      }
-    }
+    let (j, c) = self.advance()?;
 
-    self.bol = false;
-    self.chars.next();
-
-    match c {
-      '\n' => {
-        self.bol = true;
-        let token = Token {
-          kind: TokenKind::Newline,
-          text: &self.input[j..j + 1],
-        };
-        return Some(Ok((j, token, j + 1)));
-      }
-      '/' => {
-        if let Some((_, '/')) = self.chars.peek() {
-          self.chars.next();
-          loop {
-            let (k, c) = self.chars.next()?;
-            if c == '\n' {
-              self.bol = true;
-              let token = Token {
-                kind: TokenKind::Newline,
-                text: &self.input[k..k + 1],
-              };
-              return Some(Ok((k, token, k + 1)));
-            }
-          }
+    // skip comment
+    if j + 2 <= self.input.len() && &self.input[j..j + 2] == "//" {
+      loop {
+        let &(_, c) = self.chars.peek()?;
+        if c == '\n' {
+          return self.gen_tokens();
         } else {
-          return self.lex_quoted(j, '/', TokenKind::Regex, LexErrorKind::UnclosedRegex);
+          self.advance();
         }
       }
+    }
+
+    if let Some(base_indent) = self.layout_base_indent.take() {
+      if self.cur_line_indent > base_indent {
+        self.layout_stack.push(self.cur_line_indent);
+
+        let start = j - self.cur_line_indent;
+        let end = j;
+        let token = Token {
+          kind: TokenKind::Enter,
+          text: &self.input[start..end],
+        };
+        self.buffer.push_back(Ok((start, token, end)));
+      } else {
+        self.buffer.push_back(Err(UserParseError::LexError(LexError {
+          kind: LexErrorKind::InvalidIndent,
+          span: (j - self.cur_line_indent, j),
+        })));
+      }
+    } else {
+      while let Some(&indent) = self.layout_stack.last() {
+        if self.cur_line_indent >= indent {
+          break;
+        }
+      }
+
+      let base_indent = self.layout_stack.last().cloned().unwrap_or(0);
+      if self.cur_line_indent == base_indent {
+        let start = j - self.cur_line_indent;
+        let end = j;
+        let token = Token {
+          kind: TokenKind::Separator,
+          text: &self.input[start..end],
+        };
+        self.buffer.push_back(Ok((start, token, end)));
+      } else {
+        // do nothing
+      }
+    }
+
+    match c {
+      '/' => {
+        self.lex_quoted(j, '/', TokenKind::Regex, LexErrorKind::UnclosedRegex);
+      }
       '"' => {
-        return self.lex_quoted(j, '"', TokenKind::String, LexErrorKind::UnclosedString);
+        self.lex_quoted(j, '"', TokenKind::String, LexErrorKind::UnclosedString);
       }
       '%' => return self.single_char_token(TokenKind::Percent, j),
       '=' => return self.single_char_token(TokenKind::Assign, j),
       '|' => return self.single_char_token(TokenKind::Or, j),
       ',' => return self.single_char_token(TokenKind::Comma, j),
+      ':' => return self.single_char_token(TokenKind::Colon, j),
       '*' => return self.single_char_token(TokenKind::Asterisk, j),
       '+' => return self.single_char_token(TokenKind::Plus, j),
       '?' => return self.single_char_token(TokenKind::QuestionMark, j),
@@ -187,7 +222,7 @@ impl<'a> Iterator for Lexer<'a> {
             }
             None => break,
           }
-          self.chars.next();
+          self.advance();
         }
 
         let text = &self.input[j..last + 1];
@@ -207,10 +242,23 @@ impl<'a> Iterator for Lexer<'a> {
       _ => {}
     }
 
-    Some(Err(UserParseError::LexError(LexError {
+    self.buffer.push_back(Err(UserParseError::LexError(LexError {
       kind: LexErrorKind::InvalidChar,
       span: (j, j + c.len_utf8()),
-    })))
+    })));
+
+    Some(())
+  }
+}
+
+impl<'a> Iterator for Lexer<'a> {
+  type Item = Spanned<Token<'a>, usize, UserParseError>;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    while self.buffer.is_empty() {
+      self.gen_tokens()?;
+    }
+    self.buffer.pop_front()
   }
 }
 
