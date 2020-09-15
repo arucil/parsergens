@@ -2,7 +2,7 @@
 
 use bit_set::BitSet;
 use bitvec::prelude::*;
-use super::lower::{LoweredGrammar, NonterminalId, Symbol};
+use grammar::{LoweredGrammar, NonterminalId, Symbol};
 use crate::Map;
 
 #[derive(Default, Debug)]
@@ -214,7 +214,7 @@ X = Y
   | a
     "#).unwrap();
 
-    let lowered = super::super::lower::lower(grammar);
+    let lowered = grammar.lower();
     let ffn = compute(&lowered);
 
     assert_debug_snapshot!(ffn);
@@ -245,7 +245,7 @@ PARAM-LIST = ()
   | E (comma E)*
     "#).unwrap();
 
-    let lowered = super::super::lower::lower(grammar);
+    let lowered = grammar.lower();
     let ffn = compute(&lowered);
 
     assert_debug_snapshot!(ffn);
@@ -278,7 +278,7 @@ F = num
   | lparen E rparen
     "#).unwrap();
 
-    let lowered = super::super::lower::lower(grammar);
+    let lowered = grammar.lower();
     let ffn = compute(&lowered);
 
     assert_debug_snapshot!(ffn);

@@ -1,8 +1,6 @@
 use std::ops::Range;
-use grammar::{Grammar, NonterminalIdGen, Item};
+use crate::{Grammar, NonterminalIdGen, Item, Lexer, TokenId, NonterminalId};
 use crate::{Set, BiMap, Map};
-
-pub use grammar::{NonterminalId, Lexer, TokenId};
 
 #[derive(Debug)]
 pub struct LoweredGrammar {
@@ -16,13 +14,13 @@ pub struct LoweredGrammar {
 #[derive(Debug)]
 pub struct Production {
   pub nt: NonterminalId,
-  pub action: ProductionAction,
+  pub kind: ProductionKind,
   pub symbols: Vec<Symbol>,
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum ProductionAction {
-  None,
+pub enum ProductionKind {
+  Ordinary,
   RepetitionFirst,
   RepetitionRest,
 }
@@ -33,7 +31,7 @@ pub enum Symbol {
   Token(TokenId),
 }
 
-pub fn lower(grammar: Grammar) -> LoweredGrammar {
+pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
   let max_nt_id = grammar.nts
     .left_values()
     .map(|x| x.id())
@@ -50,19 +48,19 @@ pub fn lower(grammar: Grammar) -> LoweredGrammar {
   };
 
   for (nt, range) in grammar.nt_prods {
-    let mut prod_symbols = vec![];
+    let mut rule_symbols = vec![];
 
-    for prod in &grammar.prods[range] {
-      prod_symbols.push(
-        lower_items(&prod.items, &mut lowered, &mut nt_id_gen));
+    for rule in &grammar.rules[range] {
+      rule_symbols.push(
+        lower_items(&rule.items, &mut lowered, &mut nt_id_gen));
     }
 
     let start = lowered.prods.len();
 
-    for symbols in prod_symbols {
+    for symbols in rule_symbols {
       lowered.prods.push(Production {
         nt,
-        action: ProductionAction::None,
+        kind: ProductionKind::Ordinary,
         symbols,
       });
     }
@@ -93,12 +91,12 @@ fn lower_items(
 
         lowered.prods.push(Production {
           nt,
-          action: ProductionAction::None,
+          kind: ProductionKind::Ordinary,
           symbols: vec![],
         });
         lowered.prods.push(Production {
           nt,
-          action: ProductionAction::None,
+          kind: ProductionKind::Ordinary,
           symbols,
         });
 
@@ -117,14 +115,14 @@ fn lower_items(
 
         lowered.prods.push(Production {
           nt,
-          action: ProductionAction::RepetitionFirst,
+          kind: ProductionKind::RepetitionFirst,
           symbols: vec![],
         });
 
         symbols.insert(0, Symbol::Nonterminal(nt));
         lowered.prods.push(Production {
           nt,
-          action: ProductionAction::RepetitionRest,
+          kind: ProductionKind::RepetitionRest,
           symbols,
         });
 
@@ -143,14 +141,14 @@ fn lower_items(
 
         lowered.prods.push(Production {
           nt,
-          action: ProductionAction::RepetitionFirst,
+          kind: ProductionKind::RepetitionFirst,
           symbols: symbols.clone(),
         });
 
         symbols.insert(0, Symbol::Nonterminal(nt));
         lowered.prods.push(Production {
           nt,
-          action: ProductionAction::RepetitionRest,
+          kind: ProductionKind::RepetitionRest,
           symbols,
         });
 
@@ -202,7 +200,7 @@ mod tests {
 
   #[test]
   fn lower_repetition() {
-    let grammar = grammar::build(r#"
+    let grammar = crate::build(r#"
 %token A "a"
 
 %start top

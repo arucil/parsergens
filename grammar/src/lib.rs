@@ -67,35 +67,35 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
   let ast = grammar_parser::parse(grammar)
     .map_err(|err| err.into())?;
 
-  let decls = ast.iter()
+  let token_decls = ast.iter()
     .filter_map(|decl| match &decl.1 {
       ast::Decl::Token(decl) => Some(decl),
       _ => None,
     })
     .collect::<Vec<_>>();
 
-  let skips = ast.iter()
+  let skip_decls = ast.iter()
     .filter_map(|decl| match &decl.1 {
       ast::Decl::Skip(decl) => Some(decl),
       _ => None,
     })
     .collect::<Vec<_>>();
 
-  let starts = ast.iter()
+  let start_decls = ast.iter()
     .filter_map(|decl| match &decl.1 {
       ast::Decl::Start(decl) => Some(decl),
       _ => None,
     })
     .collect::<Vec<_>>();
 
-  let rules = ast.iter()
+  let rule_decls = ast.iter()
     .filter_map(|decl| match &decl.1 {
       ast::Decl::Rule(decl) => Some(decl),
       _ => None,
     })
     .collect::<Vec<_>>();
 
-  let lexer = Lexer::new(&decls, &skips).map_err(|err| {
+  let lexer = Lexer::new(&token_decls, &skip_decls).map_err(|err| {
     match err {
       LexerError::NoTokens => {
         GrammarError {
@@ -111,7 +111,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
   })?;
 
   let mut nt_id_gen = NonterminalIdGen::default();
-  let nts = rules.iter()
+  let nts = rule_decls.iter()
     .map(|decl| {
       if lexer.tokens.get_by_right(&decl.name.1).is_some() {
         return Err(GrammarError {
@@ -127,7 +127,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     })
     .collect::<Result<BiMap<_, _>, GrammarError>>()?;
 
-  let start_nts = starts.iter()
+  let start_nts = start_decls.iter()
     .map(|decl| {
       if let Some(&id) = nts.get_by_right(&decl.name.1) {
         Ok(id)
@@ -141,14 +141,14 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     })
     .collect::<Result<Set<_>, GrammarError>>()?;
 
-  let mut prods = vec![];
+  let mut rules = vec![];
   let mut nt_prods = Map::new();
 
-  for rule in &rules {
-    let nt = *nts.get_by_right(&rule.name.1).unwrap();
-    let start = prods.len();
+  for rule_decl in &rule_decls {
+    let nt = *nts.get_by_right(&rule_decl.name.1).unwrap();
+    let start = rules.len();
 
-    for alt in &rule.alts {
+    for alt in &rule_decl.alts {
       let items = match &alt.1 {
         ast::RuleAlt::Epsilon => vec![],
         ast::RuleAlt::Terms(terms) => {
@@ -156,17 +156,17 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         }
       };
 
-      prods.push(Production {
+      rules.push(Rule {
         nt,
         items,
       });
     }
 
-    nt_prods.insert(nt, start..prods.len());
+    nt_prods.insert(nt, start..rules.len());
   }
 
   Ok(Grammar {
-    prods,
+    rules,
     start_nts,
     nts,
     nt_prods,

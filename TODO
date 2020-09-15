@@ -10,5 +10,5 @@ grammar:
 - [x] identifier support ' -, remove support of _
 - [ ] semantic action (plus user import part)
 - [ ] function non-terminal
-- [ ] move 'lower' to method of Grammar
+- [x] move 'lower' to method of Grammar
 - [ ] add label to sub-rule

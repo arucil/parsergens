@@ -1,6 +1,6 @@
 use grammar::{NonterminalIdGen, TokenIdGen};
-use super::lower::{
-  LoweredGrammar, Production, ProductionAction, Symbol, TokenId
+use grammar::{
+  LoweredGrammar, Production, ProductionKind, Symbol, TokenId
 };
 
 /// Add `S' -> S $` to grammar, where `$` is a new token representing EOF.
@@ -30,7 +30,7 @@ pub fn augment(grammar: LoweredGrammar) -> (LoweredGrammar, TokenId) {
 
     prods.push(Production {
       nt: new_start_nt,
-      action: ProductionAction::None,
+      kind: ProductionKind::Ordinary,
       symbols: vec![
         Symbol::Nonterminal(nt),
         Symbol::Token(eof_token),

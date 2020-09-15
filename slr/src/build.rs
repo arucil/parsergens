@@ -1,12 +1,12 @@
 use std::collections::VecDeque;
 use bit_set::BitSet;
-use grammar::{GrammarError, TokenId, NonterminalId, NonterminalIdGen};
+use grammar::{
+  GrammarError, TokenId, NonterminalId, NonterminalIdGen, LoweredGrammar, Symbol
+};
 use crate::{SlrParser, BiMap, Map};
-use lower::{LoweredGrammar, Symbol};
 use ffn::Ffn;
 
 mod ffn;
-pub(crate) mod lower;
 mod augment;
 
 #[derive(Debug)]
@@ -18,7 +18,7 @@ pub enum Error {
 
 pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
   let grammar = grammar::build(input).map_err(Error::GrammarError)?;
-  let grammar = lower::lower(grammar);
+  let grammar = grammar.lower();
   let (grammar, eof_token) = augment::augment(grammar);
   let ffn = ffn::compute(&grammar);
 
@@ -27,7 +27,7 @@ pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
   builder.build()?;
 
   let prods = grammar.prods.iter().map(|prod| {
-    (prod.symbols.len(), prod.nt.id(), prod.action)
+    (prod.symbols.len(), prod.nt.id(), prod.kind)
   }).collect();
 
   let nt_names = (0..grammar.nts.len()).scan(
@@ -315,7 +315,7 @@ mod tests {
 
   fn prepare(input: &str) -> (LoweredGrammar, TokenId, Ffn) {
     let grammar = grammar::build(input).unwrap();
-    let grammar = lower::lower(grammar);
+    let grammar = grammar.lower();
     let (grammar, eof_token) = augment::augment(grammar);
     let ffn = ffn::compute(&grammar);
 

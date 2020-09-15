@@ -1,4 +1,4 @@
-use build::lower::ProductionAction;
+use grammar::ProductionKind;
 
 mod build;
 
@@ -31,7 +31,7 @@ struct SlrParser {
   /// zero: error
   goto: Vec<Vec<u32>>,
   /// (length of RHS of the production, non-terminal id)
-  prods: Vec<(usize, u32, ProductionAction)>,
+  prods: Vec<(usize, u32, ProductionKind)>,
   nt_names: Vec<String>,
   /// (non-terminal name, starting state)
   start: Map<String, u32>,

@@ -1,5 +1,5 @@
 ---
-source: slr/src/build/lower.rs
+source: grammar/src/grammar/lower.rs
 expression: lowered
 ---
 LoweredGrammar {
@@ -8,14 +8,14 @@ LoweredGrammar {
             nt: NonterminalId(
                 2,
             ),
-            action: None,
+            kind: Ordinary,
             symbols: [],
         },
         Production {
             nt: NonterminalId(
                 2,
             ),
-            action: None,
+            kind: Ordinary,
             symbols: [
                 Token(
                     TokenId(
@@ -28,14 +28,14 @@ LoweredGrammar {
             nt: NonterminalId(
                 3,
             ),
-            action: RepetitionFirst,
+            kind: RepetitionFirst,
             symbols: [],
         },
         Production {
             nt: NonterminalId(
                 3,
             ),
-            action: RepetitionRest,
+            kind: RepetitionRest,
             symbols: [
                 Nonterminal(
                     NonterminalId(
@@ -58,7 +58,7 @@ LoweredGrammar {
             nt: NonterminalId(
                 4,
             ),
-            action: RepetitionFirst,
+            kind: RepetitionFirst,
             symbols: [
                 Token(
                     TokenId(
@@ -76,7 +76,7 @@ LoweredGrammar {
             nt: NonterminalId(
                 4,
             ),
-            action: RepetitionRest,
+            kind: RepetitionRest,
             symbols: [
                 Nonterminal(
                     NonterminalId(
@@ -99,7 +99,7 @@ LoweredGrammar {
             nt: NonterminalId(
                 0,
             ),
-            action: None,
+            kind: Ordinary,
             symbols: [
                 Token(
                     TokenId(
@@ -122,7 +122,7 @@ LoweredGrammar {
             nt: NonterminalId(
                 0,
             ),
-            action: None,
+            kind: Ordinary,
             symbols: [
                 Nonterminal(
                     NonterminalId(
@@ -135,7 +135,7 @@ LoweredGrammar {
             nt: NonterminalId(
                 1,
             ),
-            action: None,
+            kind: Ordinary,
             symbols: [
                 Token(
                     TokenId(
@@ -148,7 +148,7 @@ LoweredGrammar {
             nt: NonterminalId(
                 1,
             ),
-            action: None,
+            kind: Ordinary,
             symbols: [],
         },
     ],

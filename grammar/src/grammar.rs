@@ -3,10 +3,14 @@ use std::borrow::Borrow;
 use super::lexer::{Lexer, TokenId};
 use crate::{Set, BiMap, Map};
 
+pub use lower::*;
+
+pub mod lower;
+
 #[derive(Debug)]
 pub struct Grammar {
   /// productions of the same nonterminals are consecutive.
-  pub prods: Vec<Production>,
+  pub rules: Vec<Rule>,
   /// starting non-terminals
   pub start_nts: Set<NonterminalId>,
   /// non-terminals
@@ -16,7 +20,7 @@ pub struct Grammar {
 }
 
 #[derive(Debug)]
-pub struct Production {
+pub struct Rule {
   pub nt: NonterminalId,
   pub items: Vec<Item>,
 }
@@ -57,5 +61,11 @@ impl NonterminalIdGen {
 
   pub fn from(start: u32) -> Self {
     Self(start + 1)
+  }
+}
+
+impl Grammar {
+  pub fn lower(self) -> LoweredGrammar {
+    lower::lower(self)
   }
 }
