@@ -38,3 +38,16 @@ factor: path::to::Node<u32> =
 param-list =
     ()
   | expr ( COMMA expr )*
+
+---------------------------------------------------
+if is layout start and is trivia: skip
+if is layout start and non-trivia:
+    if indent > layout indent: push indent to layout stack
+if not layout:
+    if indent > layout stack top indent (or 0 if layout stack is empty):
+        discard this indent
+    else:
+        pop layout stack until indent = layout indent
+if is layout start token:
+    layout start = true
+    layout indent = current indent
