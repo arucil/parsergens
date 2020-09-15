@@ -180,7 +180,7 @@ impl<'a> Iterator for Lexer<'a> {
         loop {
           match self.chars.peek() {
             Some(&(i, c)) => {
-              if !(c.is_alphanumeric() || c == '-' || c == '\'') {
+              if !(c.is_alphanumeric() || c == '-' || c == '\'' || c == '_') {
                 break;
               }
               last = i;

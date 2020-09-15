@@ -168,20 +168,9 @@ expression: result
             60,
             Token {
                 kind: Ident,
-                text: "Ax3",
+                text: "Ax3_",
             },
-            63,
-        ),
-    ),
-    Err(
-        LexError(
-            LexError {
-                kind: InvalidChar,
-                span: (
-                    63,
-                    64,
-                ),
-            },
+            64,
         ),
     ),
     Ok(
