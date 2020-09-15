@@ -363,14 +363,14 @@ T = x
 
 %start E
 
-E = T E_
+E = T E'
 
-E_ = plus T E_
+E' = plus T E'
    | ()
 
-T = F T_
+T = F T'
 
-T_ = mult F T_
+T' = mult F T'
    | ()
 
 F = num

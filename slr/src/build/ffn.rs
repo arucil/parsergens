@@ -239,13 +239,10 @@ E = E plus E
   | plus E
   | int
   | id
-  | id lparen PARAM_LIST rparen
+  | id lparen PARAM-LIST rparen
 
-PARAM_LIST = ()
-  | E PARAM_LIST_
-
-PARAM_LIST_ = ()
-  | PARAM_LIST_ comma E
+PARAM-LIST = ()
+  | E (comma E)*
     "#).unwrap();
 
     let lowered = super::super::lower::lower(grammar);
@@ -267,14 +264,14 @@ PARAM_LIST_ = ()
 
 S = E
 
-E = T E_
+E = T E'
 
-E_ = plus T E_
+E' = plus T E'
    | ()
 
-T = F T_
+T = F T'
 
-T_ = mult F T_
+T' = mult F T'
    | ()
 
 F = num
