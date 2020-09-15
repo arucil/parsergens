@@ -233,7 +233,7 @@ Ok(
                 0,
             ),
         },
-        nts: {NonterminalId(0) <> "expr", NonterminalId(1) <> "factor", NonterminalId(2) <> "param_list"},
+        nts: {NonterminalId(0) <> "expr", NonterminalId(1) <> "factor", NonterminalId(2) <> "param-list"},
         nt_prods: {
             NonterminalId(
                 0,

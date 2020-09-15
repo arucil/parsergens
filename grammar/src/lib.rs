@@ -365,9 +365,9 @@ factor =
   | LPAREN expr RPAREN
   | MINUS factor
   | IDENT
-  | IDENT LPAREN param_list RPAREN
+  | IDENT LPAREN param-list RPAREN
 
-param_list =
+param-list =
     ()
   | expr ( COMMA expr )*
     "#;

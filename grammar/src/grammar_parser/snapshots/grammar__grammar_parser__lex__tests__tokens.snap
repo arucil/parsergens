@@ -168,9 +168,20 @@ expression: result
             60,
             Token {
                 kind: Ident,
-                text: "Ax3_",
+                text: "Ax3",
             },
-            64,
+            63,
+        ),
+    ),
+    Err(
+        LexError(
+            LexError {
+                kind: InvalidChar,
+                span: (
+                    63,
+                    64,
+                ),
+            },
         ),
     ),
     Ok(
@@ -195,12 +206,32 @@ expression: result
     ),
     Ok(
         (
-            79,
+            76,
+            Token {
+                kind: Ident,
+                text: "foo-bar\'\'",
+            },
+            85,
+        ),
+    ),
+    Ok(
+        (
+            85,
             Token {
                 kind: Newline,
                 text: "\n",
             },
-            80,
+            86,
+        ),
+    ),
+    Ok(
+        (
+            89,
+            Token {
+                kind: Newline,
+                text: "\n",
+            },
+            90,
         ),
     ),
 ]

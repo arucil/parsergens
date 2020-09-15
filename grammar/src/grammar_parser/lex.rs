@@ -175,12 +175,12 @@ impl<'a> Iterator for Lexer<'a> {
       '?' => return self.single_char_token(TokenKind::QuestionMark, j),
       '(' => return self.single_char_token(TokenKind::LParen, j),
       ')' => return self.single_char_token(TokenKind::RParen, j),
-      _ if c.is_ascii_alphabetic() => {
+      _ if c.is_ascii_alphabetic() || c == '\'' => {
         let mut last = j;
         loop {
           match self.chars.peek() {
             Some(&(i, c)) => {
-              if !(c.is_alphanumeric() || c == '_') {
+              if !(c.is_alphanumeric() || c == '-' || c == '\'') {
                 break;
               }
               last = i;
@@ -231,7 +231,7 @@ mod tests {
 %% web /\d+\\[0-9]\//  //12345
     | token,start  
 
-  =  ( Ax3_ ) "abcdef"
+  =  ( Ax3_ ) "abcdef" foo-bar''
    
     "#).collect::<Vec<_>>();
 
