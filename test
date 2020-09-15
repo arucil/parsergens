@@ -1,0 +1,40 @@
+%user-import {{
+  use std::collection::HashMap;
+}}
+
+%start expr
+
+%token PLUS "\"" -> enter STRING
+
+%token PLUS "+"
+%token MINUS "-"
+%token MUL "*"
+%token DIV "/"
+%token LPAREN "("
+%token RPAREN ")"
+%token COMMA ","
+%token NUMBER /\d+(\.\d*)?/
+%token IDENT /[a-zA-Z][\w_]*/
+%lexer-mode STRING -> token STRING:
+  %token ESCAPE /\\./ -> skip
+  %token /"/ -> pop
+
+%left-assoc MUL
+%left-assoc ADD
+
+expr = expr PLUS expr %prec ADD
+  | expr MINUS expr %prec ADD
+  | expr MUL expr %prec MUL
+  | expr DIV expr
+  | factor
+
+factor: path::to::Node<u32> =
+    NUMBER {{ $1.text }}
+  | LPAREN expr RPAREN {{ $2 }}
+  | MINUS factor {{ Node::Neg($2) }}
+  | IDENT
+  | IDENT LPAREN param-list RPAREN
+
+param-list =
+    ()
+  | expr ( COMMA expr )*
