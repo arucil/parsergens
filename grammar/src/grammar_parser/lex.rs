@@ -7,7 +7,7 @@ use super::UserParseError;
 
 pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum TokenKind {
   Start,
   Token,
@@ -27,6 +27,7 @@ pub enum TokenKind {
   Asterisk,
   QuestionMark,
   Plus,
+  Arrow,
 
   Enter,
   Leave,
@@ -60,6 +61,7 @@ pub struct Lexer<'a> {
   layout_base_indent: Option<usize>,
   buffer: VecDeque<<Self as Iterator>::Item>,
   cur_line_indent: usize,
+  bol: bool,
 }
 
 impl<'a> Lexer<'a> {
@@ -71,27 +73,36 @@ impl<'a> Lexer<'a> {
       layout_base_indent: None,
       buffer: VecDeque::new(),
       cur_line_indent: 0,
+      bol: true,
     }
   }
 
   fn advance(&mut self) -> Option<(usize, char)> {
-    let (i, c) = self.chars.next()?;
-    if c == '\n' {
-      self.cur_line_indent = 0;
-    } else {
-      self.cur_line_indent += 1;
-    }
-    Some((i, c))
+    self.chars.next()
   }
 
-  fn single_char_token(
-    &self, kind: TokenKind, index: usize
-  ) -> Option<<Self as Iterator>::Item> {
+  fn gen_token(&mut self, kind: TokenKind, start: usize, end: usize) {
+    if kind.is_layout_start() {
+      self.layout_base_indent = Some(self.cur_line_indent);
+    }
+
     let token = Token {
       kind,
-      text: &self.input[index..index + 1],
+      text: &self.input[start..end],
     };
-    return Some(Ok((index, token, index + 1)));
+    self.buffer.push_back(Ok((start, token, end)));
+  }
+
+  fn gen_error(&mut self, kind: LexErrorKind, start: usize, end: usize) {
+    let error = LexError {
+      kind,
+      span: (start, end),
+    };
+    self.buffer.push_back(Err(UserParseError::LexError(error)));
+  }
+
+  fn single_char_token(&mut self, kind: TokenKind, index: usize) {
+    self.gen_token(kind, index, index + 1);
   }
 
   fn lex_quoted(
@@ -103,7 +114,7 @@ impl<'a> Lexer<'a> {
   ) {
     let mut unescaped = true;
     let mut end = start;
-    let tok = loop {
+    loop {
       match self.advance() {
         Some((t, '\\')) => {
           unescaped = !unescaped;
@@ -111,35 +122,35 @@ impl<'a> Lexer<'a> {
         }
         Some((k, c)) if c == quote && unescaped => {
           self.advance();
-          let token = Token {
-            kind,
-            text: &self.input[start..k + 1],
-          };
-          break Ok((start, token, k + 1));
+          break self.gen_token(kind, start, k + 1);
         }
         Some((_, '\n')) | None => {
-          break Err(UserParseError::LexError(LexError {
-            kind: unclosed_err_kind,
-            span: (start, end),
-          }));
+          break self.gen_error(unclosed_err_kind, start, end);
         }
         Some((t, c)) => {
           unescaped = true;
           end += t + c.len_utf8();
         }
       }
-    };
-
-    self.buffer.push_back(tok);
+    }
   }
 
   fn gen_tokens(&mut self) -> Option<()> {
     self.chars.peek()?;
 
     // skip whitespace
-    while let Some(&(_, ' ' | '\n')) = self.chars.peek() {
+    while let Some(&(_, c@(' ' | '\n'))) = self.chars.peek() {
+      if c == '\n' {
+        self.bol = true;
+        self.cur_line_indent = 0;
+      } else {
+        self.cur_line_indent += 1;
+      }
       self.advance();
     }
+
+    // TODO pop all layout at EOF
+    // FIXME BOF should not emit Separator
 
     let (j, c) = self.advance()?;
 
@@ -156,23 +167,19 @@ impl<'a> Lexer<'a> {
     }
 
     if let Some(base_indent) = self.layout_base_indent.take() {
+      let start = j - self.cur_line_indent;
+      let end = j;
+
       if self.cur_line_indent > base_indent {
         self.layout_stack.push(self.cur_line_indent);
 
-        let start = j - self.cur_line_indent;
-        let end = j;
-        let token = Token {
-          kind: TokenKind::Enter,
-          text: &self.input[start..end],
-        };
-        self.buffer.push_back(Ok((start, token, end)));
+        self.gen_token(TokenKind::Enter, start, end);
       } else {
-        self.buffer.push_back(Err(UserParseError::LexError(LexError {
-          kind: LexErrorKind::InvalidIndent,
-          span: (j - self.cur_line_indent, j),
-        })));
+        self.gen_error(LexErrorKind::InvalidIndent, start, end);
       }
-    } else {
+    } else if self.bol {
+      self.bol = false;
+
       while let Some(&indent) = self.layout_stack.last() {
         if self.cur_line_indent >= indent {
           break;
@@ -183,11 +190,7 @@ impl<'a> Lexer<'a> {
       if self.cur_line_indent == base_indent {
         let start = j - self.cur_line_indent;
         let end = j;
-        let token = Token {
-          kind: TokenKind::Separator,
-          text: &self.input[start..end],
-        };
-        self.buffer.push_back(Ok((start, token, end)));
+        self.gen_token(TokenKind::Separator, start, end);
       } else {
         // do nothing
       }
@@ -200,16 +203,16 @@ impl<'a> Lexer<'a> {
       '"' => {
         self.lex_quoted(j, '"', TokenKind::String, LexErrorKind::UnclosedString);
       }
-      '%' => return self.single_char_token(TokenKind::Percent, j),
-      '=' => return self.single_char_token(TokenKind::Assign, j),
-      '|' => return self.single_char_token(TokenKind::Or, j),
-      ',' => return self.single_char_token(TokenKind::Comma, j),
-      ':' => return self.single_char_token(TokenKind::Colon, j),
-      '*' => return self.single_char_token(TokenKind::Asterisk, j),
-      '+' => return self.single_char_token(TokenKind::Plus, j),
-      '?' => return self.single_char_token(TokenKind::QuestionMark, j),
-      '(' => return self.single_char_token(TokenKind::LParen, j),
-      ')' => return self.single_char_token(TokenKind::RParen, j),
+      '%' => self.single_char_token(TokenKind::Percent, j),
+      '=' => self.single_char_token(TokenKind::Assign, j),
+      '|' => self.single_char_token(TokenKind::Or, j),
+      ',' => self.single_char_token(TokenKind::Comma, j),
+      ':' => self.single_char_token(TokenKind::Colon, j),
+      '*' => self.single_char_token(TokenKind::Asterisk, j),
+      '+' => self.single_char_token(TokenKind::Plus, j),
+      '?' => self.single_char_token(TokenKind::QuestionMark, j),
+      '(' => self.single_char_token(TokenKind::LParen, j),
+      ')' => self.single_char_token(TokenKind::RParen, j),
       _ if c.is_ascii_alphabetic() || c == '\'' => {
         let mut last = j;
         loop {
@@ -233,19 +236,15 @@ impl<'a> Lexer<'a> {
           _ => TokenKind::Ident,
         };
 
-        let token = Token {
-          kind,
-          text,
-        };
-        return Some(Ok((j, token, last + 1)));
+        self.gen_token(kind, j, last + 1);
       }
-      _ => {}
+      _ => {
+        self.buffer.push_back(Err(UserParseError::LexError(LexError {
+          kind: LexErrorKind::InvalidChar,
+          span: (j, j + c.len_utf8()),
+        })));
+      }
     }
-
-    self.buffer.push_back(Err(UserParseError::LexError(LexError {
-      kind: LexErrorKind::InvalidChar,
-      span: (j, j + c.len_utf8()),
-    })));
 
     Some(())
   }
@@ -265,6 +264,15 @@ impl<'a> Iterator for Lexer<'a> {
 impl<'a> Display for Token<'a> {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     write!(f, "<{:?}: {:?}>", self.kind, self.text)
+  }
+}
+
+impl TokenKind {
+  fn is_layout_start(&self) -> bool {
+    match self {
+      Self::Colon => true,
+      _ => false,
+    }
   }
 }
 

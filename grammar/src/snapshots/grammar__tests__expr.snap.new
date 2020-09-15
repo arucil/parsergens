@@ -1,0 +1,14 @@
+---
+source: grammar/src/lib.rs
+expression: build(input)
+---
+Err(
+    GrammarError {
+        kind: ParseError,
+        message: "expected Ident, Percent, found <Separator: \"\">",
+        span: (
+            1,
+            1,
+        ),
+    },
+)

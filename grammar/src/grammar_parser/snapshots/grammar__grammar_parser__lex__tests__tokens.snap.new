@@ -1,0 +1,156 @@
+---
+source: grammar/src/grammar_parser/lex.rs
+expression: result
+---
+[
+    Ok(
+        (
+            1,
+            Token {
+                kind: Separator,
+                text: "",
+            },
+            1,
+        ),
+    ),
+    Ok(
+        (
+            1,
+            Token {
+                kind: Percent,
+                text: "%",
+            },
+            2,
+        ),
+    ),
+    Ok(
+        (
+            2,
+            Token {
+                kind: Percent,
+                text: "%",
+            },
+            3,
+        ),
+    ),
+    Ok(
+        (
+            4,
+            Token {
+                kind: Ident,
+                text: "web",
+            },
+            7,
+        ),
+    ),
+    Ok(
+        (
+            8,
+            Token {
+                kind: Regex,
+                text: "/\\d+\\\\[0-9]\\//",
+            },
+            22,
+        ),
+    ),
+    Ok(
+        (
+            36,
+            Token {
+                kind: Or,
+                text: "|",
+            },
+            37,
+        ),
+    ),
+    Ok(
+        (
+            38,
+            Token {
+                kind: Token,
+                text: "token",
+            },
+            43,
+        ),
+    ),
+    Ok(
+        (
+            43,
+            Token {
+                kind: Comma,
+                text: ",",
+            },
+            44,
+        ),
+    ),
+    Ok(
+        (
+            44,
+            Token {
+                kind: Start,
+                text: "start",
+            },
+            49,
+        ),
+    ),
+    Ok(
+        (
+            55,
+            Token {
+                kind: Assign,
+                text: "=",
+            },
+            56,
+        ),
+    ),
+    Ok(
+        (
+            58,
+            Token {
+                kind: LParen,
+                text: "(",
+            },
+            59,
+        ),
+    ),
+    Ok(
+        (
+            60,
+            Token {
+                kind: Ident,
+                text: "Ax3_",
+            },
+            64,
+        ),
+    ),
+    Ok(
+        (
+            65,
+            Token {
+                kind: RParen,
+                text: ")",
+            },
+            66,
+        ),
+    ),
+    Ok(
+        (
+            67,
+            Token {
+                kind: String,
+                text: "\"abcdef\"",
+            },
+            75,
+        ),
+    ),
+    Ok(
+        (
+            76,
+            Token {
+                kind: Ident,
+                text: "foo-bar\'\'",
+            },
+            85,
+        ),
+    ),
+]

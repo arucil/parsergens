@@ -19,11 +19,10 @@ decl: Option<Spanned<Decl>> = {
   <l:@L> <decl:start_decl> <r:@L> => Some(Spanned((l, r), Decl::Start(decl))),
   <l:@L> <decl:token_decl> <r:@L> => Some(Spanned((l, r), Decl::Token(decl))),
   <l:@L> <decl:skip_decl> <r:@L> => Some(Spanned((l, r), Decl::Skip(decl))),
-  Newline => None,
 };
 
 rule_decl: RuleDecl =
-  <name:ident> Assign (Newline Indent)? <alt1:production> Newline <mut alts:(Indent Or <production> Newline)*>
+  <name:ident> Assign <alt1:production> <mut alts:(Or <production>)*> Separator
   => {
     alts.insert(0, alt1);
     RuleDecl {
@@ -46,7 +45,7 @@ term: Term = {
   LParen <terms:term+> RParen Plus => Term::Many1(terms),
 }
 
-start_decl: StartDecl = Percent Start <name:ident> Newline
+start_decl: StartDecl = Percent Start <name:ident> Separator
   => {
     StartDecl {
       name,
@@ -123,7 +122,8 @@ extern {
     QuestionMark => lex::Token { kind: lex::TokenKind::QuestionMark, .. },
     Plus => lex::Token { kind: lex::TokenKind::Plus, .. },
 
-    Indent => lex::Token { kind: lex::TokenKind::Indent, .. },
-    Newline => lex::Token { kind: lex::TokenKind::Newline, .. },
+    Enter => lex::Token { kind: lex::TokenKind::Enter, .. },
+    Leave => lex::Token { kind: lex::TokenKind::Leave, .. },
+    Separator => lex::Token { kind: lex::TokenKind::Separator, .. },
   }
 }

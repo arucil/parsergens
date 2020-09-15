@@ -300,6 +300,13 @@ impl<'a> Into<GrammarError> for LexError {
           span: self.span,
         }
       }
+      LexErrorKind::InvalidIndent => {
+        GrammarError {
+          kind: GrammarErrorKind::ParseError,
+          message: format!("invalid indentation"),
+          span: self.span,
+        }
+      }
     }
   }
 }
