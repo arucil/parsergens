@@ -1,6 +1,7 @@
 use grammar::{NonterminalIdGen, TokenIdGen};
 use grammar::{
-  LoweredGrammar, Production, ProductionKind, Symbol, TokenId
+  LoweredGrammar, Production, ProductionKind, Symbol, TokenId,
+  LoweredNonterminalMetadata, NonterminalKind,
 };
 
 /// Add `S' -> S $` to grammar, where `$` is a new token representing EOF.
@@ -12,7 +13,7 @@ pub fn augment(grammar: LoweredGrammar) -> (LoweredGrammar, TokenId) {
     .unwrap();
   let mut nt_id_gen = NonterminalIdGen::from(max_nt_id);
 
-  let max_token_id = grammar.lexer.tokens
+  let max_token_id = grammar.tokens
     .left_values()
     .map(|x| x.id())
     .max()
@@ -21,7 +22,7 @@ pub fn augment(grammar: LoweredGrammar) -> (LoweredGrammar, TokenId) {
   let eof_token = token_id_gen.gen();
 
   let mut prods = grammar.prods;
-  let mut nt_prods = grammar.nt_prods;
+  let mut nt_metas = grammar.nt_metas;
   let mut nts = grammar.nts;
 
   let start_nts = grammar.start_nts.into_iter().map(|nt| {
@@ -35,9 +36,14 @@ pub fn augment(grammar: LoweredGrammar) -> (LoweredGrammar, TokenId) {
         Symbol::Nonterminal(nt),
         Symbol::Token(eof_token),
       ],
+      action: None,
     });
 
-    nt_prods.insert(new_start_nt, start..prods.len());
+    nt_metas.insert(new_start_nt, LoweredNonterminalMetadata {
+      range: start..prods.len(),
+      ty: None,
+      kind: NonterminalKind::User,
+    });
 
     let new_nt_name = format!("_{}", nts.get_by_left(&nt).unwrap());
     nts.insert(new_start_nt, new_nt_name);
@@ -48,7 +54,7 @@ pub fn augment(grammar: LoweredGrammar) -> (LoweredGrammar, TokenId) {
   let grammar = LoweredGrammar {
     prods,
     start_nts,
-    nt_prods,
+    nt_metas,
     nts,
     ..grammar
   };

@@ -18,22 +18,45 @@ decl: Option<Spanned<Decl>> = {
   <l:@L> <decl:rule_decl> <r:@L> => Some(Spanned((l, r), Decl::Rule(decl))),
   <l:@L> <decl:start_decl> <r:@L> => Some(Spanned((l, r), Decl::Start(decl))),
   <l:@L> <decl:token_decl> <r:@L> => Some(Spanned((l, r), Decl::Token(decl))),
+  <l:@L> <decl:ext_token_decl> <r:@L> => Some(Spanned((l, r), Decl::ExtToken(decl))),
   <l:@L> <decl:skip_decl> <r:@L> => Some(Spanned((l, r), Decl::Skip(decl))),
+  <l:@L> <decl:user_decl> <r:@L> => Some(Spanned((l, r), Decl::User(decl))),
 };
 
 rule_decl: RuleDecl =
-  <name:ident> Assign <alt1:production> <mut alts:(Or <production>)*>
-  => {
+  <name:ident> <ty:(Colon <code_block>)?> Assign <alt1:production> <mut alts:(Or <production>)*>
+  =>? {
     alts.insert(0, alt1);
-    RuleDecl {
-      name,
-      alts,
+    if alts.iter().any(|alt| alt.1.action.is_some()) && ty.is_none() {
+      Err(ParseError::User {
+        error: UserParseError::MissingType(name.0),
+      })
+    } else {
+      Ok(RuleDecl {
+        name,
+        ty,
+        alts,
+      })
     }
   }; 
 
 production: Spanned<RuleAlt> = {
-  <l:@L> <terms:term+> <r:@L> => Spanned((l, r), RuleAlt::Terms(terms)),
-  <l:@L> epsilon <r:@L> => Spanned((l, r), RuleAlt::Epsilon),
+  <l:@L> <terms:term+> <action:code_block?> <r:@L> =>
+    Spanned(
+      (l, r),
+      RuleAlt {
+        terms: RuleAltTerms::Terms(terms),
+        action,
+      }
+    ),
+  <l:@L> epsilon <action:code_block?> <r:@L> =>
+    Spanned(
+      (l, r),
+      RuleAlt {
+        terms: RuleAltTerms::Epsilon,
+        action,
+      }
+    ),
 };
 
 epsilon: () = LParen RParen;
@@ -60,10 +83,24 @@ token_decl: TokenDecl = Percent Token <name:ident> <pattern:token_pattern>
     }
   };
 
+ext_token_decl: ExternalTokenDecl = Percent Token <name:ident>
+  => {
+    ExternalTokenDecl {
+      name,
+    }
+  };
+
 skip_decl: SkipDecl = Percent Skip <pattern:token_pattern>
   => {
     SkipDecl {
       pattern,
+    }
+  };
+
+user_decl: UserDecl = Percent User <code:code_block>
+  => {
+    UserDecl {
+      code,
     }
   };
 
@@ -98,6 +135,7 @@ spanned<T>: Spanned<String> = <l:@L> <x:T> <r:@L> => Spanned((l, r), x.text.to_o
 ident = spanned<Ident>;
 string = spanned<String>;
 regex = spanned<Regex>;
+code_block = spanned<CodeBlock>;
 
 extern {
   type Location = usize;
@@ -107,10 +145,12 @@ extern {
     Start => lex::Token { kind: lex::TokenKind::Start, .. },
     Token => lex::Token { kind: lex::TokenKind::Token, .. },
     Skip => lex::Token { kind: lex::TokenKind::Skip, .. },
+    User => lex::Token { kind: lex::TokenKind::User, .. },
 
     Ident => lex::Token { kind: lex::TokenKind::Ident, .. },
     Regex => lex::Token { kind: lex::TokenKind::Regex, .. },
     String => lex::Token { kind: lex::TokenKind::String, .. },
+    CodeBlock => lex::Token { kind: lex::TokenKind::CodeBlock, .. },
 
     Percent => lex::Token { kind: lex::TokenKind::Percent, .. },
     Assign => lex::Token { kind: lex::TokenKind::Assign, .. },

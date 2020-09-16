@@ -1,4 +1,4 @@
-use grammar::ProductionKind;
+use grammar::{ProductionKind, TokenId};
 
 mod build;
 
@@ -36,5 +36,6 @@ struct SlrParser {
   /// (non-terminal name, starting state)
   start: Map<String, u32>,
   eof_index: usize,
-  lexer: grammar::Lexer,
+  lexer: Option<grammar::Lexer>,
+  tokens: BiMap<TokenId, String>,
 }

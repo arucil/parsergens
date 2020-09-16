@@ -106,7 +106,7 @@ fn compute_nonterminal_first(
     return;
   }
 
-  let range = grammar.nt_prods[&nt].clone();
+  let range = grammar.nt_metas[&nt].range.clone();
   let mut nt_first = BitSet::new();
 
   for prod in &grammar.prods[range] {
@@ -158,7 +158,7 @@ fn compute_nullable(grammar: &LoweredGrammar) -> BitSet {
             break;
           }
           Symbol::Nonterminal(nt) => {
-            let nt_range = &grammar.nt_prods[nt];
+            let nt_range = &grammar.nt_metas[nt].range;
             if BitSlice::all(&prods_completed[nt_range.clone()]) {
               if !prods_nullable[nt_range.clone()].some() {
                 prod_nullable = false;
@@ -181,8 +181,8 @@ fn compute_nullable(grammar: &LoweredGrammar) -> BitSet {
     }
   }
 
-  grammar.nt_prods.iter().filter_map(|(nt, range)| {
-    if prods_nullable[range.clone()].some() {
+  grammar.nt_metas.iter().filter_map(|(nt, meta)| {
+    if prods_nullable[meta.range.clone()].some() {
       Some(nt.id() as usize)
     } else {
       None

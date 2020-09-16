@@ -10,6 +10,7 @@ LoweredGrammar {
             ),
             kind: Ordinary,
             symbols: [],
+            action: None,
         },
         Production {
             nt: NonterminalId(
@@ -23,6 +24,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            action: None,
         },
         Production {
             nt: NonterminalId(
@@ -30,6 +32,7 @@ LoweredGrammar {
             ),
             kind: RepetitionFirst,
             symbols: [],
+            action: None,
         },
         Production {
             nt: NonterminalId(
@@ -53,6 +56,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            action: None,
         },
         Production {
             nt: NonterminalId(
@@ -71,6 +75,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            action: None,
         },
         Production {
             nt: NonterminalId(
@@ -94,6 +99,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            action: None,
         },
         Production {
             nt: NonterminalId(
@@ -117,6 +123,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            action: None,
         },
         Production {
             nt: NonterminalId(
@@ -130,6 +137,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            action: None,
         },
         Production {
             nt: NonterminalId(
@@ -143,6 +151,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            action: None,
         },
         Production {
             nt: NonterminalId(
@@ -150,6 +159,7 @@ LoweredGrammar {
             ),
             kind: Ordinary,
             symbols: [],
+            action: None,
         },
     ],
     start_nts: {
@@ -158,52 +168,76 @@ LoweredGrammar {
         ),
     },
     nts: {NonterminalId(0) <> "top", NonterminalId(1) <> "atom", NonterminalId(2) <> "(A)?", NonterminalId(3) <> "(atom (A)?)*", NonterminalId(4) <> "(A atom)+"},
-    nt_prods: {
+    nt_metas: {
         NonterminalId(
             2,
-        ): 0..2,
+        ): LoweredNonterminalMetadata {
+            range: 0..2,
+            ty: None,
+            kind: Optional,
+        },
         NonterminalId(
             3,
-        ): 2..4,
+        ): LoweredNonterminalMetadata {
+            range: 2..4,
+            ty: None,
+            kind: Repetition,
+        },
         NonterminalId(
             4,
-        ): 4..6,
+        ): LoweredNonterminalMetadata {
+            range: 4..6,
+            ty: None,
+            kind: Repetition,
+        },
         NonterminalId(
             0,
-        ): 6..8,
+        ): LoweredNonterminalMetadata {
+            range: 6..8,
+            ty: None,
+            kind: User,
+        },
         NonterminalId(
             1,
-        ): 8..10,
-    },
-    lexer: Lexer {
-        dfa: TabularDfa {
-            start: 0,
-            state_base: [
-                0,
-                0,
-                0,
-            ],
-            transitions: [
-                (
-                    0,
-                    0,
-                ),
-                (
-                    0,
-                    2,
-                ),
-            ],
-            accept_states: {
-                State(1): TokenId(
-                    0,
-                ),
-            },
+        ): LoweredNonterminalMetadata {
+            range: 8..10,
+            ty: None,
+            kind: User,
         },
-        char_intervals: [
-            0,
-            97,
-            98,
-        ],
-        tokens: {TokenId(0) <> "A"},
     },
+    lexer: Some(
+        Lexer {
+            dfa: TabularDfa {
+                start: 0,
+                state_base: [
+                    0,
+                    0,
+                    0,
+                ],
+                transitions: [
+                    (
+                        0,
+                        0,
+                    ),
+                    (
+                        0,
+                        2,
+                    ),
+                ],
+                accept_states: {
+                    State(1): TokenId(
+                        0,
+                    ),
+                },
+            },
+            char_intervals: [
+                0,
+                97,
+                98,
+            ],
+            skip: {},
+        },
+    ),
+    tokens: {TokenId(0) <> "A"},
+    user_code: [],
 }

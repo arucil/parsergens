@@ -247,60 +247,60 @@ expression: result
         (
             69,
             Token {
-                kind: Colon,
-                text: ":",
+                kind: Arrow,
+                text: "->",
             },
-            70,
+            71,
         ),
     ),
     Ok(
         (
-            70,
+            71,
             Token {
                 kind: Enter,
                 text: "\n    ",
             },
-            75,
+            76,
         ),
     ),
     Ok(
         (
-            75,
+            76,
             Token {
                 kind: Ident,
                 text: "sit",
             },
-            78,
+            79,
         ),
     ),
     Ok(
         (
-            78,
+            79,
             Token {
                 kind: Separator,
                 text: "\n    ",
             },
-            83,
+            84,
         ),
     ),
     Ok(
         (
-            83,
+            84,
             Token {
                 kind: Ident,
                 text: "amet",
             },
-            87,
+            88,
         ),
     ),
     Ok(
         (
-            87,
+            88,
             Token {
                 kind: Leave,
                 text: "",
             },
-            87,
+            88,
         ),
     ),
 ]

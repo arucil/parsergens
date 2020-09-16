@@ -12,10 +12,12 @@ pub enum TokenKind {
   Start,
   Token,
   Skip,
+  User,
 
   Ident,
   Regex,
   String,
+  CodeBlock,
 
   Percent,
   Assign,
@@ -48,10 +50,11 @@ pub struct LexError {
 
 #[derive(Debug)]
 pub enum LexErrorKind {
-  UnclosedRegex,
   InvalidChar,
-  UnclosedString,
   InvalidIndent,
+  UnclosedRegex,
+  UnclosedString,
+  UnclosedCodeBlock,
 }
 
 pub struct Lexer<'a> {
@@ -133,6 +136,30 @@ impl<'a> Lexer<'a> {
           unescaped = true;
           end += t + c.len_utf8();
         }
+      }
+    }
+  }
+
+  fn lex_text_block(&mut self, start: usize) {
+    let mut lbrace_num = 1;
+    while let Some((_, '{')) = self.chars.peek() {
+      lbrace_num += 1;
+      self.advance();
+    }
+
+    let mut rbrace_left = lbrace_num;
+    loop {
+      if let Some((_, '}')) = self.chars.peek() {
+        rbrace_left -= 1;
+        self.advance();
+      } else if rbrace_left == 0 {
+        let end = self.chars.peek().map(|&(i, _)| i).unwrap_or(self.input.len());
+        break self.gen_token(TokenKind::CodeBlock, start, end);
+      } else if self.chars.next().is_some() {
+        rbrace_left = lbrace_num;
+      } else {
+        break self.gen_error(
+          LexErrorKind::UnclosedCodeBlock, start, self.input.len());
       }
     }
   }
@@ -234,6 +261,9 @@ impl<'a> Lexer<'a> {
           self.gen_error(LexErrorKind::InvalidChar, j, j + 1);
         }
       }
+      '{' => {
+        self.lex_text_block(j);
+      }
       _ if c.is_ascii_alphabetic() || c == '\'' => {
         let mut last = j;
         loop {
@@ -254,6 +284,7 @@ impl<'a> Lexer<'a> {
           "start" => TokenKind::Start,
           "token" => TokenKind::Token,
           "skip" => TokenKind::Skip,
+          "user" => TokenKind::User,
           _ => TokenKind::Ident,
         };
 
@@ -288,7 +319,7 @@ impl<'a> Display for Token<'a> {
 impl TokenKind {
   fn is_layout_start(&self) -> bool {
     match self {
-      Self::Colon | Self::Arrow => true,
+      Self::Arrow => true,
       _ => false,
     }
   }
@@ -312,10 +343,20 @@ mod tests {
   }
 
   #[test]
+  fn code_block() {
+    let result = Lexer::new(r#"
+{ // not comment }  {{ } not end }}
+  {{{ }} }} } }}}
+   {{}}}} }}"#).collect::<Vec<_>>();
+
+    assert_debug_snapshot!(result);
+  }
+
+  #[test]
   fn layout_nested() {
     let result = Lexer::new(r#"
 foo ->
-  "bar" : ( = )
+  "bar"-> ( = )
           
           %
     +
@@ -336,7 +377,7 @@ lorem
   ipsum
  dolor
 
-:
+->
     sit
     amet
     "#).collect::<Vec<_>>();

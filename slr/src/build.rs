@@ -43,7 +43,8 @@ pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
     nt_names,
     start: builder.start,
     eof_index: eof_token.id() as usize,
-    lexer: grammar.lexer
+    lexer: grammar.lexer,
+    tokens: grammar.tokens,
   })
 }
 
@@ -87,7 +88,7 @@ impl<'a> Builder<'a> {
   }
 
   fn start(&mut self, nt: NonterminalId) -> Result<u32, Error> {
-    let start_prod = self.grammar.nt_prods[&nt].start;
+    let start_prod = self.grammar.nt_metas[&nt].range.start;
     let start_item = self.item(start_prod, 0);
     let start_state_set = self.closure({
       let mut set = BitSet::new();
@@ -164,7 +165,7 @@ impl<'a> Builder<'a> {
           match &symbols[prod_dot] {
             Symbol::Token(_) => {}
             Symbol::Nonterminal(nt) => {
-              for prod_ix in self.grammar.nt_prods[nt].clone() {
+              for prod_ix in self.grammar.nt_metas[nt].range.clone() {
                 let item = self.item(prod_ix, 0);
                 if !result.contains(item) {
                   new.insert(item);
@@ -277,7 +278,7 @@ impl<'a> Builder<'a> {
 
           match sym {
             Symbol::Token(token) => {
-              let name = self.grammar.lexer.tokens.get_by_left(token).map(|s|s.as_str()).unwrap_or("$");
+              let name = self.grammar.tokens.get_by_left(token).map(|s|s.as_str()).unwrap_or("$");
               write!(fmt, " {}", name)?;
             }
             Symbol::Nonterminal(nt) => {

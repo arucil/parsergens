@@ -101,10 +101,10 @@ impl<'lexer, 'input> Iterator for Tokens<'lexer, 'input> {
       if let Some(&id) = self.lexer.dfa.result(state) {
         end = self.pos;
 
-        token_kind = if self.lexer.tokens.contains_left(&id) {
-          Some(id)
-        } else {
+        token_kind = if self.lexer.skip.contains(&id) {
           None
+        } else {
+          Some(id)
         };
       }
     }

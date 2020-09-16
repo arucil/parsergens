@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 use tabular_dfa::TabularDfa;
 use super::grammar_parser::ast::{TokenDecl, SkipDecl};
 use super::grammar_parser::regex::RegexError;
-use super::BiMap;
+use super::{BiMap, Set};
 
 pub use tokens::Tokens;
 
@@ -20,7 +20,7 @@ pub mod tokens;
 pub struct Lexer {
   pub dfa: TabularDfa<TokenId>,
   pub char_intervals: Vec<u32>,
-  pub tokens: BiMap<TokenId, String>,
+  pub skip: Set<TokenId>,
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
@@ -51,7 +51,6 @@ impl TokenIdGen {
 
 #[derive(Debug)]
 pub enum LexerError {
-  NoTokens,
   RegexError(RegexError),
 }
 
@@ -68,7 +67,10 @@ impl Borrow<u32> for TokenId {
 }
 
 impl Lexer {
-  pub fn new(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Self, LexerError> {
+  pub fn new(
+    decls: &[TokenDecl],
+    skips: &[SkipDecl]
+  ) -> Result<(Self, BiMap<TokenId, String>), LexerError> {
     build::build(decls, skips)
   }
 
@@ -97,19 +99,19 @@ mod tests {
 
     let decls = ast.iter()
       .filter_map(|decl| match &decl.1 {
-        Decl::Token(decl) => Some(decl),
+        Decl::Token(decl) => Some(decl.clone()),
         _ => None,
       })
       .collect::<Vec<_>>();
 
     let skips = ast.iter()
       .filter_map(|decl| match &decl.1 {
-        Decl::Skip(decl) => Some(decl),
+        Decl::Skip(decl) => Some(decl.clone()),
         _ => None,
       })
       .collect::<Vec<_>>();
 
-    let lexer = Lexer::new(&decls, &skips).unwrap();
+    let lexer = Lexer::new(&decls, &skips).unwrap().0;
     let tokens = lexer.lex(r"  123  456  # lorem ipsum
   0127401  #
 
@@ -137,19 +139,19 @@ mod tests {
 
     let decls = ast.iter()
       .filter_map(|decl| match &decl.1 {
-        Decl::Token(decl) => Some(decl),
+        Decl::Token(decl) => Some(decl.clone()),
         _ => None,
       })
       .collect::<Vec<_>>();
 
     let skips = ast.iter()
       .filter_map(|decl| match &decl.1 {
-        Decl::Skip(decl) => Some(decl),
+        Decl::Skip(decl) => Some(decl.clone()),
         _ => None,
       })
       .collect::<Vec<_>>();
 
-    let lexer = Lexer::new(&decls, &skips).unwrap();
+    let lexer = Lexer::new(&decls, &skips).unwrap().0;
     let tokens = lexer.lex(r"(3.2 * 51 + Foo_1) / 20. -5  ,    ").collect::<Vec<_>>();
 
     assert_debug_snapshot!(tokens);
@@ -165,19 +167,19 @@ mod tests {
 
     let decls = ast.iter()
       .filter_map(|decl| match &decl.1 {
-        Decl::Token(decl) => Some(decl),
+        Decl::Token(decl) => Some(decl.clone()),
         _ => None,
       })
       .collect::<Vec<_>>();
 
     let skips = ast.iter()
       .filter_map(|decl| match &decl.1 {
-        Decl::Skip(decl) => Some(decl),
+        Decl::Skip(decl) => Some(decl.clone()),
         _ => None,
       })
       .collect::<Vec<_>>();
 
-    let lexer = Lexer::new(&decls, &skips).unwrap();
+    let lexer = Lexer::new(&decls, &skips).unwrap().0;
     let tokens = lexer.lex(r"integeintegerinteg").collect::<Vec<_>>();
 
     assert_debug_snapshot!(tokens);

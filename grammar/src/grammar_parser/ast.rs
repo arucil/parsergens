@@ -4,31 +4,38 @@ pub type Grammar = Vec<Spanned<Decl>>;
 #[derive(Debug)]
 pub enum Decl {
   Token(TokenDecl),
+  ExtToken(ExternalTokenDecl),
   Start(StartDecl),
   Rule(RuleDecl),
   Skip(SkipDecl),
+  User(UserDecl),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TokenDecl {
   pub name: Spanned<String>,
   pub pattern: TokenPattern,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct ExternalTokenDecl {
+  pub name: Spanned<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct TokenPattern {
   pub kind: TokenPatternKind,
   pub source: Spanned<String>,
   pub regex: Regex,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum TokenPatternKind {
   Regex,
   String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Regex {
   Empty,
   Any,
@@ -42,7 +49,7 @@ pub enum Regex {
   Many1(Box<Regex>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CharSetItem {
   Range(char, char),
   CharClass(CharClass),
@@ -55,29 +62,41 @@ pub enum CharClass {
   Word,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SkipDecl {
   pub pattern: TokenPattern,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct UserDecl {
+  pub code: Spanned<String>,
+}
+
+#[derive(Debug, Clone)]
 pub struct StartDecl {
   pub name: Spanned<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RuleDecl {
   pub name: Spanned<String>,
+  pub ty: Option<Spanned<String>>,
   pub alts: Vec<Spanned<RuleAlt>>,
 }
 
-#[derive(Debug)]
-pub enum RuleAlt {
+#[derive(Debug, Clone)]
+pub struct RuleAlt {
+  pub terms: RuleAltTerms,
+  pub action: Option<Spanned<String>>,
+}
+
+#[derive(Debug, Clone)]
+pub enum RuleAltTerms {
   Epsilon,
   Terms(Vec<Term>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Term {
   Symbol(Spanned<String>),
   Optional(Vec<Term>),
@@ -85,7 +104,7 @@ pub enum Term {
   Many1(Vec<Term>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Spanned<T>(pub (usize, usize), pub T);
 
 impl CharClass {

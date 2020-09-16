@@ -59,6 +59,8 @@ pub struct GrammarError {
 #[derive(Debug)]
 pub enum GrammarErrorKind {
   ParseError,
+  TokenDeclConflict,
+  MissingDecl,
   SymbolNotFound,
   NameConflict,
 }
@@ -67,53 +69,65 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
   let ast = grammar_parser::parse(grammar)
     .map_err(|err| err.into())?;
 
-  let token_decls = ast.iter()
-    .filter_map(|decl| match &decl.1 {
-      ast::Decl::Token(decl) => Some(decl),
-      _ => None,
-    })
-    .collect::<Vec<_>>();
+  let mut token_decls = vec![];
+  let mut ext_token_decls = vec![];
+  let mut skip_decls = vec![];
+  let mut start_decls = vec![];
+  let mut rule_decls = vec![];
+  let mut user_decls = vec![];
 
-  let skip_decls = ast.iter()
-    .filter_map(|decl| match &decl.1 {
-      ast::Decl::Skip(decl) => Some(decl),
-      _ => None,
-    })
-    .collect::<Vec<_>>();
+  for decl in ast {
+    match decl.1 {
+      ast::Decl::Token(decl) => token_decls.push(decl),
+      ast::Decl::ExtToken(decl) => ext_token_decls.push(decl),
+      ast::Decl::Skip(decl) => skip_decls.push(decl),
+      ast::Decl::Start(decl) => start_decls.push(decl),
+      ast::Decl::Rule(decl) => rule_decls.push(decl),
+      ast::Decl::User(decl) => user_decls.push(decl),
+    }
+  }
 
-  let start_decls = ast.iter()
-    .filter_map(|decl| match &decl.1 {
-      ast::Decl::Start(decl) => Some(decl),
-      _ => None,
-    })
-    .collect::<Vec<_>>();
+  let lexer;
+  let tokens;
+  if ext_token_decls.is_empty() {
+    if token_decls.is_empty() && skip_decls.is_empty() {
+      return Err(GrammarError {
+        kind: GrammarErrorKind::MissingDecl,
+        message: format!("missing declarations"),
+        span: (0, grammar.len()),
+      });
+    }
 
-  let rule_decls = ast.iter()
-    .filter_map(|decl| match &decl.1 {
-      ast::Decl::Rule(decl) => Some(decl),
-      _ => None,
-    })
-    .collect::<Vec<_>>();
-
-  let lexer = Lexer::new(&token_decls, &skip_decls).map_err(|err| {
-    match err {
-      LexerError::NoTokens => {
-        GrammarError {
-          kind: GrammarErrorKind::ParseError,
-          message: format!("no token declarations"),
-          span: (0, grammar.len()),
+    let (l, t) = Lexer::new(&token_decls, &skip_decls).map_err(|err| {
+      match err {
+        LexerError::RegexError(err) => {
+          err.into()
         }
       }
-      LexerError::RegexError(err) => {
-        err.into()
-      }
+    })?;
+    lexer = Some(l);
+    tokens = t;
+  } else {
+    if !token_decls.is_empty() || !skip_decls.is_empty() {
+      return Err(GrammarError {
+        kind: GrammarErrorKind::TokenDeclConflict,
+        message: format!("token declaration conflict"),
+        span: (0, grammar.len()),
+      });
     }
-  })?;
+
+    lexer = None;
+    tokens = ext_token_decls.into_iter()
+      .scan(TokenIdGen::default(), |id_gen, decl| Some((id_gen.gen(), decl.name.1)))
+      .collect();
+  }
+
+  let user_code = user_decls.into_iter().map(|decl| decl.code.1).collect();
 
   let mut nt_id_gen = NonterminalIdGen::default();
   let nts = rule_decls.iter()
     .map(|decl| {
-      if lexer.tokens.get_by_right(&decl.name.1).is_some() {
+      if tokens.get_by_right(&decl.name.1).is_some() {
         return Err(GrammarError {
           kind: GrammarErrorKind::NameConflict,
           message: format!("rule name collides with token name"),
@@ -142,35 +156,43 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     .collect::<Result<Set<_>, GrammarError>>()?;
 
   let mut rules = vec![];
-  let mut nt_prods = Map::new();
+  let mut nt_metas = Map::new();
 
   for rule_decl in &rule_decls {
     let nt = *nts.get_by_right(&rule_decl.name.1).unwrap();
     let start = rules.len();
 
     for alt in &rule_decl.alts {
-      let items = match &alt.1 {
-        ast::RuleAlt::Epsilon => vec![],
-        ast::RuleAlt::Terms(terms) => {
-          convert_terms(terms, &nts, &lexer.tokens)?
+      let items = match &alt.1.terms {
+        ast::RuleAltTerms::Epsilon => vec![],
+        ast::RuleAltTerms::Terms(terms) => {
+          convert_terms(terms, &nts, &tokens)?
         }
       };
+      let action = alt.1.action.as_ref().map(|code| code.1.clone());
 
       rules.push(Rule {
         nt,
         items,
+        action,
       });
     }
 
-    nt_prods.insert(nt, start..rules.len());
+    let ty = rule_decl.ty.as_ref().map(|t| t.1.clone());
+    nt_metas.insert(nt, NonterminalMetadata {
+      range: start..rules.len(),
+      ty,
+    });
   }
 
   Ok(Grammar {
     rules,
     start_nts,
     nts,
-    nt_prods,
+    nt_metas,
     lexer,
+    tokens,
+    user_code,
   })
 }
 
@@ -227,6 +249,13 @@ pub fn report_error(input: &str, error: &GrammarError) {
     GrammarErrorKind::SymbolNotFound => {
       diagnostic.with_message("symbol not found")
     }
+    GrammarErrorKind::TokenDeclConflict => {
+      diagnostic.with_message(
+        "token declaration and external token declaration cannot exist simultaneously")
+    }
+    GrammarErrorKind::MissingDecl => {
+      diagnostic.with_message("missing token declarations")
+    }
   };
   let diagnostic = diagnostic.with_labels(vec![
     Label::primary((), error.span.0..error.span.1).with_message(&error.message)
@@ -270,6 +299,14 @@ impl<'a> Into<GrammarError> for ParseError<usize, Token<'a>, UserParseError> {
         match error {
           UserParseError::LexError(error) => error.into(),
           UserParseError::RegexError(error) => error.into(),
+          UserParseError::MissingType(span) => {
+            GrammarError {
+              kind: GrammarErrorKind::ParseError,
+              message: format!(
+                "non-terminal type must be defined if any production has semantic action"),
+              span,
+            }
+          }
         }
       }
     }
@@ -290,6 +327,13 @@ impl<'a> Into<GrammarError> for LexError {
         GrammarError {
           kind: GrammarErrorKind::ParseError,
           message: format!("unclosed string"),
+          span: self.span,
+        }
+      }
+      LexErrorKind::UnclosedCodeBlock => {
+        GrammarError {
+          kind: GrammarErrorKind::ParseError,
+          message: format!("unclosed code block"),
           span: self.span,
         }
       }

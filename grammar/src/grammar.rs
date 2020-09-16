@@ -15,14 +15,17 @@ pub struct Grammar {
   pub start_nts: Set<NonterminalId>,
   /// non-terminals
   pub nts: BiMap<NonterminalId, String>,
-  pub nt_prods: Map<NonterminalId, Range<usize>>,
-  pub lexer: Lexer,
+  pub nt_metas: Map<NonterminalId, NonterminalMetadata>,
+  pub lexer: Option<Lexer>,
+  pub tokens: BiMap<TokenId, String>,
+  pub user_code: Vec<String>,
 }
 
 #[derive(Debug)]
 pub struct Rule {
   pub nt: NonterminalId,
   pub items: Vec<Item>,
+  pub action: Option<String>,
 }
 
 #[derive(Debug)]
@@ -32,6 +35,12 @@ pub enum Item {
   Optional(Vec<Item>),
   Many(Vec<Item>),
   Many1(Vec<Item>),
+}
+
+#[derive(Debug)]
+pub struct NonterminalMetadata {
+  pub range: Range<usize>,
+  pub ty: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]

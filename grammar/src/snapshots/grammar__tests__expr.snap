@@ -26,6 +26,7 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -48,6 +49,7 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -70,6 +72,7 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -92,6 +95,7 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -104,6 +108,7 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -116,6 +121,7 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -138,6 +144,7 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -155,6 +162,7 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -167,6 +175,7 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -194,12 +203,14 @@ Ok(
                         ),
                     ),
                 ],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
                     2,
                 ),
                 items: [],
+                action: None,
             },
             Rule {
                 nt: NonterminalId(
@@ -226,6 +237,7 @@ Ok(
                         ],
                     ),
                 ],
+                action: None,
             },
         ],
         start_nts: {
@@ -234,261 +246,278 @@ Ok(
             ),
         },
         nts: {NonterminalId(0) <> "expr", NonterminalId(1) <> "factor", NonterminalId(2) <> "param-list"},
-        nt_prods: {
+        nt_metas: {
             NonterminalId(
                 0,
-            ): 0..5,
+            ): NonterminalMetadata {
+                range: 0..5,
+                ty: None,
+            },
             NonterminalId(
                 1,
-            ): 5..10,
+            ): NonterminalMetadata {
+                range: 5..10,
+                ty: None,
+            },
             NonterminalId(
                 2,
-            ): 10..12,
+            ): NonterminalMetadata {
+                range: 10..12,
+                ty: None,
+            },
         },
-        lexer: Lexer {
-            dfa: TabularDfa {
-                start: 11,
-                state_base: [
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    1,
-                    3,
-                    17,
-                    21,
-                ],
-                transitions: [
-                    (
+        lexer: Some(
+            Lexer {
+                dfa: TabularDfa {
+                    start: 11,
+                    state_base: [
                         0,
                         0,
-                    ),
-                    (
                         0,
                         0,
-                    ),
-                    (
                         0,
                         0,
-                    ),
-                    (
                         0,
                         0,
-                    ),
-                    (
                         0,
-                        0,
-                    ),
-                    (
-                        0,
-                        0,
-                    ),
-                    (
-                        0,
-                        0,
-                    ),
-                    (
-                        0,
-                        0,
-                    ),
-                    (
-                        0,
-                        0,
-                    ),
-                    (
-                        0,
-                        0,
-                    ),
-                    (
-                        0,
-                        0,
-                    ),
-                    (
-                        0,
-                        0,
-                    ),
-                    (
-                        9,
-                        11,
-                    ),
-                    (
-                        7,
-                        8,
-                    ),
-                    (
-                        9,
-                        10,
-                    ),
-                    (
-                        7,
-                        8,
-                    ),
-                    (
-                        10,
-                        11,
-                    ),
-                    (
-                        7,
-                        8,
-                    ),
-                    (
-                        11,
-                        9,
-                    ),
-                    (
-                        7,
-                        8,
-                    ),
-                    (
-                        11,
-                        9,
-                    ),
-                    (
-                        10,
-                        0,
-                    ),
-                    (
-                        11,
-                        5,
-                    ),
-                    (
-                        11,
-                        6,
-                    ),
-                    (
-                        11,
-                        3,
-                    ),
-                    (
-                        11,
                         1,
-                    ),
-                    (
-                        11,
-                        7,
-                    ),
-                    (
-                        11,
-                        2,
-                    ),
-                    (
-                        11,
-                        0,
-                    ),
-                    (
-                        11,
-                        4,
-                    ),
-                    (
-                        11,
-                        10,
-                    ),
-                    (
-                        11,
-                        0,
-                    ),
-                    (
-                        11,
-                        8,
-                    ),
-                    (
-                        11,
-                        0,
-                    ),
-                    (
-                        11,
-                        0,
-                    ),
-                    (
-                        11,
-                        0,
-                    ),
-                    (
-                        11,
-                        8,
-                    ),
-                    (
-                        12,
-                        0,
-                    ),
-                    (
-                        12,
-                        0,
-                    ),
-                    (
-                        12,
-                        0,
-                    ),
-                    (
-                        12,
-                        0,
-                    ),
-                ],
-                accept_states: {
-                    State(0): TokenId(
-                        0,
-                    ),
-                    State(1): TokenId(
-                        1,
-                    ),
-                    State(2): TokenId(
-                        2,
-                    ),
-                    State(3): TokenId(
                         3,
-                    ),
-                    State(4): TokenId(
-                        4,
-                    ),
-                    State(5): TokenId(
-                        5,
-                    ),
-                    State(6): TokenId(
-                        6,
-                    ),
-                    State(7): TokenId(
-                        8,
-                    ),
-                    State(8): TokenId(
+                        17,
+                        21,
+                    ],
+                    transitions: [
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            9,
+                            11,
+                        ),
+                        (
+                            7,
+                            8,
+                        ),
+                        (
+                            9,
+                            10,
+                        ),
+                        (
+                            7,
+                            8,
+                        ),
+                        (
+                            10,
+                            11,
+                        ),
+                        (
+                            7,
+                            8,
+                        ),
+                        (
+                            11,
+                            9,
+                        ),
+                        (
+                            7,
+                            8,
+                        ),
+                        (
+                            11,
+                            9,
+                        ),
+                        (
+                            10,
+                            0,
+                        ),
+                        (
+                            11,
+                            5,
+                        ),
+                        (
+                            11,
+                            6,
+                        ),
+                        (
+                            11,
+                            3,
+                        ),
+                        (
+                            11,
+                            1,
+                        ),
+                        (
+                            11,
+                            7,
+                        ),
+                        (
+                            11,
+                            2,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            4,
+                        ),
+                        (
+                            11,
+                            10,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            8,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            8,
+                        ),
+                        (
+                            12,
+                            0,
+                        ),
+                        (
+                            12,
+                            0,
+                        ),
+                        (
+                            12,
+                            0,
+                        ),
+                        (
+                            12,
+                            0,
+                        ),
+                    ],
+                    accept_states: {
+                        State(0): TokenId(
+                            0,
+                        ),
+                        State(1): TokenId(
+                            1,
+                        ),
+                        State(2): TokenId(
+                            2,
+                        ),
+                        State(3): TokenId(
+                            3,
+                        ),
+                        State(4): TokenId(
+                            4,
+                        ),
+                        State(5): TokenId(
+                            5,
+                        ),
+                        State(6): TokenId(
+                            6,
+                        ),
+                        State(7): TokenId(
+                            8,
+                        ),
+                        State(8): TokenId(
+                            9,
+                        ),
+                        State(9): TokenId(
+                            7,
+                        ),
+                        State(10): TokenId(
+                            7,
+                        ),
+                    },
+                },
+                char_intervals: [
+                    0,
+                    10,
+                    11,
+                    32,
+                    33,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44,
+                    45,
+                    46,
+                    47,
+                    48,
+                    58,
+                    65,
+                    91,
+                    95,
+                    96,
+                    97,
+                    123,
+                ],
+                skip: {
+                    TokenId(
                         9,
-                    ),
-                    State(9): TokenId(
-                        7,
-                    ),
-                    State(10): TokenId(
-                        7,
                     ),
                 },
             },
-            char_intervals: [
-                0,
-                10,
-                11,
-                32,
-                33,
-                40,
-                41,
-                42,
-                43,
-                44,
-                45,
-                46,
-                47,
-                48,
-                58,
-                65,
-                91,
-                95,
-                96,
-                97,
-                123,
-            ],
-            tokens: {TokenId(0) <> "PLUS", TokenId(1) <> "MINUS", TokenId(2) <> "MUL", TokenId(3) <> "DIV", TokenId(4) <> "LPAREN", TokenId(5) <> "RPAREN", TokenId(6) <> "COMMA", TokenId(7) <> "NUMBER", TokenId(8) <> "IDENT"},
-        },
+        ),
+        tokens: {TokenId(0) <> "PLUS", TokenId(1) <> "MINUS", TokenId(2) <> "MUL", TokenId(3) <> "DIV", TokenId(4) <> "LPAREN", TokenId(5) <> "RPAREN", TokenId(6) <> "COMMA", TokenId(7) <> "NUMBER", TokenId(8) <> "IDENT"},
+        user_code: [],
     },
 )

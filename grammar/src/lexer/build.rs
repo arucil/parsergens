@@ -7,11 +7,10 @@ use super::{Lexer, TokenId, LexerError, TokenIdGen};
 use super::util;
 use crate::{Set, BiMap};
 
-pub fn build(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Lexer, LexerError> {
-  if decls.is_empty() {
-    return Err(LexerError::NoTokens);
-  }
-
+pub fn build(
+  decls: &[TokenDecl],
+  skips: &[SkipDecl]
+) -> Result<(Lexer, BiMap<TokenId, String>), LexerError> {
   validate_decls(decls, skips)?;
 
   let char_intervals = compute_char_intervals(decls, skips);
@@ -20,6 +19,7 @@ pub fn build(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Lexer, LexerEr
   let start = nfa_builder.state();
   let mut token_gen = TokenIdGen::default();
   let mut tokens = BiMap::new();
+  let mut skip = Set::new();
 
   for decl in decls {
     let accept = add_regex_to_nfa(
@@ -36,17 +36,20 @@ pub fn build(decls: &[&TokenDecl], skips: &[&SkipDecl]) -> Result<Lexer, LexerEr
     let token = token_gen.gen();
 
     nfa_builder.accept(accept, decl.pattern.source.0 .0, token);
+    skip.insert(token);
   }
 
   let nfa = nfa_builder.build();
   let dfa = nfa.to_dfa(start).minimize();
   let dfa = dfa.into();
 
-  Ok(Lexer {
+  let lexer = Lexer {
     dfa,
     char_intervals,
-    tokens,
-  })
+    skip,
+  };
+
+  Ok((lexer, tokens))
 }
 
 fn add_regex_to_nfa(
@@ -199,8 +202,8 @@ fn add_intervals_to_nfa(
 }
 
 fn compute_char_intervals(
-  decls: &[&TokenDecl],
-  skips: &[&SkipDecl]
+  decls: &[TokenDecl],
+  skips: &[SkipDecl]
 ) -> Vec<u32> {
   let mut char_intervals = BTreeSet::new();
   char_intervals.insert(0);
@@ -263,8 +266,8 @@ fn collect_char_class_intervals(class: &CharClass, intervals: &mut BTreeSet<u32>
 }
 
 fn validate_decls(
-  decls: &[&TokenDecl],
-  skips: &[&SkipDecl]
+  decls: &[TokenDecl],
+  skips: &[SkipDecl]
 ) -> Result<(), LexerError> {
   for decl in decls {
     if regex_accepts_empty_string(&decl.pattern.regex) {
@@ -333,7 +336,7 @@ mod tests {
 
     let decls = ast.iter()
       .filter_map(|decl| match &decl.1 {
-        Decl::Token(decl) => Some(decl),
+        Decl::Token(decl) => Some(decl.clone()),
         _ => None,
       })
       .collect::<Vec<_>>();
@@ -370,7 +373,7 @@ mod tests {
 
     let decls = ast.iter()
       .filter_map(|decl| match &decl.1 {
-        Decl::Token(decl) => Some(decl),
+        Decl::Token(decl) => Some(decl.clone()),
         _ => None,
       })
       .collect::<Vec<_>>();
@@ -407,7 +410,7 @@ mod tests {
 
     let decls = ast.iter()
       .filter_map(|decl| match &decl.1 {
-        Decl::Token(decl) => Some(decl),
+        Decl::Token(decl) => Some(decl.clone()),
         _ => None,
       })
       .collect::<Vec<_>>();

@@ -5,10 +5,10 @@ expression: result
 [
     Ok(
         (
-            1,
+            0,
             Token {
                 kind: Separator,
-                text: "",
+                text: "\n",
             },
             1,
         ),
@@ -55,10 +55,10 @@ expression: result
     ),
     Ok(
         (
-            16,
+            15,
             Token {
-                kind: Colon,
-                text: ":",
+                kind: Arrow,
+                text: "->",
             },
             17,
         ),
@@ -105,10 +105,10 @@ expression: result
     ),
     Ok(
         (
-            35,
+            23,
             Token {
                 kind: Separator,
-                text: "          ",
+                text: "\n          \n          ",
             },
             45,
         ),
@@ -125,12 +125,12 @@ expression: result
     ),
     Ok(
         (
-            51,
+            46,
             Token {
                 kind: Leave,
                 text: "",
             },
-            51,
+            46,
         ),
     ),
     Ok(
@@ -145,10 +145,10 @@ expression: result
     ),
     Ok(
         (
-            53,
+            52,
             Token {
                 kind: Separator,
-                text: "  ",
+                text: "\n  ",
             },
             55,
         ),
@@ -165,12 +165,12 @@ expression: result
     ),
     Ok(
         (
-            64,
+            59,
             Token {
                 kind: Leave,
                 text: "",
             },
-            64,
+            59,
         ),
     ),
 ]

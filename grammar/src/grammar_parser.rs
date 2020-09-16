@@ -11,6 +11,7 @@ lalrpop_mod!(pub grammar, "/grammar_parser/grammar.rs");
 pub enum UserParseError {
   LexError(lex::LexError),
   RegexError(regex::RegexError),
+  MissingType((usize, usize)),
 }
 
 pub fn parse(
