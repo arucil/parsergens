@@ -148,19 +148,47 @@ impl<'a> Lexer<'a> {
     }
 
     let mut rbrace_left = lbrace_num;
+    let mut lbrace_left = lbrace_num;
+    let mut nest = 1;
     loop {
-      if let Some((_, '}')) = self.chars.peek() {
-        rbrace_left -= 1;
-        self.advance();
-      } else if rbrace_left == 0 {
-        let end = self.chars.peek().map(|&(i, _)| i).unwrap_or(self.input.len());
-        break self.gen_token(TokenKind::CodeBlock, start, end);
-      } else if self.chars.next().is_some() {
-        rbrace_left = lbrace_num;
-      } else {
-        break self.gen_error(
-          LexErrorKind::UnclosedCodeBlock, start, self.input.len());
+      let c = self.chars.peek().map(|(_, c)| *c);
+
+      if c != Some('}') && rbrace_left == 0 {
+        nest -= 1;
+        if nest == 0 {
+          let end = self.chars.peek().map(|&(i, _)| i).unwrap_or(self.input.len());
+          break self.gen_token(TokenKind::CodeBlock, start, end);
+        }
       }
+
+      if c != Some('{') && lbrace_left == 0 {
+        nest += 1;
+      }
+
+      match self.chars.peek() {
+        Some((_, '}')) => {
+          rbrace_left -= 1;
+          lbrace_left = lbrace_num;
+          self.advance();
+          continue;
+        }
+        Some((_, '{')) => {
+          lbrace_left -= 1;
+          rbrace_left = lbrace_num;
+          self.advance();
+          continue;
+        }
+        Some(_) => {
+          self.advance();
+        }
+        None => {
+          break self.gen_error(
+            LexErrorKind::UnclosedCodeBlock, start, self.input.len());
+        }
+      }
+
+      lbrace_left = lbrace_num;
+      rbrace_left = lbrace_num;
     }
   }
 
@@ -348,6 +376,15 @@ mod tests {
 { // not comment }  {{ } not end }}
   {{{ }} }} } }}}
    {{}}}} }}"#).collect::<Vec<_>>();
+
+    assert_debug_snapshot!(result);
+  }
+
+  #[test]
+  fn code_block_nested() {
+    let result = Lexer::new(r#"
+{ {}{1} }
+   {{ {{{ {{ {{.}} }} {{{{} }}"#).collect::<Vec<_>>();
 
     assert_debug_snapshot!(result);
   }

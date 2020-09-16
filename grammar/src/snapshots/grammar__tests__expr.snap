@@ -121,7 +121,9 @@ Ok(
                         ),
                     ),
                 ],
-                action: None,
+                action: Some(
+                    "$1.parse::<f64>().unwrap()",
+                ),
             },
             Rule {
                 nt: NonterminalId(
@@ -144,7 +146,9 @@ Ok(
                         ),
                     ),
                 ],
-                action: None,
+                action: Some(
+                    "$2",
+                ),
             },
             Rule {
                 nt: NonterminalId(
@@ -257,7 +261,9 @@ Ok(
                 1,
             ): NonterminalMetadata {
                 range: 5..10,
-                ty: None,
+                ty: Some(
+                    "Expr",
+                ),
             },
             NonterminalId(
                 2,

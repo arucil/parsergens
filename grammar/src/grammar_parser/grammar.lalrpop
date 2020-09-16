@@ -135,7 +135,8 @@ spanned<T>: Spanned<String> = <l:@L> <x:T> <r:@L> => Spanned((l, r), x.text.to_o
 ident = spanned<Ident>;
 string = spanned<String>;
 regex = spanned<Regex>;
-code_block = spanned<CodeBlock>;
+code_block: Spanned<String> = <spanned<CodeBlock>> =>
+  Spanned(<>.0, <>.1.trim_start_matches('{').trim_end_matches('}').trim().to_owned());
 
 extern {
   type Location = usize;

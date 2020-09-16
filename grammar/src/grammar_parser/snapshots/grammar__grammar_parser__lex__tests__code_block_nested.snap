@@ -1,0 +1,36 @@
+---
+source: grammar/src/grammar_parser/lex.rs
+expression: result
+---
+[
+    Ok(
+        (
+            0,
+            Token {
+                kind: Separator,
+                text: "\n",
+            },
+            1,
+        ),
+    ),
+    Ok(
+        (
+            1,
+            Token {
+                kind: CodeBlock,
+                text: "{ {}{1} }",
+            },
+            10,
+        ),
+    ),
+    Ok(
+        (
+            14,
+            Token {
+                kind: CodeBlock,
+                text: "{{ {{{ {{ {{.}} }} {{{{} }}",
+            },
+            41,
+        ),
+    ),
+]

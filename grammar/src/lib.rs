@@ -411,9 +411,9 @@ expr = expr PLUS expr
   | expr DIV expr
   | factor
 
-factor =
-    NUMBER
-  | LPAREN expr RPAREN
+factor: {Expr} =
+    NUMBER   { $1.parse::<f64>().unwrap() }
+  | LPAREN expr RPAREN { $2 }
   | MINUS factor
   | IDENT
   | IDENT LPAREN param-list RPAREN
