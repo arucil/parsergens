@@ -36,6 +36,7 @@ pub fn augment(grammar: LoweredGrammar) -> (LoweredGrammar, TokenId) {
         Symbol::Nonterminal(nt),
         Symbol::Token(eof_token),
       ],
+      prec: None,
       action: None,
     });
 

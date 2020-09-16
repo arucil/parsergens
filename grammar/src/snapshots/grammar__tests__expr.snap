@@ -26,6 +26,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: None,
             },
             Rule {
@@ -49,6 +50,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: None,
             },
             Rule {
@@ -72,6 +74,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: None,
             },
             Rule {
@@ -95,6 +98,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: None,
             },
             Rule {
@@ -108,6 +112,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: None,
             },
             Rule {
@@ -121,6 +126,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: Some(
                     "$1.parse::<f64>().unwrap()",
                 ),
@@ -146,6 +152,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: Some(
                     "$2",
                 ),
@@ -166,6 +173,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: None,
             },
             Rule {
@@ -179,6 +187,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: None,
             },
             Rule {
@@ -207,6 +216,7 @@ Ok(
                         ),
                     ),
                 ],
+                prec: None,
                 action: None,
             },
             Rule {
@@ -214,6 +224,7 @@ Ok(
                     2,
                 ),
                 items: [],
+                prec: None,
                 action: None,
             },
             Rule {
@@ -241,6 +252,7 @@ Ok(
                         ],
                     ),
                 ],
+                prec: None,
                 action: None,
             },
         ],

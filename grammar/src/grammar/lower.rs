@@ -20,6 +20,7 @@ pub struct Production {
   pub nt: NonterminalId,
   pub kind: ProductionKind,
   pub symbols: Vec<Symbol>,
+  pub prec: Option<u32>,
   pub action: Option<String>,
 }
 
@@ -74,17 +75,19 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
     for rule in &grammar.rules[meta.range] {
       rules.push((
         lower_items(&rule.items, &mut lowered, &mut nt_id_gen),
+        rule.prec,
         rule.action.clone()
       ));
     }
 
     let start = lowered.prods.len();
 
-    for (symbols, action) in rules {
+    for (symbols, prec, action) in rules {
       lowered.prods.push(Production {
         nt,
         kind: ProductionKind::Ordinary,
         symbols,
+        prec,
         action,
       });
     }
@@ -123,12 +126,14 @@ fn lower_items(
           nt,
           kind: ProductionKind::Ordinary,
           symbols: vec![],
+          prec: None,
           action: None,
         });
         lowered.prods.push(Production {
           nt,
           kind: ProductionKind::Ordinary,
           symbols,
+          prec: None,
           action: None,
         });
 
@@ -153,6 +158,7 @@ fn lower_items(
           nt,
           kind: ProductionKind::RepetitionFirst,
           symbols: vec![],
+          prec: None,
           action: None,
         });
 
@@ -161,6 +167,7 @@ fn lower_items(
           nt,
           kind: ProductionKind::RepetitionRest,
           symbols,
+          prec: None,
           action: None,
         });
 
@@ -185,6 +192,7 @@ fn lower_items(
           nt,
           kind: ProductionKind::RepetitionFirst,
           symbols: symbols.clone(),
+          prec: None,
           action: None,
         });
 
@@ -193,6 +201,7 @@ fn lower_items(
           nt,
           kind: ProductionKind::RepetitionRest,
           symbols,
+          prec: None,
           action: None,
         });
 

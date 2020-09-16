@@ -21,6 +21,7 @@ decl: Option<Spanned<Decl>> = {
   <l:@L> <decl:ext_token_decl> <r:@L> => Some(Spanned((l, r), Decl::ExtToken(decl))),
   <l:@L> <decl:skip_decl> <r:@L> => Some(Spanned((l, r), Decl::Skip(decl))),
   <l:@L> <decl:user_decl> <r:@L> => Some(Spanned((l, r), Decl::User(decl))),
+  <l:@L> <decl:assoc_decl> <r:@L> => Some(Spanned((l, r), Decl::Assoc(decl))),
 };
 
 rule_decl: RuleDecl =
@@ -41,11 +42,12 @@ rule_decl: RuleDecl =
   }; 
 
 production: Spanned<RuleAlt> = {
-  <l:@L> <terms:term+> <action:code_block?> <r:@L> =>
+  <l:@L> <terms:term+> <prec:(Percent Prec <ident>)?> <action:code_block?> <r:@L> =>
     Spanned(
       (l, r),
       RuleAlt {
         terms: RuleAltTerms::Terms(terms),
+        prec,
         action,
       }
     ),
@@ -54,6 +56,7 @@ production: Spanned<RuleAlt> = {
       (l, r),
       RuleAlt {
         terms: RuleAltTerms::Epsilon,
+        prec: None,
         action,
       }
     ),
@@ -104,6 +107,20 @@ user_decl: UserDecl = Percent User <code:code_block>
     }
   };
 
+assoc_decl: AssocDecl = Percent <assoc:assoc> <name:ident>
+  => {
+    AssocDecl {
+      name,
+      assoc,
+    }
+  };
+
+assoc: Spanned<Associativity> = {
+  <l:@L> LeftAssoc <r:@L> => Spanned((l, r), Associativity::LeftAssoc),
+  <l:@L> RightAssoc <r:@L> => Spanned((l, r), Associativity::RightAssoc),
+  <l:@L> NonAssoc <r:@L> => Spanned((l, r), Associativity::NonAssoc),
+}
+
 token_pattern: TokenPattern = {
   <regex:regex> =>? regex::parse_regex(
     &regex.1[1..regex.1.len() - 1],
@@ -147,6 +164,10 @@ extern {
     Token => lex::Token { kind: lex::TokenKind::Token, .. },
     Skip => lex::Token { kind: lex::TokenKind::Skip, .. },
     User => lex::Token { kind: lex::TokenKind::User, .. },
+    LeftAssoc => lex::Token { kind: lex::TokenKind::LeftAssoc, .. },
+    RightAssoc => lex::Token { kind: lex::TokenKind::RightAssoc, .. },
+    NonAssoc => lex::Token { kind: lex::TokenKind::NonAssoc, .. },
+    Prec => lex::Token { kind: lex::TokenKind::Prec, .. },
 
     Ident => lex::Token { kind: lex::TokenKind::Ident, .. },
     Regex => lex::Token { kind: lex::TokenKind::Regex, .. },
