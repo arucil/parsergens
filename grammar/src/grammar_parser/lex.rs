@@ -58,9 +58,10 @@ pub struct Lexer<'a> {
   input: &'a str,
   chars: Peekable<CharIndices<'a>>,
   layout_stack: Vec<usize>,
-  layout_base_indent: Option<usize>,
+  layout_base: Option<(usize, usize)>,
   buffer: VecDeque<<Self as Iterator>::Item>,
   cur_line_indent: usize,
+  column: usize,
   bol: bool,
 }
 
@@ -70,20 +71,22 @@ impl<'a> Lexer<'a> {
       input,
       chars: input.char_indices().peekable(),
       layout_stack: vec![],
-      layout_base_indent: None,
+      layout_base: None,
       buffer: VecDeque::new(),
       cur_line_indent: 0,
+      column: 0,
       bol: true,
     }
   }
 
   fn advance(&mut self) -> Option<(usize, char)> {
+    self.column += 1;
     self.chars.next()
   }
 
   fn gen_token(&mut self, kind: TokenKind, start: usize, end: usize) {
     if kind.is_layout_start() {
-      self.layout_base_indent = Some(self.cur_line_indent);
+      self.layout_base = Some((self.cur_line_indent, end));
     }
 
     let token = Token {
@@ -121,7 +124,6 @@ impl<'a> Lexer<'a> {
           end += t + 1;
         }
         Some((k, c)) if c == quote && unescaped => {
-          self.advance();
           break self.gen_token(kind, start, k + 1);
         }
         Some((_, '\n')) | None => {
@@ -136,23 +138,33 @@ impl<'a> Lexer<'a> {
   }
 
   fn gen_tokens(&mut self) -> Option<()> {
-    self.chars.peek()?;
+    let i = self.chars.peek().map(|&(i, _)| i).unwrap_or(self.input.len());
 
     // skip whitespace
     while let Some(&(_, c@(' ' | '\n'))) = self.chars.peek() {
+      self.advance();
       if c == '\n' {
         self.bol = true;
         self.cur_line_indent = 0;
+        self.column = 0;
       } else {
         self.cur_line_indent += 1;
       }
-      self.advance();
     }
 
-    // TODO pop all layout at EOF
-    // FIXME BOF should not emit Separator
-
-    let (j, c) = self.advance()?;
+    let (j, c) = if let Some(x) = self.advance() {
+      x
+    } else {
+      // pop all layout on EOF
+      while self.layout_stack.pop().is_some() {
+        self.gen_token(TokenKind::Leave, i, i);
+      }
+      if self.buffer.is_empty() {
+        return None;
+      } else {
+        return Some(());
+      }
+    };
 
     // skip comment
     if j + 2 <= self.input.len() && &self.input[j..j + 2] == "//" {
@@ -166,35 +178,36 @@ impl<'a> Lexer<'a> {
       }
     }
 
-    if let Some(base_indent) = self.layout_base_indent.take() {
-      let start = j - self.cur_line_indent;
+    if let Some((base_indent, start)) = self.layout_base.take() {
       let end = j;
 
-      if self.cur_line_indent > base_indent {
-        self.layout_stack.push(self.cur_line_indent);
+      if self.column - 1 > base_indent {
+        self.layout_stack.push(self.column - 1);
 
         self.gen_token(TokenKind::Enter, start, end);
       } else {
         self.gen_error(LexErrorKind::InvalidIndent, start, end);
       }
     } else if self.bol {
-      self.bol = false;
-
       while let Some(&indent) = self.layout_stack.last() {
         if self.cur_line_indent >= indent {
           break;
         }
+        self.layout_stack.pop();
+        self.gen_token(TokenKind::Leave, i, i);
       }
 
       let base_indent = self.layout_stack.last().cloned().unwrap_or(0);
       if self.cur_line_indent == base_indent {
-        let start = j - self.cur_line_indent;
+        let start = i;
         let end = j;
         self.gen_token(TokenKind::Separator, start, end);
       } else {
         // do nothing
       }
     }
+
+    self.bol = false;
 
     match c {
       '/' => {
@@ -213,6 +226,14 @@ impl<'a> Lexer<'a> {
       '?' => self.single_char_token(TokenKind::QuestionMark, j),
       '(' => self.single_char_token(TokenKind::LParen, j),
       ')' => self.single_char_token(TokenKind::RParen, j),
+      '-' => {
+        if let Some((_, '>')) = self.chars.peek() {
+          self.advance();
+          self.gen_token(TokenKind::Arrow, j, j + 2);
+        } else {
+          self.gen_error(LexErrorKind::InvalidChar, j, j + 1);
+        }
+      }
       _ if c.is_ascii_alphabetic() || c == '\'' => {
         let mut last = j;
         loop {
@@ -239,10 +260,7 @@ impl<'a> Lexer<'a> {
         self.gen_token(kind, j, last + 1);
       }
       _ => {
-        self.buffer.push_back(Err(UserParseError::LexError(LexError {
-          kind: LexErrorKind::InvalidChar,
-          span: (j, j + c.len_utf8()),
-        })));
+        self.gen_error(LexErrorKind::InvalidChar, j, j + c.len_utf8());
       }
     }
 
@@ -270,7 +288,7 @@ impl<'a> Display for Token<'a> {
 impl TokenKind {
   fn is_layout_start(&self) -> bool {
     match self {
-      Self::Colon => true,
+      Self::Colon | Self::Arrow => true,
       _ => false,
     }
   }
@@ -283,12 +301,55 @@ mod tests {
 
   #[test]
   fn tokens() {
-    let result = Lexer::new(r#"
-%% web /\d+\\[0-9]\//  //12345
+    let result = Lexer::new(r#"%% web /\d+\\[0-9]\//  //12345
     | token,start  
 
   =  ( Ax3_ ) "abcdef" foo-bar''
    
+    "#).collect::<Vec<_>>();
+
+    assert_debug_snapshot!(result);
+  }
+
+  #[test]
+  fn layout_nested() {
+    let result = Lexer::new(r#"
+foo ->
+  "bar" : ( = )
+          
+          %
+    +
+  * //
+    "#).collect::<Vec<_>>();
+
+    assert_debug_snapshot!(result);
+  }
+
+  #[test]
+  fn layout_multiple() {
+    let result = Lexer::new(r#"
+-> -> -> foo
+         bar ()
+      baz
+   qux
+lorem
+  ipsum
+ dolor
+
+:
+    sit
+    amet
+    "#).collect::<Vec<_>>();
+
+    assert_debug_snapshot!(result);
+  }
+
+  #[test]
+  fn separator_toplevel() {
+    let result = Lexer::new(r#"
+foo( )
+bar "a"
+baz
     "#).collect::<Vec<_>>();
 
     assert_debug_snapshot!(result);

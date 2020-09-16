@@ -7,8 +7,18 @@ expression: result
         (
             0,
             Token {
-                kind: Newline,
-                text: "\n",
+                kind: Separator,
+                text: "",
+            },
+            0,
+        ),
+    ),
+    Ok(
+        (
+            0,
+            Token {
+                kind: Percent,
+                text: "%",
             },
             1,
         ),
@@ -25,202 +35,122 @@ expression: result
     ),
     Ok(
         (
-            2,
-            Token {
-                kind: Percent,
-                text: "%",
-            },
             3,
-        ),
-    ),
-    Ok(
-        (
-            4,
             Token {
                 kind: Ident,
                 text: "web",
             },
-            7,
+            6,
         ),
     ),
     Ok(
         (
-            8,
+            7,
             Token {
                 kind: Regex,
                 text: "/\\d+\\\\[0-9]\\//",
             },
-            22,
+            21,
         ),
     ),
     Ok(
         (
-            31,
-            Token {
-                kind: Newline,
-                text: "\n",
-            },
-            32,
-        ),
-    ),
-    Ok(
-        (
-            32,
-            Token {
-                kind: Indent,
-                text: "    ",
-            },
-            36,
-        ),
-    ),
-    Ok(
-        (
-            36,
+            35,
             Token {
                 kind: Or,
                 text: "|",
             },
-            37,
+            36,
         ),
     ),
     Ok(
         (
-            38,
+            37,
             Token {
                 kind: Token,
                 text: "token",
             },
-            43,
+            42,
         ),
     ),
     Ok(
         (
-            43,
+            42,
             Token {
                 kind: Comma,
                 text: ",",
             },
-            44,
+            43,
         ),
     ),
     Ok(
         (
-            44,
+            43,
             Token {
                 kind: Start,
                 text: "start",
             },
-            49,
+            48,
         ),
     ),
     Ok(
         (
-            51,
-            Token {
-                kind: Newline,
-                text: "\n",
-            },
-            52,
-        ),
-    ),
-    Ok(
-        (
-            52,
-            Token {
-                kind: Newline,
-                text: "\n",
-            },
-            53,
-        ),
-    ),
-    Ok(
-        (
-            53,
-            Token {
-                kind: Indent,
-                text: "  ",
-            },
-            55,
-        ),
-    ),
-    Ok(
-        (
-            55,
+            54,
             Token {
                 kind: Assign,
                 text: "=",
             },
-            56,
+            55,
         ),
     ),
     Ok(
         (
-            58,
+            57,
             Token {
                 kind: LParen,
                 text: "(",
             },
-            59,
+            58,
         ),
     ),
     Ok(
         (
-            60,
+            59,
             Token {
                 kind: Ident,
                 text: "Ax3_",
             },
-            64,
+            63,
         ),
     ),
     Ok(
         (
-            65,
+            64,
             Token {
                 kind: RParen,
                 text: ")",
             },
-            66,
+            65,
         ),
     ),
     Ok(
         (
-            67,
+            66,
             Token {
                 kind: String,
                 text: "\"abcdef\"",
             },
-            75,
+            74,
         ),
     ),
     Ok(
         (
-            76,
+            75,
             Token {
                 kind: Ident,
                 text: "foo-bar\'\'",
             },
-            85,
-        ),
-    ),
-    Ok(
-        (
-            85,
-            Token {
-                kind: Newline,
-                text: "\n",
-            },
-            86,
-        ),
-    ),
-    Ok(
-        (
-            89,
-            Token {
-                kind: Newline,
-                text: "\n",
-            },
-            90,
+            84,
         ),
     ),
 ]

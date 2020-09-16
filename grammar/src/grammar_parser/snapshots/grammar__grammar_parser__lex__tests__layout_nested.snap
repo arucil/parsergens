@@ -1,0 +1,176 @@
+---
+source: grammar/src/grammar_parser/lex.rs
+expression: result
+---
+[
+    Ok(
+        (
+            1,
+            Token {
+                kind: Separator,
+                text: "",
+            },
+            1,
+        ),
+    ),
+    Ok(
+        (
+            1,
+            Token {
+                kind: Ident,
+                text: "foo",
+            },
+            4,
+        ),
+    ),
+    Ok(
+        (
+            5,
+            Token {
+                kind: Arrow,
+                text: "->",
+            },
+            7,
+        ),
+    ),
+    Ok(
+        (
+            7,
+            Token {
+                kind: Enter,
+                text: "\n  ",
+            },
+            10,
+        ),
+    ),
+    Ok(
+        (
+            10,
+            Token {
+                kind: String,
+                text: "\"bar\"",
+            },
+            15,
+        ),
+    ),
+    Ok(
+        (
+            16,
+            Token {
+                kind: Colon,
+                text: ":",
+            },
+            17,
+        ),
+    ),
+    Ok(
+        (
+            17,
+            Token {
+                kind: Enter,
+                text: " ",
+            },
+            18,
+        ),
+    ),
+    Ok(
+        (
+            18,
+            Token {
+                kind: LParen,
+                text: "(",
+            },
+            19,
+        ),
+    ),
+    Ok(
+        (
+            20,
+            Token {
+                kind: Assign,
+                text: "=",
+            },
+            21,
+        ),
+    ),
+    Ok(
+        (
+            22,
+            Token {
+                kind: RParen,
+                text: ")",
+            },
+            23,
+        ),
+    ),
+    Ok(
+        (
+            35,
+            Token {
+                kind: Separator,
+                text: "          ",
+            },
+            45,
+        ),
+    ),
+    Ok(
+        (
+            45,
+            Token {
+                kind: Percent,
+                text: "%",
+            },
+            46,
+        ),
+    ),
+    Ok(
+        (
+            51,
+            Token {
+                kind: Leave,
+                text: "",
+            },
+            51,
+        ),
+    ),
+    Ok(
+        (
+            51,
+            Token {
+                kind: Plus,
+                text: "+",
+            },
+            52,
+        ),
+    ),
+    Ok(
+        (
+            53,
+            Token {
+                kind: Separator,
+                text: "  ",
+            },
+            55,
+        ),
+    ),
+    Ok(
+        (
+            55,
+            Token {
+                kind: Asterisk,
+                text: "*",
+            },
+            56,
+        ),
+    ),
+    Ok(
+        (
+            64,
+            Token {
+                kind: Leave,
+                text: "",
+            },
+            64,
+        ),
+    ),
+]

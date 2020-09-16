@@ -7,7 +7,7 @@ use super::regex;
 #[LALR]
 grammar<'input>(input: &'input str);
 
-pub Document: Grammar = <decl*>
+pub Document: Grammar = (Separator <decl>)*
   => {
     <>.into_iter()
       .filter_map(|x| x)
@@ -22,7 +22,7 @@ decl: Option<Spanned<Decl>> = {
 };
 
 rule_decl: RuleDecl =
-  <name:ident> Assign <alt1:production> <mut alts:(Or <production>)*> Separator
+  <name:ident> Assign <alt1:production> <mut alts:(Or <production>)*>
   => {
     alts.insert(0, alt1);
     RuleDecl {
@@ -45,7 +45,7 @@ term: Term = {
   LParen <terms:term+> RParen Plus => Term::Many1(terms),
 }
 
-start_decl: StartDecl = Percent Start <name:ident> Separator
+start_decl: StartDecl = Percent Start <name:ident>
   => {
     StartDecl {
       name,
@@ -118,9 +118,11 @@ extern {
     LParen => lex::Token { kind: lex::TokenKind::LParen, .. },
     RParen => lex::Token { kind: lex::TokenKind::RParen, .. },
     Comma => lex::Token { kind: lex::TokenKind::Comma, .. },
+    Colon => lex::Token { kind: lex::TokenKind::Colon, .. },
     Asterisk => lex::Token { kind: lex::TokenKind::Asterisk, .. },
     QuestionMark => lex::Token { kind: lex::TokenKind::QuestionMark, .. },
     Plus => lex::Token { kind: lex::TokenKind::Plus, .. },
+    Arrow => lex::Token { kind: lex::TokenKind::Arrow, .. },
 
     Enter => lex::Token { kind: lex::TokenKind::Enter, .. },
     Leave => lex::Token { kind: lex::TokenKind::Leave, .. },

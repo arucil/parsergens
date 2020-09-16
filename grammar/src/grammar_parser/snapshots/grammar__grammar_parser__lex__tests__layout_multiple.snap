@@ -1,0 +1,306 @@
+---
+source: grammar/src/grammar_parser/lex.rs
+expression: result
+---
+[
+    Ok(
+        (
+            0,
+            Token {
+                kind: Separator,
+                text: "\n",
+            },
+            1,
+        ),
+    ),
+    Ok(
+        (
+            1,
+            Token {
+                kind: Arrow,
+                text: "->",
+            },
+            3,
+        ),
+    ),
+    Ok(
+        (
+            3,
+            Token {
+                kind: Enter,
+                text: " ",
+            },
+            4,
+        ),
+    ),
+    Ok(
+        (
+            4,
+            Token {
+                kind: Arrow,
+                text: "->",
+            },
+            6,
+        ),
+    ),
+    Ok(
+        (
+            6,
+            Token {
+                kind: Enter,
+                text: " ",
+            },
+            7,
+        ),
+    ),
+    Ok(
+        (
+            7,
+            Token {
+                kind: Arrow,
+                text: "->",
+            },
+            9,
+        ),
+    ),
+    Ok(
+        (
+            9,
+            Token {
+                kind: Enter,
+                text: " ",
+            },
+            10,
+        ),
+    ),
+    Ok(
+        (
+            10,
+            Token {
+                kind: Ident,
+                text: "foo",
+            },
+            13,
+        ),
+    ),
+    Ok(
+        (
+            13,
+            Token {
+                kind: Separator,
+                text: "\n         ",
+            },
+            23,
+        ),
+    ),
+    Ok(
+        (
+            23,
+            Token {
+                kind: Ident,
+                text: "bar",
+            },
+            26,
+        ),
+    ),
+    Ok(
+        (
+            27,
+            Token {
+                kind: LParen,
+                text: "(",
+            },
+            28,
+        ),
+    ),
+    Ok(
+        (
+            28,
+            Token {
+                kind: RParen,
+                text: ")",
+            },
+            29,
+        ),
+    ),
+    Ok(
+        (
+            29,
+            Token {
+                kind: Leave,
+                text: "",
+            },
+            29,
+        ),
+    ),
+    Ok(
+        (
+            29,
+            Token {
+                kind: Separator,
+                text: "\n      ",
+            },
+            36,
+        ),
+    ),
+    Ok(
+        (
+            36,
+            Token {
+                kind: Ident,
+                text: "baz",
+            },
+            39,
+        ),
+    ),
+    Ok(
+        (
+            39,
+            Token {
+                kind: Leave,
+                text: "",
+            },
+            39,
+        ),
+    ),
+    Ok(
+        (
+            39,
+            Token {
+                kind: Separator,
+                text: "\n   ",
+            },
+            43,
+        ),
+    ),
+    Ok(
+        (
+            43,
+            Token {
+                kind: Ident,
+                text: "qux",
+            },
+            46,
+        ),
+    ),
+    Ok(
+        (
+            46,
+            Token {
+                kind: Leave,
+                text: "",
+            },
+            46,
+        ),
+    ),
+    Ok(
+        (
+            46,
+            Token {
+                kind: Separator,
+                text: "\n",
+            },
+            47,
+        ),
+    ),
+    Ok(
+        (
+            47,
+            Token {
+                kind: Ident,
+                text: "lorem",
+            },
+            52,
+        ),
+    ),
+    Ok(
+        (
+            55,
+            Token {
+                kind: Ident,
+                text: "ipsum",
+            },
+            60,
+        ),
+    ),
+    Ok(
+        (
+            62,
+            Token {
+                kind: Ident,
+                text: "dolor",
+            },
+            67,
+        ),
+    ),
+    Ok(
+        (
+            67,
+            Token {
+                kind: Separator,
+                text: "\n\n",
+            },
+            69,
+        ),
+    ),
+    Ok(
+        (
+            69,
+            Token {
+                kind: Colon,
+                text: ":",
+            },
+            70,
+        ),
+    ),
+    Ok(
+        (
+            70,
+            Token {
+                kind: Enter,
+                text: "\n    ",
+            },
+            75,
+        ),
+    ),
+    Ok(
+        (
+            75,
+            Token {
+                kind: Ident,
+                text: "sit",
+            },
+            78,
+        ),
+    ),
+    Ok(
+        (
+            78,
+            Token {
+                kind: Separator,
+                text: "\n    ",
+            },
+            83,
+        ),
+    ),
+    Ok(
+        (
+            83,
+            Token {
+                kind: Ident,
+                text: "amet",
+            },
+            87,
+        ),
+    ),
+    Ok(
+        (
+            87,
+            Token {
+                kind: Leave,
+                text: "",
+            },
+            87,
+        ),
+    ),
+]
