@@ -1,0 +1,72 @@
+---
+source: lr/tests/slr.rs
+expression: "parse::parse(&parser, input, \"E\").join(\"\\n\")"
+---
+shift  12
+reduce E -> 12
+shift  +
+shift  3
+reduce E -> 3
+shift  *
+shift  x
+reduce E -> x
+reduce E -> E * E
+shift  /
+shift  5
+reduce E -> 5
+reduce E -> E / E
+reduce E -> E + E
+shift  -
+shift  50
+reduce E -> 50
+reduce E -> E - E
+shift  -
+shift  foo
+reduce E -> foo
+shift  ^
+shift  -
+shift  y
+reduce E -> y
+reduce E -> - E
+shift  ^
+shift  (
+shift  -
+shift  1
+reduce E -> 1
+reduce E -> - E
+shift  ==
+shift  f
+shift  (
+reduce ARGS ->
+shift  )
+reduce E -> f ( ARGS )
+shift  +
+shift  g
+shift  (
+shift  3
+reduce E -> 3
+shift  *
+shift  -
+shift  4
+reduce E -> 4
+reduce E -> - E
+reduce E -> E * E
+reduce (comma E)* ->
+shift  ,
+shift  (
+shift  p
+reduce E -> p
+shift  )
+reduce E -> ( E )
+reduce (comma E)* -> (comma E)* , E
+reduce ARGS -> E (comma E)*
+shift  )
+reduce E -> g ( ARGS )
+reduce E -> E + E
+reduce E -> E == E
+shift  )
+reduce E -> ( E )
+reduce E -> E ^ E
+reduce E -> E ^ E
+reduce E -> E - E
+accept

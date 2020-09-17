@@ -1,6 +1,8 @@
 use grammar::{ProductionKind, TokenId};
 
-mod build;
+pub mod slr;
+mod ffn;
+mod augment;
 
 #[cfg(not(debug_assertions))]
 type Map<K, V> = std::collections::HashMap<K, V>;
@@ -21,21 +23,21 @@ type BiMap<K, V> = bimap::BiHashMap<K, V>;
 type BiMap<K, V> = bimap::BiBTreeMap<K, V>;
 
 #[derive(Debug)]
-struct SlrParser {
+pub struct Parser {
   /// positive: shift (n - 1)  
   /// zero: error
   /// negative: reduce (-n - 1)
   /// MIN: accept
-  action: Vec<Vec<i32>>,
+  pub action: Vec<Vec<i32>>,
   /// positive: goto (n - 1)
   /// zero: error
-  goto: Vec<Vec<u32>>,
+  pub goto: Vec<Vec<u32>>,
   /// (length of RHS of the production, non-terminal id)
-  prods: Vec<(usize, u32, ProductionKind)>,
-  nt_names: Vec<String>,
+  pub prods: Vec<(usize, u32, ProductionKind)>,
+  pub nt_names: Vec<String>,
   /// (non-terminal name, starting state)
-  start: Map<String, u32>,
-  eof_index: usize,
-  lexer: Option<grammar::Lexer>,
-  tokens: BiMap<TokenId, String>,
+  pub start: Map<String, u32>,
+  pub eof_index: usize,
+  pub lexer: Option<grammar::Lexer>,
+  pub tokens: BiMap<TokenId, String>,
 }

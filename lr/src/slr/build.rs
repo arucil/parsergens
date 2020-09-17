@@ -4,11 +4,10 @@ use grammar::{
   GrammarError, TokenId, NonterminalId, NonterminalIdGen, LoweredGrammar, Symbol,
   Assoc,
 };
-use crate::{SlrParser, BiMap, Map};
-use ffn::Ffn;
-
-mod ffn;
-mod augment;
+use crate::{BiMap, Map, Parser};
+use crate::ffn::Ffn;
+use crate::ffn;
+use crate::augment;
 
 #[derive(Debug)]
 pub enum Error {
@@ -19,7 +18,7 @@ pub enum Error {
   AssocConflict,
 }
 
-pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
+pub fn build(input: &str) -> Result<Parser, Error> {
   let grammar = grammar::build(input).map_err(Error::GrammarError)?;
   let grammar = grammar.lower();
   let (grammar, eof_token) = augment::augment(grammar);
@@ -41,7 +40,7 @@ pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
     .map(|nt| grammar.nts.get_by_left(&nt).unwrap().clone())
     .collect();
 
-  Ok(SlrParser {
+  Ok(Parser {
     action,
     goto: builder.goto,
     prods,
@@ -90,7 +89,13 @@ impl<'a> Builder<'a> {
   fn build(&mut self) -> Result<(), Error> {
     for &start_nt in &self.grammar.start_nts {
       let start_state = self.start(start_nt)?;
-      let nt_name = self.grammar.nts.get_by_left(&start_nt).unwrap().clone();
+      let start_prod_ix = self.grammar.nt_metas[&start_nt].range.start;
+      let real_start_nt =
+        match self.grammar.prods[start_prod_ix].symbols[0] {
+          Symbol::Nonterminal(nt) => nt,
+          _ => unreachable!(),
+        };
+      let nt_name = self.grammar.nts.get_by_left(&real_start_nt).unwrap().clone();
       self.start.insert(nt_name, start_state);
     }
 
@@ -100,8 +105,8 @@ impl<'a> Builder<'a> {
   }
 
   fn resolve_conflicts(&mut self) -> Result<(), Error> {
-    for (state, tx) in &mut self.action {
-      for (token, ActionEntry { shift, reduce }) in tx {
+    for (_, tx) in &mut self.action {
+      for (_, ActionEntry { shift, reduce }) in tx {
         if let (&&mut Some(shift_state), &&mut Some(reduce_prod)) = (&shift, &reduce) {
           let (reduce_assoc, reduce_prec) = self.grammar.prods[reduce_prod as usize]
             .prec
@@ -524,4 +529,5 @@ E = E minus E    %prec ADD
 
     assert_debug_snapshot!(builder.action_goto());
   }
+
 }

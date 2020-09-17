@@ -1,5 +1,5 @@
 ---
-source: lr/src/build/ffn.rs
+source: lr/src/ffn.rs
 expression: ffn
 ---
 Ffn {
