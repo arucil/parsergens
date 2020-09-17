@@ -22,32 +22,22 @@ use grammar_parser::UserParseError;
 use lexer::LexerError;
 
 #[cfg(not(debug_assertions))]
-use std::collections::{HashMap, HashSet};
-#[cfg(not(debug_assertions))]
-use bimap::BiHashMap;
+pub type Map<K, V> = std::collections::HashMap<K, V>;
 
 #[cfg(debug_assertions)]
-use indexmap::{IndexMap, IndexSet};
-#[cfg(debug_assertions)]
-use bimap::BiBTreeMap;
+pub type Map<K, V> = indexmap::IndexMap<K, V>;
 
 #[cfg(not(debug_assertions))]
-type Map<K, V> = HashMap<K, V>;
+pub type BiMap<K, V> = bimap::BiHashMap<K, V>;
 
 #[cfg(debug_assertions)]
-type Map<K, V> = IndexMap<K, V>;
+pub type BiMap<K, V> = bimap::BiBTreeMap<K, V>;
 
 #[cfg(not(debug_assertions))]
-type BiMap<K, V> = BiHashMap<K, V>;
+pub type Set<K> = std::collections::HashSet<K>;
 
 #[cfg(debug_assertions)]
-type BiMap<K, V> = BiBTreeMap<K, V>;
-
-#[cfg(not(debug_assertions))]
-type Set<K> = HashSet<K>;
-
-#[cfg(debug_assertions)]
-type Set<K> = IndexSet<K>;
+pub type Set<K> = indexmap::IndexSet<K>;
 
 
 #[derive(Debug)]
