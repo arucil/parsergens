@@ -1,4 +1,3 @@
-use lr::Parser;
 use lr::slr;
 use insta::assert_snapshot;
 

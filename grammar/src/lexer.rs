@@ -5,6 +5,7 @@ use super::grammar_parser::regex::RegexError;
 use super::{BiMap, Set};
 
 pub use tokens::Tokens;
+pub use dfa::State;
 
 mod nfa;
 mod nfa_builder;

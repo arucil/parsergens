@@ -9,10 +9,10 @@ pub use super::dfa::State;
 
 #[derive(Debug)]
 pub struct TabularDfa<V> {
-  start: u32,
-  state_base: Vec<usize>,
-  transitions: Vec<(u32, u32)>,
-  accept_states: Map<State, V>,
+  pub start: u32,
+  pub state_base: Vec<usize>,
+  pub transitions: Vec<(u32, u32)>,
+  pub accept_states: Map<State, V>,
 }
 
 impl<V> TabularDfa<V> {

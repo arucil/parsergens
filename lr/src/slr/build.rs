@@ -34,21 +34,26 @@ pub fn build(input: &str) -> Result<Parser, Error> {
     (prod.symbols.len(), prod.nt.id(), prod.kind)
   }).collect();
 
-  let nt_names = (0..grammar.nts.len()).scan(
+  let nts = (0..grammar.nts.len()).scan(
     NonterminalIdGen::default(),
     |gen, _| Some(gen.gen()))
-    .map(|nt| grammar.nts.get_by_left(&nt).unwrap().clone())
+    .map(|nt| {
+      let name = grammar.nts.get_by_left(&nt).unwrap().clone();
+      let ty = grammar.nt_metas[&nt].ty.clone();
+      (name, ty)
+    })
     .collect();
 
   Ok(Parser {
     action,
     goto: builder.goto,
     prods,
-    nt_names,
+    nts,
     start: builder.start,
     eof_index: eof_token.id() as usize,
     lexer: grammar.lexer,
     tokens: grammar.tokens,
+    user_code: grammar.user_code,
   })
 }
 

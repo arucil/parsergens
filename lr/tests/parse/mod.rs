@@ -38,7 +38,7 @@ pub  fn parse<'a>(
       } else {
         stack[stack.len() - rhs_len].0
       };
-      let nt_name = &parser.nt_names[nt as usize];
+      let nt_name = &parser.nts[nt as usize].0;
 
       state = parser.goto[state0 as usize][nt as usize] - 1;
 

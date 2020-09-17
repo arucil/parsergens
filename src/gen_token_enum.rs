@@ -3,7 +3,7 @@ use quote::*;
 use syn::Ident;
 use heck::CamelCase;
 
-pub fn gen_token_enum(
+pub fn gen(
   tokens: &BiMap<TokenId, String>
 ) -> (impl ToTokens, Map<TokenId, Ident>) {
   let variants = tokens.iter().map(|(id, name)| {
@@ -18,6 +18,8 @@ pub fn gen_token_enum(
   });
 
   let e = quote! {
+    #[repr(u32)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum TokenKind {
       #(#variants),*
     }
