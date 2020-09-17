@@ -8,7 +8,7 @@ grammar:
 - [ ] non-terminal kind: anonymous (merge children into parent)
 - [ ] alt operator in production
 - [x] identifier support ' -, remove support of _
-- [ ] semantic action (plus user import part)
+- [x] semantic action (plus user import part)
 - [ ] function non-terminal
 - [x] move 'lower' to method of Grammar
 - [ ] add label to sub-rule
