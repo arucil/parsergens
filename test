@@ -15,7 +15,7 @@
 %token COMMA ","
 %token NUMBER /\d+(\.\d*)?/
 %token IDENT /[a-zA-Z][\w_]*/
-%lexer-mode STRING -> token STRING:
+%lexer-mode STRING: token STRING ->
   %token ESCAPE /\\./ -> skip
   %token /"/ -> pop
 
@@ -28,7 +28,7 @@ expr = expr PLUS expr %prec ADD
   | expr DIV expr
   | factor
 
-factor: path::to::Node<u32> =
+factor: {path::to::Node<u32>} =
     NUMBER {{ $1.text }}
   | LPAREN expr RPAREN {{ $2 }}
   | MINUS factor {{ Node::Neg($2) }}
@@ -38,16 +38,3 @@ factor: path::to::Node<u32> =
 param-list =
     ()
   | expr ( COMMA expr )*
-
----------------------------------------------------
-if is layout start and is trivia: skip
-if is layout start and non-trivia:
-    if indent > layout indent: push indent to layout stack
-if not layout:
-    if indent > layout stack top indent (or 0 if layout stack is empty):
-        discard this indent
-    else:
-        pop layout stack until indent = layout indent
-if is layout start token:
-    layout start = true
-    layout indent = current indent
