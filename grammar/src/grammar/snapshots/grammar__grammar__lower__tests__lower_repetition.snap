@@ -10,6 +10,7 @@ LoweredGrammar {
             ),
             kind: Ordinary,
             symbols: [],
+            prec: None,
             action: None,
         },
         Production {
@@ -24,6 +25,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            prec: None,
             action: None,
         },
         Production {
@@ -32,6 +34,7 @@ LoweredGrammar {
             ),
             kind: RepetitionFirst,
             symbols: [],
+            prec: None,
             action: None,
         },
         Production {
@@ -56,6 +59,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            prec: None,
             action: None,
         },
         Production {
@@ -75,6 +79,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            prec: None,
             action: None,
         },
         Production {
@@ -99,6 +104,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            prec: None,
             action: None,
         },
         Production {
@@ -123,6 +129,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            prec: None,
             action: None,
         },
         Production {
@@ -137,6 +144,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            prec: None,
             action: None,
         },
         Production {
@@ -151,6 +159,7 @@ LoweredGrammar {
                     ),
                 ),
             ],
+            prec: None,
             action: None,
         },
         Production {
@@ -159,6 +168,7 @@ LoweredGrammar {
             ),
             kind: Ordinary,
             symbols: [],
+            prec: None,
             action: None,
         },
     ],

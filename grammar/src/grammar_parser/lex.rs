@@ -13,6 +13,10 @@ pub enum TokenKind {
   Token,
   Skip,
   User,
+  LeftAssoc,
+  RightAssoc,
+  NonAssoc,
+  Prec,
 
   Ident,
   Regex,
@@ -313,6 +317,9 @@ impl<'a> Lexer<'a> {
           "token" => TokenKind::Token,
           "skip" => TokenKind::Skip,
           "user" => TokenKind::User,
+          "left-assoc" => TokenKind::LeftAssoc,
+          "right-assoc" => TokenKind::RightAssoc,
+          "non-assoc" => TokenKind::NonAssoc,
           _ => TokenKind::Ident,
         };
 

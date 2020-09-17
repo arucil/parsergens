@@ -5,7 +5,7 @@ grammar:
 - [ ] reduce the check of EOF in DFA: *RE2C: A more versatile scanner generator*.
 - [x] support layout syntax for grammar parser
 - [ ] %left-assoc %right-assoc %non-assoc, precedence
-- [ ] non-terminal kind: anonymous (merge children into parent)
+- [x] non-terminal kind: anonymous (merge children into parent)
 - [ ] alt operator in production
 - [x] identifier support ' -, remove support of _
 - [x] semantic action (plus user import part)

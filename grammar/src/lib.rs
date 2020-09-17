@@ -13,6 +13,7 @@ pub mod grammar;
 
 pub use crate::grammar::*;
 pub use lexer::{Lexer, TokenId, TokenIdGen};
+pub use grammar_parser::ast::Associativity;
 
 use grammar_parser::ast;
 use grammar_parser::lex::{Token, LexErrorKind, LexError};
@@ -75,6 +76,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
   let mut start_decls = vec![];
   let mut rule_decls = vec![];
   let mut user_decls = vec![];
+  let mut assoc_decls = vec![];
 
   for decl in ast {
     match decl.1 {
@@ -84,8 +86,13 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
       ast::Decl::Start(decl) => start_decls.push(decl),
       ast::Decl::Rule(decl) => rule_decls.push(decl),
       ast::Decl::User(decl) => user_decls.push(decl),
+      ast::Decl::Assoc(decl) => assoc_decls.push(decl),
     }
   }
+
+  let assocs = assoc_decls.into_iter()
+    .map(|decl| (decl.name.1, decl.name.0))
+    .collect::<Map<_, _>>();
 
   let lexer;
   let tokens;
@@ -169,11 +176,13 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
           convert_terms(terms, &nts, &tokens)?
         }
       };
+      let prec = alt.1.prec.as_ref().map(|p| !(p.0 .0 as u32));
       let action = alt.1.action.as_ref().map(|code| code.1.clone());
 
       rules.push(Rule {
         nt,
         items,
+        prec,
         action,
       });
     }

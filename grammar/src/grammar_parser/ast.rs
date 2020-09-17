@@ -9,6 +9,7 @@ pub enum Decl {
   Rule(RuleDecl),
   Skip(SkipDecl),
   User(UserDecl),
+  Assoc(AssocDecl),
 }
 
 #[derive(Debug, Clone)]
@@ -87,6 +88,7 @@ pub struct RuleDecl {
 #[derive(Debug, Clone)]
 pub struct RuleAlt {
   pub terms: RuleAltTerms,
+  pub prec: Option<Spanned<String>>,
   pub action: Option<Spanned<String>>,
 }
 
@@ -102,6 +104,19 @@ pub enum Term {
   Optional(Vec<Term>),
   Many(Vec<Term>),
   Many1(Vec<Term>),
+}
+
+#[derive(Debug, Clone)]
+pub struct AssocDecl {
+  pub name: Spanned<String>,
+  pub assoc: Spanned<Associativity>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Associativity {
+  LeftAssoc,
+  RightAssoc,
+  NonAssoc,
 }
 
 #[derive(Debug, Clone)]
