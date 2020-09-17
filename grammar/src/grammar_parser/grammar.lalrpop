@@ -107,18 +107,18 @@ user_decl: UserDecl = Percent User <code:code_block>
     }
   };
 
-assoc_decl: AssocDecl = Percent <assoc:assoc> <name:ident>
+assoc_decl: AssocDecl = Percent <assoc:assoc> <names:ident+>
   => {
     AssocDecl {
-      name,
+      names,
       assoc,
     }
   };
 
-assoc: Spanned<Associativity> = {
-  <l:@L> LeftAssoc <r:@L> => Spanned((l, r), Associativity::LeftAssoc),
-  <l:@L> RightAssoc <r:@L> => Spanned((l, r), Associativity::RightAssoc),
-  <l:@L> NonAssoc <r:@L> => Spanned((l, r), Associativity::NonAssoc),
+assoc: Spanned<Assoc> = {
+  <l:@L> LeftAssoc <r:@L> => Spanned((l, r), Assoc::LeftAssoc),
+  <l:@L> RightAssoc <r:@L> => Spanned((l, r), Assoc::RightAssoc),
+  <l:@L> NonAssoc <r:@L> => Spanned((l, r), Assoc::NonAssoc),
 }
 
 token_pattern: TokenPattern = {

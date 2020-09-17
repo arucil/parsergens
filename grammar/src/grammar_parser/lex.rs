@@ -320,6 +320,7 @@ impl<'a> Lexer<'a> {
           "left-assoc" => TokenKind::LeftAssoc,
           "right-assoc" => TokenKind::RightAssoc,
           "non-assoc" => TokenKind::NonAssoc,
+          "prec" => TokenKind::Prec,
           _ => TokenKind::Ident,
         };
 

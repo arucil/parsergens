@@ -1,8 +1,8 @@
 use std::ops::Range;
 use crate::{
-  Grammar, NonterminalIdGen, Item, Lexer, TokenId, NonterminalId
+  Grammar, NonterminalIdGen, Item, Lexer, TokenId, NonterminalId, Assoc,
+  Set, BiMap, Map,
 };
-use crate::{Set, BiMap, Map};
 
 #[derive(Debug)]
 pub struct LoweredGrammar {
@@ -20,7 +20,7 @@ pub struct Production {
   pub nt: NonterminalId,
   pub kind: ProductionKind,
   pub symbols: Vec<Symbol>,
-  pub prec: Option<u32>,
+  pub prec: Option<(Assoc, u32)>,
   pub action: Option<String>,
 }
 

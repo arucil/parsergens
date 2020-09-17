@@ -108,12 +108,12 @@ pub enum Term {
 
 #[derive(Debug, Clone)]
 pub struct AssocDecl {
-  pub name: Spanned<String>,
-  pub assoc: Spanned<Associativity>,
+  pub names: Vec<Spanned<String>>,
+  pub assoc: Spanned<Assoc>,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum Associativity {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Assoc {
   LeftAssoc,
   RightAssoc,
   NonAssoc,

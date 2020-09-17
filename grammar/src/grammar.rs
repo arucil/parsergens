@@ -1,7 +1,7 @@
 use std::ops::Range;
 use std::borrow::Borrow;
 use super::lexer::{Lexer, TokenId};
-use super::Associativity;
+use super::Assoc;
 use crate::{Set, BiMap, Map};
 
 pub use lower::*;
@@ -26,7 +26,7 @@ pub struct Grammar {
 pub struct Rule {
   pub nt: NonterminalId,
   pub items: Vec<Item>,
-  pub prec: Option<(Associativity, u32)>,
+  pub prec: Option<(Assoc, u32)>,
   pub action: Option<String>,
 }
 

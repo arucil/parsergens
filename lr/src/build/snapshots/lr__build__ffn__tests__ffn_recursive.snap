@@ -1,45 +1,50 @@
 ---
-source: slr/src/build/ffn.rs
+source: lr/src/build/ffn.rs
 expression: ffn
 ---
 Ffn {
     first: {
         NonterminalId(
-            1,
-        ): {
-            1,
-        },
-        NonterminalId(
-            2,
-        ): {
-            0,
-            1,
-        },
-        NonterminalId(
             0,
         ): {
             0,
             1,
             2,
+            4,
+        },
+        NonterminalId(
+            1,
+        ): {
+            0,
+            1,
+            2,
+            4,
+        },
+        NonterminalId(
+            2,
+        ): {
+            6,
         },
     },
     follow: {
         NonterminalId(
             0,
-        ): {},
+        ): {
+            3,
+            4,
+            5,
+            6,
+        },
         NonterminalId(
             1,
         ): {
-            0,
-            1,
-            2,
+            3,
         },
         NonterminalId(
             2,
         ): {
-            0,
-            1,
-            2,
+            3,
+            6,
         },
     },
     nullable: {

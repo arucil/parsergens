@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
 use bit_set::BitSet;
 use grammar::{
-  GrammarError, TokenId, NonterminalId, NonterminalIdGen, LoweredGrammar, Symbol
+  GrammarError, TokenId, NonterminalId, NonterminalIdGen, LoweredGrammar, Symbol,
+  Assoc,
 };
 use crate::{SlrParser, BiMap, Map};
 use ffn::Ffn;
@@ -14,6 +15,8 @@ pub enum Error {
   GrammarError(GrammarError),
   ShiftReduceConflict,
   ReduceReduceConflict,
+  PrecConflict,
+  AssocConflict,
 }
 
 pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
@@ -26,6 +29,8 @@ pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
 
   builder.build()?;
 
+  let action = builder.build_action_table();
+
   let prods = grammar.prods.iter().map(|prod| {
     (prod.symbols.len(), prod.nt.id(), prod.kind)
   }).collect();
@@ -37,7 +42,7 @@ pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
     .collect();
 
   Ok(SlrParser {
-    action: builder.action,
+    action,
     goto: builder.goto,
     prods,
     nt_names,
@@ -51,14 +56,20 @@ pub(crate) fn build(input: &str) -> Result<SlrParser, Error> {
 struct Builder<'a> {
   grammar: &'a LoweredGrammar,
   ffn: Ffn,
-  states: Map<BitSet, u32>,
+  states: BiMap<BitSet, u32>,
   items: BiMap<(usize, usize), usize>,
-  action: Vec<Vec<i32>>,
-  action_row_len: usize,
+  /// state -> token -> (shift state, reduce production)
+  action: Map<u32, Map<u32, ActionEntry>>,
   goto: Vec<Vec<u32>>,
   goto_row_len: usize,
   start: Map<String, u32>,
   eof_token: TokenId,
+}
+
+#[derive(Default)]
+struct ActionEntry {
+  shift: Option<u32>,
+  reduce: Option<u32>,
 }
 
 impl<'a> Builder<'a> {
@@ -66,10 +77,9 @@ impl<'a> Builder<'a> {
     Builder {
       grammar: &grammar,
       ffn,
-      states: Map::new(),
+      states: BiMap::new(),
       items: BiMap::new(),
-      action: vec![],
-      action_row_len: eof_token.id() as usize + 1,
+      action: Map::new(),
       goto: vec![],
       goto_row_len: grammar.nts.len(),
       start: Map::new(),
@@ -84,7 +94,88 @@ impl<'a> Builder<'a> {
       self.start.insert(nt_name, start_state);
     }
 
+    self.resolve_conflicts()?;
+
     Ok(())
+  }
+
+  fn resolve_conflicts(&mut self) -> Result<(), Error> {
+    for (state, tx) in &mut self.action {
+      for (token, ActionEntry { shift, reduce }) in tx {
+        if let (&&mut Some(shift_state), &&mut Some(reduce_prod)) = (&shift, &reduce) {
+          let (reduce_assoc, reduce_prec) = self.grammar.prods[reduce_prod as usize]
+            .prec
+            .ok_or(Error::ShiftReduceConflict)?;
+
+          let mut shift_prec = None;
+          for item in self.states.get_by_right(&shift_state).unwrap().iter() {
+            let &(prod_ix, prod_dot) = self.items.get_by_right(&item).unwrap();
+            if prod_dot == 0 {
+              continue;
+            }
+            if let Some((assoc, prec)) = self.grammar.prods[prod_ix].prec {
+              if let Some((last_assoc, last_prec)) = shift_prec {
+                if last_prec != prec {
+                  return Err(Error::PrecConflict);
+                } else if last_assoc != assoc {
+                  return Err(Error::AssocConflict);
+                }
+              } else {
+                shift_prec = Some((assoc, prec));
+              }
+            }
+          }
+
+          if let Some((shift_assoc, shift_prec)) = shift_prec {
+            if shift_prec == reduce_prec {
+              if shift_assoc == reduce_assoc {
+                match shift_assoc {
+                  Assoc::LeftAssoc => *shift = None,
+                  Assoc::RightAssoc => *reduce = None,
+                  Assoc::NonAssoc => {
+                    *shift = None;
+                    *reduce = None;
+                  }
+                }
+              } else {
+                *shift = None;
+                *reduce = None;
+              }
+            } else if shift_prec > reduce_prec {
+              *reduce = None;
+            } else {
+              *shift = None;
+            }
+          } else {
+            return Err(Error::ShiftReduceConflict);
+          }
+        }
+      }
+    }
+
+    Ok(())
+  }
+
+  fn build_action_table(&self) -> Vec<Vec<i32>> {
+    let mut action = vec![vec![0i32; self.eof_token.id() as usize + 1]; self.goto.len()];
+
+    for (state, tx) in &self.action {
+      let row = &mut action[*state as usize];
+      for (token, entry) in tx {
+        if let Some(new_state) = entry.shift {
+          assert!(entry.reduce.is_none());
+          row[*token as usize] = new_state as i32 + 1;
+        } else if let Some(prod) = entry.reduce {
+          row[*token as usize] = if prod == std::i32::MAX as u32 {
+            std::i32::MIN
+          } else {
+            !(prod as i32)
+          };
+        }
+      }
+    }
+
+    action
   }
 
   fn start(&mut self, nt: NonterminalId) -> Result<u32, Error> {
@@ -123,18 +214,15 @@ impl<'a> Builder<'a> {
 
       for (sym, to_state) in to_states {
         let to_state = self.closure(to_state);
-        let is_new_state = !self.states.contains_key(&to_state);
+        let is_new_state = !self.states.contains_left(&to_state);
         let to_state_ix = self.state(&to_state);
 
         match sym {
           Symbol::Token(token) => {
-            let old = self.action[from_state][token.id() as usize];
-            if old < 0 {
-              return Err(Error::ShiftReduceConflict);
-            }
-            assert!(old == 0);
+            let entry = self.action[from_state].entry(token.id()).or_default();
+            assert!(entry.shift.is_none());
 
-            self.action[from_state][token.id() as usize] = (to_state_ix + 1) as i32;
+            entry.shift = Some(to_state_ix);
           }
           Symbol::Nonterminal(nt) => {
             assert!(self.goto[from_state][nt.id() as usize] == 0);
@@ -171,15 +259,6 @@ impl<'a> Builder<'a> {
                   new.insert(item);
                 }
               }
-
-              /*
-              if self.ffn.nullable.contains(nt.id() as usize) {
-                let item = self.item(prod_ix, prod_dot + 1);
-                if !result.contains(item) {
-                  new.insert(item);
-                }
-              }
-              */
             }
           }
         }
@@ -208,16 +287,16 @@ impl<'a> Builder<'a> {
   }
 
   fn state(&mut self, set: &BitSet) -> u32 {
-    if let Some(&state) = self.states.get(set) {
+    if let Some(&state) = self.states.get_by_left(set) {
       state
     } else {
-      let len = self.states.len() as u32;
-      self.states.insert(set.clone(), len);
+      let state = self.states.len() as u32;
+      self.states.insert(set.clone(), state);
 
-      self.action.push(vec![0; self.action_row_len]);
+      self.action.insert(state, Map::new());
       self.goto.push(vec![0; self.goto_row_len]);
 
-      len
+      state
     }
   }
 
@@ -225,20 +304,21 @@ impl<'a> Builder<'a> {
     let nt = self.grammar.prods[prod_ix].nt;
 
     for token in self.ffn.follow[&nt].iter() {
-      let old = self.action[from_state][token];
-      if old < 0 {
+      let entry = self.action[from_state].entry(token as u32).or_default();
+      if entry.reduce.is_some() {
         return Err(Error::ReduceReduceConflict);
       }
-      assert!(old == 0);
+      assert!(entry.shift.is_none());
 
-      self.action[from_state][token] = !(prod_ix as i32);
+      entry.reduce = Some(prod_ix as u32);
     }
 
     Ok(())
   }
 
   fn accept(&mut self, from_state: usize) {
-    self.action[from_state][self.eof_token.id() as usize] = std::i32::MIN;
+    let entry = self.action[from_state].entry(self.eof_token.id()).or_default();
+    entry.reduce = Some(std::i32::MAX as u32);
   }
 }
 
@@ -302,7 +382,8 @@ impl<'a> Builder<'a> {
   }
 
   fn action_goto(self) -> Vec<Vec<i32>> {
-    self.action.into_iter().zip(self.goto).map(|(mut row1, row2)| {
+    let action = self.build_action_table();
+    action.into_iter().zip(self.goto).map(|(mut row1, row2)| {
       row1.extend(row2.into_iter().map(|x| x as i32));
       row1
     }).collect()
@@ -391,6 +472,52 @@ F = num
   #[test]
   fn epsilon_action_goto() {
     let (grammar, eof_token, ffn) = prepare(EPSILON);
+    let mut builder = Builder::new(&grammar, eof_token, ffn);
+
+    builder.build().unwrap();
+
+    assert_debug_snapshot!(builder.action_goto());
+  }
+
+  static PRECEDENCE: &str = r#"
+%token minus "-"
+%token mult "*"
+%token pow "^"
+%token equal "=="
+%token lparen "("
+%token rparen ")"
+%token num "1"
+
+%right-assoc NEG
+%right-assoc POW
+%left-assoc MUL
+%left-assoc ADD
+%non-assoc REL
+
+%start E
+
+E = E minus E    %prec ADD
+  | E mult E    %prec MUL
+  | E pow E     %prec POW
+  | E equal E     %prec REL
+  | minus E       %prec NEG
+  | lparen E rparen
+  | num
+  "#;
+
+  #[test]
+  fn precedence_states() {
+    let (grammar, eof_token, ffn) = prepare(PRECEDENCE);
+    let mut builder = Builder::new(&grammar, eof_token, ffn);
+
+    builder.build().unwrap();
+
+    assert_snapshot!(builder.states());
+  }
+
+  #[test]
+  fn precedence_action_goto() {
+    let (grammar, eof_token, ffn) = prepare(PRECEDENCE);
     let mut builder = Builder::new(&grammar, eof_token, ffn);
 
     builder.build().unwrap();

@@ -13,7 +13,7 @@ pub mod grammar;
 
 pub use crate::grammar::*;
 pub use lexer::{Lexer, TokenId, TokenIdGen};
-pub use grammar_parser::ast::Associativity;
+pub use grammar_parser::ast::Assoc;
 
 use grammar_parser::ast;
 use grammar_parser::lex::{Token, LexErrorKind, LexError};
@@ -62,7 +62,7 @@ pub enum GrammarErrorKind {
   ParseError,
   TokenDeclConflict,
   MissingDecl,
-  SymbolNotFound,
+  NameNotFound,
   NameConflict,
 }
 
@@ -91,7 +91,10 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
   }
 
   let assocs = assoc_decls.into_iter()
-    .map(|decl| (decl.name.1, decl.name.0))
+    .flat_map(|decl| {
+      let assoc = decl.assoc.1;
+      decl.names.into_iter().map(move |name| (name.1, (assoc, !(name.0 .0 as u32))))
+    })
     .collect::<Map<_, _>>();
 
   let lexer;
@@ -154,7 +157,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         Ok(id)
       } else {
         Err(GrammarError {
-          kind: GrammarErrorKind::SymbolNotFound,
+          kind: GrammarErrorKind::NameNotFound,
           message: format!("nonterminal not found"),
           span: decl.name.0,
         })
@@ -176,7 +179,18 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
           convert_terms(terms, &nts, &tokens)?
         }
       };
-      let prec = alt.1.prec.as_ref().map(|p| !(p.0 .0 as u32));
+      let prec = match &alt.1.prec {
+        Some(name) => {
+          Some(assocs.get(&name.1)
+            .cloned()
+            .ok_or_else(|| GrammarError {
+            kind: GrammarErrorKind::NameNotFound,
+            message: format!("precedence symbol not found"),
+            span: name.0,
+          })?)
+        }
+        None => None,
+      };
       let action = alt.1.action.as_ref().map(|code| code.1.clone());
 
       rules.push(Rule {
@@ -221,7 +235,7 @@ fn convert_terms(
           items.push(Item::Token(id));
         } else {
           return Err(GrammarError {
-            kind: GrammarErrorKind::SymbolNotFound,
+            kind: GrammarErrorKind::NameNotFound,
             message: format!("nonterminal or token not found"),
             span: sym.0,
           });
@@ -255,8 +269,8 @@ pub fn report_error(input: &str, error: &GrammarError) {
     GrammarErrorKind::NameConflict => {
       diagnostic.with_message("name conflict")
     }
-    GrammarErrorKind::SymbolNotFound => {
-      diagnostic.with_message("symbol not found")
+    GrammarErrorKind::NameNotFound => {
+      diagnostic.with_message("name not found")
     }
     GrammarErrorKind::TokenDeclConflict => {
       diagnostic.with_message(

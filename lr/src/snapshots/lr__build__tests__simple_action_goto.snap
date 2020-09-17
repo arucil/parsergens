@@ -1,5 +1,5 @@
 ---
-source: slr/src/build.rs
+source: lr/src/build.rs
 expression: builder.action_goto()
 ---
 [
