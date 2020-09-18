@@ -6,7 +6,7 @@ pub  fn parse<'a>(
   start: &str
 ) -> Vec<String> {
   let mut events = vec![];
-  let mut state = parser.start[start];
+  let mut state = parser.start[start].1;
   let mut stack: Vec<(u32, String)> = vec![];
   let mut tokens = parser.lexer.as_ref().unwrap().lex(input);
   let mut token = tokens.next().transpose().unwrap();
@@ -32,19 +32,19 @@ pub  fn parse<'a>(
       break;
     } else if action < 0 {
       let mut event = format!("reduce ");
-      let (rhs_len, nt, _) = parser.prods[(!action) as usize];
-      let state0 = if rhs_len == 0 {
+      let prod = &parser.prods[(!action) as usize];
+      let state0 = if prod.rhs_len == 0 {
         state
       } else {
-        stack[stack.len() - rhs_len].0
+        stack[stack.len() - prod.rhs_len].0
       };
-      let nt_name = &parser.nts[nt as usize].0;
+      let nt_name = &parser.nts[prod.nt as usize].0;
 
-      state = parser.goto[state0 as usize][nt as usize] - 1;
+      state = parser.goto[state0 as usize][prod.nt as usize] - 1;
 
       event.push_str(nt_name);
       event.push_str(" ->");
-      for (_, text) in stack.drain(stack.len() - rhs_len..) {
+      for (_, text) in stack.drain(stack.len() - prod.rhs_len..) {
         event.push_str(" ");
         event.push_str(&text);
       }

@@ -1,7 +1,7 @@
 use std::ops::Range;
 use crate::{
   Grammar, NonterminalIdGen, Item, Lexer, TokenId, NonterminalId, Assoc,
-  Set, BiMap, Map,
+  Set, BiMap, Map, UserState,
 };
 
 #[derive(Debug)]
@@ -13,6 +13,7 @@ pub struct LoweredGrammar {
   pub lexer: Option<Lexer>,
   pub tokens: BiMap<TokenId, String>,
   pub user_code: Vec<String>,
+  pub user_state: Vec<UserState>,
 }
 
 #[derive(Debug)]
@@ -67,6 +68,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
     lexer: grammar.lexer,
     tokens: grammar.tokens,
     user_code: grammar.user_code,
+    user_state: grammar.user_state,
   };
 
   for (nt, meta) in grammar.nt_metas {

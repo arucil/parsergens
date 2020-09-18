@@ -10,6 +10,7 @@ pub enum Decl {
   Skip(SkipDecl),
   User(UserDecl),
   Assoc(AssocDecl),
+  State(StateDecl),
 }
 
 #[derive(Debug, Clone)]
@@ -117,6 +118,12 @@ pub enum Assoc {
   LeftAssoc,
   RightAssoc,
   NonAssoc,
+}
+
+#[derive(Debug, Clone)]
+pub struct StateDecl {
+  pub state: Spanned<String>,
+  pub lifetime: Option<Spanned<String>>,
 }
 
 #[derive(Debug, Clone)]

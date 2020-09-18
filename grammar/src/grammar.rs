@@ -20,6 +20,7 @@ pub struct Grammar {
   pub lexer: Option<Lexer>,
   pub tokens: BiMap<TokenId, String>,
   pub user_code: Vec<String>,
+  pub user_state: Vec<UserState>,
 }
 
 #[derive(Debug)]
@@ -43,6 +44,12 @@ pub enum Item {
 pub struct NonterminalMetadata {
   pub range: Range<usize>,
   pub ty: Option<String>,
+}
+
+#[derive(Debug)]
+pub struct UserState {
+  pub lifetime: Option<String>,
+  pub state: String,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]

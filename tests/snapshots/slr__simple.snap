@@ -1,0 +1,9 @@
+---
+source: tests/slr.rs
+expression: tokens
+---
+Ok(
+    Ok(
+        8.21,
+    ),
+)

@@ -1,7 +1,11 @@
+#![feature(extend_one)]
 
+use std::marker::PhantomData;
 use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
 use syn::*;
+use syn::parse::*;
+use syn::punctuated::Punctuated;
 use quote::quote;
 use std::fs;
 use parser_spec::ParserKind;
@@ -29,26 +33,41 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
     _ => todo!()
   };
 
-  let mut user_code = quote!{};
-  for code in &parser.user_code {
-    let code = code.parse::<TokenStream>().expect("valid user code");
-    let code = parse_macro_input!(code as Item);
-    user_code = quote!{ #user_code #code };
-  }
+  let user_code = parser.user_code.iter().map(|code| {
+    let items = syn::parse_str::<SepBy<Item, Token![;]>>(code)
+      .expect("valid user code")
+      .items;
+      quote!{ #(#items);* }
+  });
 
   let (token_enum, tokens) = gen_token_enum::gen(&parser.tokens);
   let lexer = gen_lexer::gen(&parser.lexer, &tokens);
-  let parser = gen_parser::gen(&parser, &tokens);
+  let parser = gen_parser::gen(&parser);
 
   let vis = spec.vis;
   let mod_name = spec.mod_name;
 
   (quote! {
     #vis mod #mod_name {
-      #user_code
+      #(#user_code)*
       #token_enum
       #lexer
       #parser
     }
   }).into()
+}
+
+struct SepBy<T, P> {
+  items: Vec<T>,
+  _marker: PhantomData<P>,
+}
+
+impl<T: Parse, P: Parse> Parse for SepBy<T, P> {
+  fn parse(input: ParseStream) -> Result<Self> {
+    let p = Punctuated::<T, P>::parse_terminated(input)?;
+    Ok(Self {
+      items: p.into_iter().collect(),
+      _marker: PhantomData,
+    })
+  }
 }

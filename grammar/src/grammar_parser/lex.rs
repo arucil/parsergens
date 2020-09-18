@@ -17,6 +17,7 @@ pub enum TokenKind {
   RightAssoc,
   NonAssoc,
   Prec,
+  State,
 
   Ident,
   Regex,
@@ -321,6 +322,7 @@ impl<'a> Lexer<'a> {
           "right-assoc" => TokenKind::RightAssoc,
           "non-assoc" => TokenKind::NonAssoc,
           "prec" => TokenKind::Prec,
+          "state" => TokenKind::State,
           _ => TokenKind::Ident,
         };
 

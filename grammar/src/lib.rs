@@ -67,6 +67,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
   let mut rule_decls = vec![];
   let mut user_decls = vec![];
   let mut assoc_decls = vec![];
+  let mut state_decls = vec![];
 
   for decl in ast {
     match decl.1 {
@@ -77,6 +78,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
       ast::Decl::Rule(decl) => rule_decls.push(decl),
       ast::Decl::User(decl) => user_decls.push(decl),
       ast::Decl::Assoc(decl) => assoc_decls.push(decl),
+      ast::Decl::State(decl) => state_decls.push(decl),
     }
   }
 
@@ -86,6 +88,13 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
       decl.names.into_iter().map(move |name| (name.1, (assoc, !(name.0 .0 as u32))))
     })
     .collect::<Map<_, _>>();
+
+  let user_state = state_decls.into_iter()
+    .map(|decl| UserState {
+      lifetime: decl.lifetime.map(|x| x.1),
+      state: decl.state.1
+    })
+    .collect::<Vec<_>>();
 
   let lexer;
   let tokens;
@@ -206,6 +215,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     lexer,
     tokens,
     user_code,
+    user_state,
   })
 }
 

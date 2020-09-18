@@ -4,7 +4,7 @@ use grammar::{
   GrammarError, TokenId, NonterminalId, NonterminalIdGen, LoweredGrammar, Symbol,
   Assoc,
 };
-use crate::{BiMap, Map, Parser};
+use crate::{BiMap, Map, Parser, Production};
 use crate::ffn::Ffn;
 use crate::ffn;
 use crate::augment;
@@ -31,7 +31,22 @@ pub fn build(input: &str) -> Result<Parser, Error> {
   let action = builder.build_action_table();
 
   let prods = grammar.prods.iter().map(|prod| {
-    (prod.symbols.len(), prod.nt.id(), prod.kind)
+    let symbols = prod.symbols.iter()
+      .map(|sym| {
+        match sym {
+          Symbol::Token(tok) => crate::Symbol::Token(*tok),
+          Symbol::Nonterminal(nt) => crate::Symbol::Nonterminal(nt.id()),
+        }
+      })
+      .collect();
+
+    Production {
+      rhs_len: prod.symbols.len(),
+      nt: prod.nt.id(),
+      symbols,
+      kind: prod.kind,
+      action: prod.action.clone(),
+    }
   }).collect();
 
   let nts = (0..grammar.nts.len()).scan(
@@ -54,6 +69,7 @@ pub fn build(input: &str) -> Result<Parser, Error> {
     lexer: grammar.lexer,
     tokens: grammar.tokens,
     user_code: grammar.user_code,
+    user_state: grammar.user_state,
   })
 }
 
@@ -66,7 +82,7 @@ struct Builder<'a> {
   action: Map<u32, Map<u32, ActionEntry>>,
   goto: Vec<Vec<u32>>,
   goto_row_len: usize,
-  start: Map<String, u32>,
+  start: Map<String, (u32, u32)>,
   eof_token: TokenId,
 }
 
@@ -101,7 +117,7 @@ impl<'a> Builder<'a> {
           _ => unreachable!(),
         };
       let nt_name = self.grammar.nts.get_by_left(&real_start_nt).unwrap().clone();
-      self.start.insert(nt_name, start_state);
+      self.start.insert(nt_name, (real_start_nt.id(), start_state));
     }
 
     self.resolve_conflicts()?;
@@ -349,7 +365,7 @@ impl<'a> Builder<'a> {
 
     for (state_set, state) in states {
       write!(fmt, "State {}", state)?;
-      if self.start.values().find(|&&x| x == state).is_some() {
+      if self.start.values().find(|x| x.1 == state).is_some() {
         write!(fmt, " (start)")?;
       }
       writeln!(fmt)?;

@@ -250,4 +250,5 @@ LoweredGrammar {
     ),
     tokens: {TokenId(0) <> "A"},
     user_code: [],
+    user_state: [],
 }

@@ -13,3 +13,6 @@ grammar:
 - [x] move 'lower' to method of Grammar
 - [ ] add label to sub-rule
 - [ ] user state
+- [ ] support lifetime in user state. allow omitting lifetime parameter, auto gen
+- [ ] move semantic action and type parsing to grammar
+- [ ] generate parser through build.rs

@@ -22,6 +22,7 @@ decl: Option<Spanned<Decl>> = {
   <l:@L> <decl:skip_decl> <r:@L> => Some(Spanned((l, r), Decl::Skip(decl))),
   <l:@L> <decl:user_decl> <r:@L> => Some(Spanned((l, r), Decl::User(decl))),
   <l:@L> <decl:assoc_decl> <r:@L> => Some(Spanned((l, r), Decl::Assoc(decl))),
+  <l:@L> <decl:state_decl> <r:@L> => Some(Spanned((l, r), Decl::State(decl))),
 };
 
 rule_decl: RuleDecl =
@@ -121,6 +122,14 @@ assoc: Spanned<Assoc> = {
   <l:@L> NonAssoc <r:@L> => Spanned((l, r), Assoc::NonAssoc),
 }
 
+state_decl: StateDecl = Percent State <lifetime:code_block?> <state:code_block>
+  => {
+    StateDecl {
+      lifetime,
+      state,
+    }
+  };
+
 token_pattern: TokenPattern = {
   <regex:regex> =>? regex::parse_regex(
     &regex.1[1..regex.1.len() - 1],
@@ -168,6 +177,7 @@ extern {
     RightAssoc => lex::Token { kind: lex::TokenKind::RightAssoc, .. },
     NonAssoc => lex::Token { kind: lex::TokenKind::NonAssoc, .. },
     Prec => lex::Token { kind: lex::TokenKind::Prec, .. },
+    State => lex::Token { kind: lex::TokenKind::State, .. },
 
     Ident => lex::Token { kind: lex::TokenKind::Ident, .. },
     Regex => lex::Token { kind: lex::TokenKind::Regex, .. },

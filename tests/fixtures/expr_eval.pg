@@ -1,0 +1,41 @@
+
+%token PLUS "+"
+%token MINUS "-"
+%token MUL "*"
+%token DIV "/"
+%token POW "^"
+%token LPAREN "("
+%token RPAREN ")"
+%token COMMA ","
+%token NUMBER /\d+(\.\d*)?/
+
+%skip /[ \n]/
+
+%right-assoc NEG
+%right-assoc POW
+%left-assoc MUL
+%left-assoc ADD
+
+%start expr
+
+expr: {Result<f64, String>} =
+    expr PLUS expr %prec ADD { $1.and_then(|x| $3.map(|y| x + y)) }
+  | expr MINUS expr %prec ADD { $1.and_then(|x| $3.map(|y| x - y)) }
+  | expr MUL expr %prec MUL { $1.and_then(|x| $3.map(|y| x * y)) }
+  | expr DIV expr %prec MUL
+    {
+      $1.and_then(|x|
+        $3.and_then(|y|
+          if y == 0.0 {
+            Err(format!("division by zero"))
+          } else {
+            Ok(x / y)
+          }))
+    }
+  | expr POW expr %prec POW { $1.and_then(|x| $3.map(|y| f64::powf(x, y))) }
+  | factor { $1 }
+
+factor: {Result<f64, String>} =
+    MINUS expr %prec NEG { $2.map(|x| -x) }
+  | LPAREN expr RPAREN { $2 }
+  | NUMBER { $1.text.parse::<f64>().map_err(|err| err.to_string()) }
