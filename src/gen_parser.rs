@@ -33,24 +33,36 @@ pub fn gen(
     .map(|(name, _)| format_ident!("{}", name.replace(&['\'', '-'][..], "_")))
     .collect::<Vec<_>>();
 
-  let nt_variants = parser.nts.iter().enumerate()
-    .map(|(i, (_, ty))| {
-      let name = &nt_names[i];
-
-      let ty = if let Some(ty) = ty {
+  let nt_types = parser.nts.iter()
+    .map(|(_, ty)| {
+      if let Some(ty) = ty {
         let ty = syn::parse_str::<Type>(ty)
           .expect_with(|err|
             format!("invalid non-terminal type: {}, error: {}", ty, err));
         quote!{ #ty }
       } else {
         quote!{ () }
-      };
+      }
+    })
+    .collect::<Vec<_>>();
+
+  let nt_variants = (0..parser.nts.len())
+    .map(|i| {
+      let name = &nt_names[i];
+      let ty = &nt_types[i];
 
       quote! { #name(#ty) }
     });
 
+  let user_state = parser.user_state.iter().map(|state| {
+    syn::parse_str::<Type>(&state.state)
+      .expect_with(|err|
+        format!("invalid user state: {}, error: {}", state.state, err))
+  }).collect::<Vec<_>>();
+
   let prod_actions = parser.prods.iter().enumerate().map(|(i, prod)| {
     let nt_name = &nt_names[prod.nt as usize];
+    let nt_type = &nt_types[prod.nt as usize];
 
     if let Some(action) = &prod.action {
       let action0 = format!("{{ {} }}", action);
@@ -62,8 +74,25 @@ pub fn gen(
         .expect_with(|err|
           format!("invalid semantic action: {}, error: {}", action0, err));
 
-      let init_rhs = prod.symbols.iter().enumerate().map(|(i, sym)| {
-        let id = format_ident!("__{}", i);
+      let init_param_names = (0..prod.symbols.len())
+        .map(|i| format_ident!("__{}", i))
+        .collect::<Vec<_>>();
+
+      let init_params = init_param_names.iter()
+        .zip(&prod.symbols)
+        .map(|(name, sym)| {
+          let ty = match sym {
+            Symbol::Token(_) => quote!{ Token<'input> },
+            Symbol::Nonterminal(nt) => {
+              let ty = &nt_types[*nt as usize];
+              quote! { #ty }
+            }
+          };
+          quote!{ mut #name : #ty }
+        });
+
+      let init_args = prod.symbols.iter().enumerate().map(|(i, sym)| {
+        let id = &init_param_names[i];
 
         match sym {
           Symbol::Token(_) => {
@@ -89,20 +118,20 @@ pub fn gen(
       quote!{
         #i => {
           let mut rhs = rhs.into_iter();
-          #(#init_rhs)*
-          NtType::#nt_name(#action)
+          #(#init_args)*
+          fn semantic_action<'input>(
+            state: &mut (#(#user_state),*),
+            #(#init_params),*
+          ) -> #nt_type {
+            #action
+          }
+          NtType::#nt_name(semantic_action(user_state, #(#init_param_names),*))
         }
       }
     } else {
       quote!{ #i => NtType::#nt_name(()) }
     }
   });
-
-  let user_state = parser.user_state.iter().map(|state| {
-    syn::parse_str::<Type>(&state.state)
-      .expect_with(|err|
-        format!("invalid user state: {}, error: {}", state.state, err))
-  }).collect::<Vec<_>>();
 
   let user_state_lifetime = parser.user_state.iter().filter_map(|state| {
     if let Some(lifetime) = &state.lifetime {
@@ -130,20 +159,16 @@ pub fn gen(
   let start = parser.start.iter().map(|(name, (nt, state))| {
     let name = name.replace(&['\'', '-'][..], "_");
     let fn_name = format_ident!("parse_{}", name.to_snake_case());
-
-    let ty = if let Some(ty) = &parser.nts[*nt as usize].1 {
-      let ty = syn::parse_str::<Type>(ty)
-        .expect_with(|err| format!("invalid type: {}, error: {}", ty, err));
-      quote!{ #ty }
-    } else {
-      quote!{ () }
-    };
+    let ty = &nt_types[*nt as usize];
 
     let nt_name = format_ident!("{}", nt_names[*nt as usize]);
 
     quote! {
-      pub fn #fn_name(&mut self) -> ::std::result::Result<#ty, ParseError<'input>> {
-        match self.parse(#state as usize)? {
+      pub fn #fn_name(
+        &mut self,
+        #(#user_state_params),*
+      ) -> ::std::result::Result<#ty, ParseError<'input>> {
+        match self.parse(#state as usize, (#(#user_state_names),*))? {
           NtType::#nt_name(ty) => Ok(ty),
           _ => unreachable!(),
         }
@@ -163,30 +188,27 @@ pub fn gen(
       #(#nt_variants),*
     }
 
-    pub struct Parser<#(#user_state_lifetime)* 'input, I> {
+    pub struct Parser<'input, I> {
       tokens: I,
       token: Option<Token<'input>>,
       token_kind: usize,
-      user_state: (#(#user_state),*),
     }
 
-    pub fn with_input<#(#user_state_lifetime)* 'input>(
+    pub fn with_input<'input>(
       input: &'input str,
-      #(#user_state_params),*
-    ) -> Parser<#(#user_state_lifetime)* 'input, Tokens> {
-      Parser::new(lex(input), #(#user_state_names),*)
+    ) -> Parser<'input, Tokens<'input>> {
+      Parser::new(lex(input))
     }
 
-    pub fn with_tokens<#(#user_state_lifetime)* 'input, I>(
+    pub fn with_tokens<'input, I>(
       tokens: I,
-      #(#user_state_params),*
-    ) -> Parser<#(#user_state_lifetime)* 'input, I>
+    ) -> Parser<'input, I>
       where I: Iterator<Item=::std::result::Result<Token<'input>, Error>>
     {
-      Parser::new(tokens, #(#user_state_names),*)
+      Parser::new(tokens)
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum ParseError<'input> {
       InvalidChar {
         char: char,
@@ -197,10 +219,10 @@ pub fn gen(
       UnexpectedEof,
     }
 
-    fn reduce<#(#user_state_lifetime)* 'input>(
+    fn reduce<'input>(
       nt: usize,
       rhs: Vec<NtType<'input>>,
-      state: &mut (#(#user_state),*),
+      user_state: &mut (#(#user_state),*),
     ) -> NtType<'input> {
       match nt {
         #(#prod_actions),* ,
@@ -208,15 +230,14 @@ pub fn gen(
       }
     }
 
-    impl<#(#user_state_lifetime)* 'input, I> Parser<#(#user_state_lifetime)* 'input, I>
+    impl<'input, I> Parser<'input, I>
       where I: Iterator<Item=::std::result::Result<Token<'input>, Error>>
     {
-      fn new(tokens: I, #(#user_state_params),*) -> Self {
+      fn new(tokens: I) -> Self {
         Self {
           tokens,
           token: None,
           token_kind: 0,
-          user_state: (#(#user_state_names),*),
         }
       }
 
@@ -243,7 +264,8 @@ pub fn gen(
 
       fn parse(
         &mut self,
-        mut state: usize
+        mut state: usize,
+        mut user_state: (#(#user_state),*)
       ) -> ::std::result::Result<NtType<'input>, ParseError<'input>> {
         let mut stack = ::std::vec::Vec::<(usize, NtType)>::new();
         self.get_token()?;
@@ -271,7 +293,7 @@ pub fn gen(
             let rhs = stack.drain(stack.len() - rhs_len..)
               .map(|(_, x)| x)
               .collect::<Vec<_>>();
-            let ty = reduce(prod, rhs, &mut self.user_state);
+            let ty = reduce(prod, rhs, &mut user_state);
 
             stack.push((state0, ty));
           } else {

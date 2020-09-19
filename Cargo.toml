@@ -16,6 +16,7 @@ quote = "1.0.7"
 dunce = "1.0.1"
 heck = "0.3.1"
 phf = "0.8.0"
+pretty_assertions = "0.6.1"
 
 [workspace]
 members = [

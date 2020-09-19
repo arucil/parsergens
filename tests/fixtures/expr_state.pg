@@ -1,8 +1,8 @@
 %user {
-  use std::collections::HashMap;
+  use std::collections::BTreeMap;
 }
 
-%state {'env} {&'env mut HashMap<String, f64>}
+%state {&mut BTreeMap<String, f64>}
 
 %token PLUS "+"
 %token MINUS "-"
@@ -26,13 +26,13 @@
 %start stmt
 
 stmt: {Result<(), String>} =
-    ()
-  | assignment
-  | assignment SEMI stmt
+    ()  { Ok(()) }
+  | assignment  { $1 }
+  | assignment SEMI stmt { $1.and_then(|_| $3) }
 
 assignment: {Result<(), String>} = IDENT ASSIGN expr
   {
-    *state.entry($1.text).or_default() = $3?;
+    *state.entry($1.text.to_owned()).or_default() = $3?;
     Ok(())
   }
 
@@ -57,3 +57,8 @@ factor: {Result<f64, String>} =
     MINUS expr %prec NEG { $2.map(|x| -x) }
   | LPAREN expr RPAREN { $2 }
   | NUMBER { $1.text.parse::<f64>().map_err(|err| err.to_string()) }
+  | IDENT
+    {
+      state.get($1.text).cloned()
+        .ok_or_else(|| format!("variable {} not found", $1.text))
+    }
