@@ -123,7 +123,6 @@ pub enum Assoc {
 #[derive(Debug, Clone)]
 pub struct StateDecl {
   pub state: Spanned<String>,
-  pub lifetime: Option<Spanned<String>>,
 }
 
 #[derive(Debug, Clone)]

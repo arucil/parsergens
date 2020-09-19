@@ -48,7 +48,6 @@ pub struct NonterminalMetadata {
 
 #[derive(Debug)]
 pub struct UserState {
-  pub lifetime: Option<String>,
   pub state: String,
 }
 

@@ -91,7 +91,6 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
 
   let user_state = state_decls.into_iter()
     .map(|decl| UserState {
-      lifetime: decl.lifetime.map(|x| x.1),
       state: decl.state.1
     })
     .collect::<Vec<_>>();

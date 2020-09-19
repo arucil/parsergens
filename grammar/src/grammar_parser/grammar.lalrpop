@@ -122,10 +122,9 @@ assoc: Spanned<Assoc> = {
   <l:@L> NonAssoc <r:@L> => Spanned((l, r), Assoc::NonAssoc),
 }
 
-state_decl: StateDecl = Percent State <lifetime:code_block?> <state:code_block>
+state_decl: StateDecl = Percent State <state:code_block>
   => {
     StateDecl {
-      lifetime,
       state,
     }
   };
