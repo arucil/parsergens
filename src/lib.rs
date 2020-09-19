@@ -46,7 +46,7 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
     r##"
 {vis} mod {mod_name} {{
   #![allow(dead_code, non_camel_case_types, unused_parens, unused_mut)]
-  #![allow(unused_variables, unused_braces)]
+  #![allow(unused_variables, unused_braces, non_snake_case)]
   {user_code}
   {token_enum}
   {lexer}

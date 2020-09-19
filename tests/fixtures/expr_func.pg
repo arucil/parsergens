@@ -1,0 +1,80 @@
+
+%token PLUS "+"
+%token MINUS "-"
+%token MUL "*"
+%token DIV "/"
+%token POW "^"
+%token LPAREN "("
+%token RPAREN ")"
+%token COMMA ","
+%token NUMBER /\d+(\.\d*)?/
+%token IDENT /[a-zA-Z]\w*/
+
+%skip /[ \n]/
+
+%right-assoc NEG
+%right-assoc POW
+%left-assoc MUL
+%left-assoc ADD
+
+%start expr
+
+expr: {Result<f64, String>} =
+    expr PLUS expr %prec ADD { $1.and_then(|x| $3.map(|y| x + y)) }
+  | expr MINUS expr %prec ADD { $1.and_then(|x| $3.map(|y| x - y)) }
+  | expr MUL expr %prec MUL { $1.and_then(|x| $3.map(|y| x * y)) }
+  | expr DIV expr %prec MUL
+    {
+      $1.and_then(|x|
+        $3.and_then(|y|
+          if y == 0.0 {
+            Err(format!("division by zero"))
+          } else {
+            Ok(x / y)
+          }))
+    }
+  | expr POW expr %prec POW { $1.and_then(|x| $3.map(|y| f64::powf(x, y))) }
+  | factor { $1 }
+
+factor: {Result<f64, String>} =
+    MINUS expr %prec NEG { $2.map(|x| -x) }
+  | LPAREN expr RPAREN { $2 }
+  | NUMBER { $1.text.parse::<f64>().map_err(|err| err.to_string()) }
+  | IDENT LPAREN arg-list RPAREN
+    {
+      let func = $1.text;
+      let args = $3?;
+      match func {
+        "factorial" => {
+          if args.len() == 1 {
+            Ok((1..=args[0] as u32).product::<u32>() as f64)
+          } else {
+            Err(format!("arity mismatch for factorial"))
+          }
+        }
+        "gcd" => {
+          if args.len() == 2 {
+            fn gcd(a: u32, b: u32) -> u32 {
+              if b == 0 {
+                a
+              } else {
+                gcd(b, a % b)
+              }
+            }
+            Ok(gcd(args[0] as u32, args[1] as u32) as f64)
+          } else {
+            Err(format!("arity mismatch for gcd"))
+          }
+        }
+        _ => Err(format!("unknown function: {}", func)),
+      }
+    }
+
+arg-list: {Result<Vec<f64>, String>} =
+  expr (COMMA expr)*
+    {
+      let mut args = $2.into_iter().map(|(_, x)| x).collect::<Result<Vec<_>, _>>()?;
+      let arg1 = $1?;
+      args.insert(0, arg1);
+      Ok(args)
+    }

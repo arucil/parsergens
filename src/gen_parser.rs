@@ -2,6 +2,7 @@ use lr::{Parser, Symbol, Nonterminal, NonterminalKind, ProductionKind};
 use heck::SnakeCase;
 use std::path::Path;
 use itertools::Itertools;
+use nanoid::nanoid;
 
 pub fn gen(
   parser: &Parser,
@@ -26,7 +27,13 @@ pub fn gen(
   }).join(", ");
 
   let nt_names = parser.nts.iter()
-    .map(|nt| nt.name.replace(&['\'', '-'][..], "_"))
+    .map(|nt| {
+      if nt.kind == NonterminalKind::User {
+        nt.name.replace(&['\'', '-'][..], "_")
+      } else {
+        format!("_{}", nanoid!(10).replace('~', "_"))
+      }
+    })
     .collect::<Vec<_>>();
 
   let nt_types = parser.nts.iter()
@@ -123,7 +130,12 @@ fn compute_nt_type(
     match nt.kind {
       NonterminalKind::User => format!("()"),
       NonterminalKind::Repetition | NonterminalKind::Optional => {
-        let types = parser.prods[nt.range.start + 1].symbols.iter()
+        let skip = if nt.kind == NonterminalKind::Repetition {
+          1
+        } else {
+          0
+        };
+        let types = parser.prods[nt.range.start + 1].symbols.iter().skip(skip)
           .map(|sym| {
             match sym {
               Symbol::Token(_) => format!("Token<'input>"),
@@ -207,17 +219,23 @@ fn compute_prod_actions(
         ProductionKind::RepetitionFirst => {
           let init_args = compute_prod_action_init_args(&prod.symbols, &nt_names);
           format!(
-            r##"{i} => NtType::{nt_name}(vec![({init_args})]),"##,
+            r##"
+            {i} => {{
+              let mut rhs = rhs.into_iter();
+              NtType::{nt_name}(vec![({init_args})])
+            }}
+            "##,
             i = i,
             nt_name = nt_name,
             init_args = init_args,
           )
         }
         ProductionKind::RepetitionRest => {
-          let init_args = compute_prod_action_init_args(&prod.symbols, &nt_names);
+          let init_args = compute_prod_action_init_args(&prod.symbols[1..], &nt_names);
           format!(
             r##"
             {i} => {{
+              let mut rhs = rhs.into_iter();
               let mut result = rhs.next().unwrap().assert_{nt_name}();
               result.push(({init_args}));
               NtType::{nt_name}(result)
@@ -272,10 +290,7 @@ fn compute_start_fn(
         &mut self,
         {user_state_params}
       ) -> ::std::result::Result<{ty}, ParseError<'input>> {{
-        match self.parse({state} as usize, ({user_state_names}))? {{
-          NtType::{nt_name}(ty) => Ok(ty),
-          _ => unreachable!(),
-        }}
+        Ok(self.parse({state} as usize, ({user_state_names}))?.assert_{nt_name}())
       }}
       "##,
       fn_name = fn_name,
