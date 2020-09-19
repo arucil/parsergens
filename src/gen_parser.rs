@@ -133,19 +133,6 @@ pub fn gen(
     }
   });
 
-  let user_state_lifetime = parser.user_state.iter().filter_map(|state| {
-    if let Some(lifetime) = &state.lifetime {
-      let lifetime = syn::parse_str::<Lifetime>(&lifetime)
-        .expect_with(|err|
-          format!("invalid user state lifetime: {}, error: {}", lifetime, err));
-
-      Some(quote!{ #lifetime, })
-    } else {
-      None
-    }
-  }).collect::<Vec<_>>();
-  let user_state_lifetime = &user_state_lifetime;
-
   let user_state_names = (0..parser.user_state.len()).map(|i| {
     format_ident!("us_{}", i)
   }).collect::<Vec<_>>();
@@ -202,10 +189,10 @@ pub fn gen(
 
     pub fn with_tokens<'input, I>(
       tokens: I,
-    ) -> Parser<'input, I>
-      where I: Iterator<Item=::std::result::Result<Token<'input>, Error>>
+    ) -> Parser<'input, I::IntoIter>
+      where I: IntoIterator<Item=::std::result::Result<Token<'input>, Error>>
     {
-      Parser::new(tokens)
+      Parser::new(tokens.into_iter())
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]
