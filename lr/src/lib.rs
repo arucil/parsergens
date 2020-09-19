@@ -1,6 +1,7 @@
-use grammar::{ProductionKind, TokenId, Map, BiMap};
+use grammar::{TokenId, Map, BiMap};
+use std::ops::Range;
 
-pub use grammar::UserState;
+pub use grammar::{UserState, NonterminalKind, ProductionKind};
 
 pub mod slr;
 mod ffn;
@@ -17,8 +18,7 @@ pub struct Parser {
   /// zero: error
   pub goto: Vec<Vec<u32>>,
   pub prods: Vec<Production>,
-  /// (name, type)
-  pub nts: Vec<(String, Option<String>)>,
+  pub nts: Vec<Nonterminal>,
   /// non-terminal name -> (non-terminal id, starting state)
   pub start: Map<String, (u32, u32)>,
   pub eof_index: usize,
@@ -26,6 +26,14 @@ pub struct Parser {
   pub tokens: BiMap<TokenId, String>,
   pub user_code: Vec<String>,
   pub user_state: Vec<UserState>,
+}
+
+#[derive(Debug)]
+pub struct Nonterminal {
+  pub name: String,
+  pub ty: Option<String>,
+  pub kind: NonterminalKind,
+  pub range: Range<usize>,
 }
 
 #[derive(Debug)]

@@ -6,13 +6,13 @@ grammar:
 - [x] support layout syntax for grammar parser
 - [x] %left-assoc %right-assoc %non-assoc, precedence
 - [x] non-terminal kind: anonymous (merge children into parent)
-- [ ] alt operator in production
+- [ ] ~~alt operator in production~~
 - [x] identifier support ' -, remove support of _
 - [x] semantic action (plus user import part)
 - [ ] function non-terminal
 - [x] move 'lower' to method of Grammar
-- [ ] add label to sub-rule
+- [ ] ~~add label to sub-rule~~
 - [x] user state
 - [x] support lifetime in user state. allow omitting lifetime parameter, auto gen
-- [ ] move semantic action and type parsing to grammar
-- [ ] generate parser through build.rs
+- [x] move semantic action and type parsing to grammar
+- [ ] ~~generate parser through build.rs~~

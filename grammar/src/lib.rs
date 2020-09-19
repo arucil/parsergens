@@ -1,10 +1,16 @@
-#![feature(or_patterns, never_type)]
+#![feature(or_patterns, never_type, extend_one)]
 
 use lalrpop_util::ParseError;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::term;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use codespan_reporting::files::SimpleFile;
+use proc_macro2::{TokenStream, TokenTree, Group, Spacing, Delimiter};
+use quote::{quote, format_ident};
+use std::num::NonZeroUsize;
+use std::marker::PhantomData;
+use syn::parse::{Parse, ParseStream};
+use syn::punctuated::Punctuated;
 
 mod grammar_parser;
 
@@ -90,10 +96,21 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     .collect::<Map<_, _>>();
 
   let user_state = state_decls.into_iter()
-    .map(|decl| UserState {
-      state: decl.state.1
+    .map(|decl| {
+      syn::parse_str::<syn::Type>(&decl.state.1)
+        .map_err(|err| {
+          GrammarError {
+            kind: GrammarErrorKind::ParseError,
+            message: format!("invalid user state: {}, error: {}", decl.state.1, err),
+            span: decl.state.0,
+          }
+        })?;
+
+      Ok(UserState {
+        state: decl.state.1,
+      })
     })
-    .collect::<Vec<_>>();
+    .collect::<Result<Vec<_>, _>>()?;
 
   let lexer;
   let tokens;
@@ -130,7 +147,20 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
       .collect();
   }
 
-  let user_code = user_decls.into_iter().map(|decl| decl.code.1).collect();
+  let user_code = user_decls.into_iter()
+    .map(|decl| {
+      syn::parse_str::<SepBy<syn::Item, syn::parse::Nothing>>(&decl.code.1)
+        .map_err(|err| {
+          GrammarError {
+            kind: GrammarErrorKind::ParseError,
+            message: format!("invalid user code: {}, error: {}", decl.code.1, err),
+            span: decl.code.0,
+          }
+        })?;
+
+      Ok(decl.code.1)
+    })
+    .collect::<Result<Vec<_>, _>>()?;
 
   let mut nt_id_gen = NonterminalIdGen::default();
   let nts = rule_decls.iter()
@@ -177,6 +207,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
           convert_terms(terms, &nts, &tokens)?
         }
       };
+
       let prec = match &alt.1.prec {
         Some(name) => {
           Some(assocs.get(&name.1)
@@ -189,7 +220,31 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         }
         None => None,
       };
-      let action = alt.1.action.as_ref().map(|code| code.1.clone());
+
+      let action = match &alt.1.action {
+        Some(action0) => {
+          let action = syn::parse_str::<TokenStream>(&format!("{{{}}}", action0.1))
+            .map_err(|err| {
+              GrammarError {
+                kind: GrammarErrorKind::ParseError,
+                message: format!("invalid semantic action: {}, error: {}", action0.1, err),
+                span: action0.0,
+              }
+            })?;
+          let action = replace_place_holder(action).to_string();
+          syn::parse_str::<syn::Block>(&action)
+            .map_err(|err| {
+              GrammarError {
+                kind: GrammarErrorKind::ParseError,
+                message: format!("invalid semantic action: {}, error: {}", action, err),
+                span: action0.0,
+              }
+            })?;
+
+          Some(action)
+        }
+        None => None,
+      };
 
       rules.push(Rule {
         nt,
@@ -199,7 +254,22 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
       });
     }
 
-    let ty = rule_decl.ty.as_ref().map(|t| t.1.clone());
+    let ty = match &rule_decl.ty {
+      Some(ty) => {
+        syn::parse_str::<syn::Type>(&ty.1)
+          .map_err(|err| {
+            GrammarError {
+              kind: GrammarErrorKind::ParseError,
+              message: format!("invalid non-terminal type: {}, error: {}", ty.1, err),
+              span: ty.0,
+            }
+          })?;
+
+        Some(ty.1.clone())
+      }
+      None => None,
+    };
+
     nt_metas.insert(nt, NonterminalMetadata {
       range: start..rules.len(),
       ty,
@@ -403,6 +473,60 @@ impl<'a> Into<GrammarError> for RegexError {
       }
     }
   }
+}
+
+struct SepBy<T, P> {
+  #[allow(dead_code)]
+  items: Vec<T>,
+  _marker: PhantomData<P>,
+}
+
+impl<T: Parse, P: Parse> Parse for SepBy<T, P> {
+  fn parse(input: ParseStream) -> syn::Result<Self> {
+    let p = Punctuated::<T, P>::parse_terminated(input)?;
+    Ok(Self {
+      items: p.into_iter().collect(),
+      _marker: PhantomData,
+    })
+  }
+}
+
+fn replace_place_holder(action: TokenStream) -> TokenStream {
+  let mut input = action.into_iter().peekable();
+  let mut output = TokenStream::new();
+
+  while let Some(tree) = input.next() {
+    match tree {
+      TokenTree::Group(g) => {
+        output.extend_one(TokenTree::Group(
+          Group::new(
+            g.delimiter(),
+            replace_place_holder(g.stream()))));
+      }
+      TokenTree::Punct(punct) => {
+        if punct.as_char() == '$' && punct.spacing() == Spacing::Alone {
+          if let Some(TokenTree::Literal(lit)) = input.peek() {
+            if lit.to_string().chars().all(|c| c.is_ascii_digit()) {
+              let ix = lit.to_string().parse::<NonZeroUsize>().expect("valid RHS index");
+              let ix = format_ident!("__{}", ix.get() - 1);
+              let replaced = quote!(#ix).into();
+
+              output.extend_one(TokenTree::Group(
+                Group::new(Delimiter::Parenthesis, replaced)
+              ));
+
+              input.next();
+              continue;
+            }
+          }
+        }
+        output.extend_one(TokenTree::Punct(punct));
+      }
+      x => output.extend_one(x),
+    }
+  }
+
+  output
 }
 
 #[cfg(test)]

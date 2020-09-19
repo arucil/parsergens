@@ -4,7 +4,7 @@ use grammar::{
   GrammarError, TokenId, NonterminalId, NonterminalIdGen, LoweredGrammar, Symbol,
   Assoc,
 };
-use crate::{BiMap, Map, Parser, Production};
+use crate::{BiMap, Map, Parser, Production, Nonterminal};
 use crate::ffn::Ffn;
 use crate::ffn;
 use crate::augment;
@@ -54,8 +54,13 @@ pub fn build(input: &str) -> Result<Parser, Error> {
     |gen, _| Some(gen.gen()))
     .map(|nt| {
       let name = grammar.nts.get_by_left(&nt).unwrap().clone();
-      let ty = grammar.nt_metas[&nt].ty.clone();
-      (name, ty)
+      let meta = &grammar.nt_metas[&nt];
+      Nonterminal {
+        name,
+        ty: meta.ty.clone(),
+        kind: meta.kind,
+        range: meta.range.clone(),
+      }
     })
     .collect();
 

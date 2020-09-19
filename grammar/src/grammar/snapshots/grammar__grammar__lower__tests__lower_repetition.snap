@@ -32,7 +32,7 @@ LoweredGrammar {
             nt: NonterminalId(
                 3,
             ),
-            kind: RepetitionFirst,
+            kind: RepetitionEpsilon,
             symbols: [],
             prec: None,
             action: None,

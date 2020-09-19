@@ -128,7 +128,7 @@ Ok(
                 ],
                 prec: None,
                 action: Some(
-                    "$1.parse::<f64>().unwrap()",
+                    "{ (__0) . parse ::< f64 > () . unwrap () }",
                 ),
             },
             Rule {
@@ -154,7 +154,7 @@ Ok(
                 ],
                 prec: None,
                 action: Some(
-                    "$2",
+                    "{ (__1) }",
                 ),
             },
             Rule {

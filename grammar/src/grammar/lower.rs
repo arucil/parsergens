@@ -32,16 +32,17 @@ pub struct LoweredNonterminalMetadata {
   pub kind: NonterminalKind,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NonterminalKind {
   User,
   Repetition,
   Optional,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProductionKind {
   Ordinary,
+  RepetitionEpsilon,
   RepetitionFirst,
   RepetitionRest,
 }
@@ -158,7 +159,7 @@ fn lower_items(
 
         lowered.prods.push(Production {
           nt,
-          kind: ProductionKind::RepetitionFirst,
+          kind: ProductionKind::RepetitionEpsilon,
           symbols: vec![],
           prec: None,
           action: None,
