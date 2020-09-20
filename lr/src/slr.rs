@@ -1,39 +1,49 @@
-use grammar::{ Symbol, LoweredGrammar };
+use grammar::{ Symbol, LoweredGrammar, TokenId };
 use crate::Error;
 use crate::ffn::Ffn;
-use crate::builder::{LrStateCalculation, LrItem};
+use crate::builder::{LrCalculation, LrItem};
 
+pub enum SlrCalc {}
 
-pub enum SlrStateCalc {}
-
-impl LrStateCalculation for SlrStateCalc {
-  type Item = (usize, usize);
+impl LrCalculation for SlrCalc {
+  type Item = SlrItem;
 
   fn start_item(
     start_prod_ix: usize,
-  ) -> Self::Item {
-    (start_prod_ix, 0)
+    _eof: TokenId,
+  ) -> SlrItem {
+    SlrItem {
+      prod_ix: start_prod_ix,
+      dot_ix: 0,
+    }
   }
 
   fn next_item(
-    item: &Self::Item
-  ) -> Self::Item {
-    (item.0, item.1 + 1)
+    item: &SlrItem
+  ) -> SlrItem {
+    SlrItem {
+      prod_ix: item.prod_ix,
+      dot_ix: item.dot_ix + 1,
+    }
   }
 
   fn closure_step<F>(
     grammar: &LoweredGrammar,
-    prev: &Self::Item,
+    _ffn: &Ffn,
+    prev: &SlrItem,
     mut action: F
   )
-    where F: FnMut(Self::Item)
+    where F: FnMut(SlrItem)
   {
     let symbols = &grammar.prods[prev.prod_ix()].symbols;
     match &symbols[prev.dot_ix()] {
       Symbol::Token(_) => {}
       Symbol::Nonterminal(nt) => {
         for prod_ix in grammar.nt_metas[nt].range.clone() {
-          action((prod_ix, 0));
+          action(SlrItem {
+            prod_ix,
+            dot_ix: 0
+          });
         }
       }
     }
@@ -42,7 +52,7 @@ impl LrStateCalculation for SlrStateCalc {
   fn reduce_tokens<F>(
     grammar: &LoweredGrammar,
     ffn: &Ffn,
-    item: &Self::Item,
+    item: &SlrItem,
     action: F,
   ) -> Result<(), Error>
     where F: FnMut(u32) -> Result<(), Error>
@@ -52,13 +62,54 @@ impl LrStateCalculation for SlrStateCalc {
   }
 }
 
-impl LrItem for (usize, usize) {
+#[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
+pub struct SlrItem {
+  prod_ix: usize,
+  dot_ix: usize,
+}
+
+impl LrItem for SlrItem {
   fn prod_ix(&self) -> usize {
-    self.0
+    self.prod_ix
   }
 
   fn dot_ix(&self) -> usize {
-    self.1
+    self.dot_ix
+  }
+
+  #[cfg(test)]
+  fn fmt(
+    &self,
+    grammar: &LoweredGrammar,
+    f: &mut impl std::fmt::Write,
+  ) -> std::fmt::Result {
+    let nt = grammar.prods[self.prod_ix].nt;
+    let symbols = &grammar.prods[self.prod_ix].symbols;
+
+    write!(f, "{} ->", grammar.nts[&nt])?;
+
+    for (i, sym) in symbols.iter().enumerate() {
+      if i == self.dot_ix {
+        write!(f, " .")?;
+      }
+
+      match sym {
+        Symbol::Token(token) => {
+          let name = grammar.tokens.get(token).map(|s|s.as_str()).unwrap_or("$");
+          write!(f, " {}", name)?;
+        }
+        Symbol::Nonterminal(nt) => {
+          let name = grammar.nts.get(nt).unwrap();
+          write!(f, " {}", name)?;
+        }
+      }
+    }
+
+    if self.dot_ix == symbols.len() {
+      write!(f, " .")?;
+    }
+
+    Ok(())
   }
 }
 
@@ -71,6 +122,7 @@ mod tests {
   use crate::ffn;
   use crate::augment;
   use crate::builder::Builder;
+  use crate::Error;
 
   fn prepare(input: &str) -> (LoweredGrammar, TokenId, Ffn) {
     let grammar = grammar::build(input).unwrap();
@@ -96,7 +148,7 @@ T = x
   #[test]
   fn simple_states() {
     let (grammar, eof_token, ffn) = prepare(SIMPLE);
-    let mut builder = Builder::<SlrStateCalc>::new(&grammar, eof_token, ffn);
+    let mut builder = Builder::<SlrCalc>::new(&grammar, eof_token, ffn);
 
     builder.build().unwrap();
 
@@ -106,7 +158,7 @@ T = x
   #[test]
   fn simple_action_goto() {
     let (grammar, eof_token, ffn) = prepare(SIMPLE);
-    let mut builder = Builder::<SlrStateCalc>::new(&grammar, eof_token, ffn);
+    let mut builder = Builder::<SlrCalc>::new(&grammar, eof_token, ffn);
 
     builder.build().unwrap();
 
@@ -139,7 +191,7 @@ F = num
   #[test]
   fn epsilon_states() {
     let (grammar, eof_token, ffn) = prepare(EPSILON);
-    let mut builder = Builder::<SlrStateCalc>::new(&grammar, eof_token, ffn);
+    let mut builder = Builder::<SlrCalc>::new(&grammar, eof_token, ffn);
 
     builder.build().unwrap();
 
@@ -149,7 +201,7 @@ F = num
   #[test]
   fn epsilon_action_goto() {
     let (grammar, eof_token, ffn) = prepare(EPSILON);
-    let mut builder = Builder::<SlrStateCalc>::new(&grammar, eof_token, ffn);
+    let mut builder = Builder::<SlrCalc>::new(&grammar, eof_token, ffn);
 
     builder.build().unwrap();
 
@@ -185,7 +237,7 @@ E = E minus E    %prec ADD
   #[test]
   fn precedence_states() {
     let (grammar, eof_token, ffn) = prepare(PRECEDENCE);
-    let mut builder = Builder::<SlrStateCalc>::new(&grammar, eof_token, ffn);
+    let mut builder = Builder::<SlrCalc>::new(&grammar, eof_token, ffn);
 
     builder.build().unwrap();
 
@@ -195,11 +247,34 @@ E = E minus E    %prec ADD
   #[test]
   fn precedence_action_goto() {
     let (grammar, eof_token, ffn) = prepare(PRECEDENCE);
-    let mut builder = Builder::<SlrStateCalc>::new(&grammar, eof_token, ffn);
+    let mut builder = Builder::<SlrCalc>::new(&grammar, eof_token, ffn);
 
     builder.build().unwrap();
 
     assert_debug_snapshot!(builder.action_goto());
   }
 
+  static AMBIGUOUS: &str = r#"
+%token a "a"
+%token b "b"
+%token c "c"
+%token d "d"
+
+%start S
+
+// this is LR(1) but not SLR
+// from https://stackoverflow.com/questions/10505717/how-is-this-grammar-lr1-but-not-slr1#:~:text=The%20only%20possible%20shift%2Freduce,)%20and%20LR(1).
+S = A a | b A c | d c | b d a
+A = d
+  "#;
+
+  #[test]
+  fn ambiguous() {
+    let (grammar, eof_token, ffn) = prepare(AMBIGUOUS);
+    let mut builder = Builder::<SlrCalc>::new(&grammar, eof_token, ffn);
+
+    let result = builder.build();
+
+    assert_eq!(result, Err(Error::ShiftReduceConflict));
+  }
 }

@@ -1,6 +1,6 @@
 ---
-source: tests/slr.rs
-expression: tokens
+source: tests/eval.rs
+expression: result
 ---
 Ok(
     Ok(

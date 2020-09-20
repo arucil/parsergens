@@ -88,7 +88,7 @@ fn compute_first(
 ) -> Map<NonterminalId, BitSet> {
   let mut first = Map::<NonterminalId, BitSet>::new();
 
-  for &nt in grammar.nts.left_values() {
+  for &nt in grammar.nts.keys() {
     compute_nonterminal_first(grammar, nullable, &mut first, &mut BitSet::new(), nt);
   }
 

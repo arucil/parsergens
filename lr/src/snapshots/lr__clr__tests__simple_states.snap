@@ -1,0 +1,47 @@
+---
+source: lr/src/clr.rs
+expression: builder.states()
+---
+State 0 (start)
+_S -> . S $      $
+S -> . A a      $
+S -> . b A c      $
+S -> . d c      $
+S -> . b d a      $
+A -> . d      a
+
+State 1
+_S -> S . $      $
+
+State 2
+S -> A . a      $
+
+State 3
+S -> b . A c      $
+S -> b . d a      $
+A -> . d      c
+
+State 4
+S -> d . c      $
+A -> d .      a
+
+State 5
+S -> A a .      $
+
+State 6
+S -> b A . c      $
+
+State 7
+S -> b d . a      $
+A -> d .      c
+
+State 8
+S -> d c .      $
+
+State 9
+S -> b A c .      $
+
+State 10
+S -> b d a .      $
+
+

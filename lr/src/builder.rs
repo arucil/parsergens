@@ -1,16 +1,17 @@
 use std::hash::Hash;
 use std::collections::VecDeque;
 use bit_set::BitSet;
-use grammar::{ TokenId, NonterminalId, LoweredGrammar, Symbol, Assoc };
+use grammar::{ TokenId, NonterminalId, LoweredGrammar, Symbol, Assoc, BiMap, Map };
 use std::marker::PhantomData;
-use crate::{BiMap, Map, Error};
+use crate::Error;
 use crate::ffn::Ffn;
 
-pub trait LrStateCalculation {
+pub trait LrCalculation {
   type Item: LrItem;
 
   fn start_item(
     start_prod_ix: usize,
+    eof_token: TokenId,
   ) -> Self::Item;
 
   fn next_item(
@@ -19,6 +20,7 @@ pub trait LrStateCalculation {
 
   fn closure_step<F>(
     grammar: &LoweredGrammar,
+    ffn: &Ffn,
     prev: &Self::Item,
     action: F,
   )
@@ -36,10 +38,17 @@ pub trait LrStateCalculation {
 pub trait LrItem: Eq + Hash + Ord + Clone {
   fn prod_ix(&self) -> usize;
   fn dot_ix(&self) -> usize;
+
+  #[cfg(test)]
+  fn fmt(
+    &self,
+    grammar: &LoweredGrammar,
+    f: &mut impl std::fmt::Write
+  ) -> std::fmt::Result;
 }
 
 pub struct Builder<'a, T>
-  where T: LrStateCalculation
+  where T: LrCalculation
 {
   grammar: &'a LoweredGrammar,
   ffn: Ffn,
@@ -61,7 +70,7 @@ struct ActionEntry {
 }
 
 impl<'a, T> Builder<'a, T>
-  where T: LrStateCalculation
+  where T: LrCalculation
 {
   pub fn new(grammar: &'a LoweredGrammar, eof_token: TokenId, ffn: Ffn) -> Self {
     Builder {
@@ -87,7 +96,7 @@ impl<'a, T> Builder<'a, T>
           Symbol::Nonterminal(nt) => nt,
           _ => unreachable!(),
         };
-      let nt_name = self.grammar.nts.get_by_left(&real_start_nt).unwrap().clone();
+      let nt_name = self.grammar.nts.get(&real_start_nt).unwrap().clone();
       self.start.insert(nt_name, (real_start_nt.id(), start_state));
     }
 
@@ -177,7 +186,8 @@ impl<'a, T> Builder<'a, T>
 
   fn start(&mut self, nt: NonterminalId) -> Result<u32, Error> {
     let start_prod = self.grammar.nt_metas[&nt].range.start;
-    let start_item = store_item(&mut self.items, T::start_item(start_prod));
+    let start_item = store_item(&mut self.items,
+      T::start_item(start_prod, self.eof_token));
     let start_state_set = self.closure({
       let mut set = BitSet::new();
       set.insert(start_item);
@@ -249,7 +259,7 @@ impl<'a, T> Builder<'a, T>
         if item.dot_ix() < symbols.len() {
           let items = &mut self.items;
 
-          T::closure_step(&self.grammar, &item, |new_item| {
+          T::closure_step(&self.grammar, &self.ffn, &item, |new_item| {
             let item = store_item(items, new_item);
             if !result.contains(item) {
               new.insert(item);
@@ -325,7 +335,7 @@ use std::fmt::{self, Write};
 
 #[cfg(test)]
 impl<'a, T> Builder<'a, T>
-  where T: LrStateCalculation
+  where T: LrCalculation
 {
   pub fn states(self) -> String {
     let mut buf = String::new();
@@ -346,31 +356,7 @@ impl<'a, T> Builder<'a, T>
 
       for item in state_set.iter() {
         let item = self.items.get_by_right(&item).unwrap();
-        let nt = self.grammar.prods[item.prod_ix()].nt;
-        let symbols = &self.grammar.prods[item.prod_ix()].symbols;
-
-        write!(fmt, "{} ->", self.grammar.nts.get_by_left(&nt).unwrap())?;
-
-        for (i, sym) in symbols.iter().enumerate() {
-          if i == item.dot_ix() {
-            write!(fmt, " .")?;
-          }
-
-          match sym {
-            Symbol::Token(token) => {
-              let name = self.grammar.tokens.get_by_left(token).map(|s|s.as_str()).unwrap_or("$");
-              write!(fmt, " {}", name)?;
-            }
-            Symbol::Nonterminal(nt) => {
-              let name = self.grammar.nts.get_by_left(nt).unwrap();
-              write!(fmt, " {}", name)?;
-            }
-          }
-        } 
-
-        if item.dot_ix() == symbols.len() {
-          write!(fmt, " .")?;
-        }
+        item.fmt(&self.grammar, fmt)?;
 
         writeln!(fmt)?;
       }

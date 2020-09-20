@@ -261,7 +261,17 @@ Ok(
                 0,
             ),
         },
-        nts: {NonterminalId(0) <> "expr", NonterminalId(1) <> "factor", NonterminalId(2) <> "param-list"},
+        nts: {
+            NonterminalId(
+                0,
+            ): "expr",
+            NonterminalId(
+                1,
+            ): "factor",
+            NonterminalId(
+                2,
+            ): "param-list",
+        },
         nt_metas: {
             NonterminalId(
                 0,
@@ -535,7 +545,35 @@ Ok(
                 },
             },
         ),
-        tokens: {TokenId(0) <> "PLUS", TokenId(1) <> "MINUS", TokenId(2) <> "MUL", TokenId(3) <> "DIV", TokenId(4) <> "LPAREN", TokenId(5) <> "RPAREN", TokenId(6) <> "COMMA", TokenId(7) <> "NUMBER", TokenId(8) <> "IDENT"},
+        tokens: {
+            TokenId(
+                0,
+            ): "PLUS",
+            TokenId(
+                1,
+            ): "MINUS",
+            TokenId(
+                2,
+            ): "MUL",
+            TokenId(
+                3,
+            ): "DIV",
+            TokenId(
+                4,
+            ): "LPAREN",
+            TokenId(
+                5,
+            ): "RPAREN",
+            TokenId(
+                6,
+            ): "COMMA",
+            TokenId(
+                7,
+            ): "NUMBER",
+            TokenId(
+                8,
+            ): "IDENT",
+        },
         user_code: [],
         user_state: [],
     },

@@ -1,5 +1,5 @@
 ---
-source: tests/slr_func.rs
+source: tests/func.rs
 expression: result
 ---
 Ok(

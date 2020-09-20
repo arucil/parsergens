@@ -177,7 +177,23 @@ LoweredGrammar {
             0,
         ),
     },
-    nts: {NonterminalId(0) <> "top", NonterminalId(1) <> "atom", NonterminalId(2) <> "(A)?", NonterminalId(3) <> "(atom (A)?)*", NonterminalId(4) <> "(A atom)+"},
+    nts: {
+        NonterminalId(
+            0,
+        ): "top",
+        NonterminalId(
+            1,
+        ): "atom",
+        NonterminalId(
+            2,
+        ): "(A)?",
+        NonterminalId(
+            3,
+        ): "(atom (A)?)*",
+        NonterminalId(
+            4,
+        ): "(A atom)+",
+    },
     nt_metas: {
         NonterminalId(
             2,
@@ -248,7 +264,11 @@ LoweredGrammar {
             skip: {},
         },
     ),
-    tokens: {TokenId(0) <> "A"},
+    tokens: {
+        TokenId(
+            0,
+        ): "A",
+    },
     user_code: [],
     user_state: [],
 }

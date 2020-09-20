@@ -1,9 +1,9 @@
-use grammar::{BiMap, Map, TokenId};
+use grammar::{Map, TokenId};
 use heck::CamelCase;
 use itertools::Itertools;
 
 pub fn gen(
-  tokens: &BiMap<TokenId, String>
+  tokens: &Map<TokenId, String>
 ) -> (String, Map<TokenId, String>) {
   let variants = tokens.iter().map(|(id, name)| {
     let name = name.replace(&['\'', '-'][..], "_").to_camel_case();

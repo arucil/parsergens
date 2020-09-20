@@ -46,14 +46,14 @@ pub type Set<K> = std::collections::HashSet<K>;
 pub type Set<K> = indexmap::IndexSet<K>;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GrammarError {
   kind: GrammarErrorKind,
   message: String,
   span: (usize, usize),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GrammarErrorKind {
   ParseError,
   TokenDeclConflict,
@@ -275,6 +275,9 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
       ty,
     });
   }
+
+  let nts = nts.into_iter().collect();
+  let tokens = tokens.into_iter().collect();
 
   Ok(Grammar {
     rules,

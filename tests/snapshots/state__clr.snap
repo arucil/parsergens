@@ -1,5 +1,5 @@
 ---
-source: tests/slr_state.rs
+source: tests/state.rs
 expression: env
 ---
 {

@@ -2,7 +2,7 @@ use std::ops::Range;
 use std::borrow::Borrow;
 use super::lexer::{Lexer, TokenId};
 use super::Assoc;
-use crate::{Set, BiMap, Map};
+use crate::{Set, Map};
 
 pub use lower::*;
 
@@ -15,10 +15,10 @@ pub struct Grammar {
   /// starting non-terminals
   pub start_nts: Set<NonterminalId>,
   /// non-terminals
-  pub nts: BiMap<NonterminalId, String>,
+  pub nts: Map<NonterminalId, String>,
   pub nt_metas: Map<NonterminalId, NonterminalMetadata>,
   pub lexer: Option<Lexer>,
-  pub tokens: BiMap<TokenId, String>,
+  pub tokens: Map<TokenId, String>,
   pub user_code: Vec<String>,
   pub user_state: Vec<UserState>,
 }

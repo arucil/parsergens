@@ -1,17 +1,17 @@
 use std::ops::Range;
 use crate::{
   Grammar, NonterminalIdGen, Item, Lexer, TokenId, NonterminalId, Assoc,
-  Set, BiMap, Map, UserState,
+  Set, Map, UserState,
 };
 
 #[derive(Debug)]
 pub struct LoweredGrammar {
   pub prods: Vec<Production>,
   pub start_nts: Set<NonterminalId>,
-  pub nts: BiMap<NonterminalId, String>,
+  pub nts: Map<NonterminalId, String>,
   pub nt_metas: Map<NonterminalId, LoweredNonterminalMetadata>,
   pub lexer: Option<Lexer>,
-  pub tokens: BiMap<TokenId, String>,
+  pub tokens: Map<TokenId, String>,
   pub user_code: Vec<String>,
   pub user_state: Vec<UserState>,
 }
@@ -55,7 +55,7 @@ pub enum Symbol {
 
 pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
   let max_nt_id = grammar.nts
-    .left_values()
+    .keys()
     .map(|x| x.id())
     .max()
     .unwrap();
@@ -237,10 +237,10 @@ fn make_production_name(
 
     match symbol {
       Symbol::Nonterminal(nt) => {
-        buf.push_str(lowered.nts.get_by_left(nt).unwrap());
+        buf.push_str(&lowered.nts[nt]);
       }
       Symbol::Token(token) => {
-        buf.push_str(lowered.tokens.get_by_left(token).unwrap());
+        buf.push_str(&lowered.tokens[token]);
       }
     }
 

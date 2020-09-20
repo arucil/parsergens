@@ -7,14 +7,14 @@ use grammar::{
 /// Add `S' -> S $` to grammar, where `$` is a new token representing EOF.
 pub fn augment(grammar: LoweredGrammar) -> (LoweredGrammar, TokenId) {
   let max_nt_id = grammar.nts
-    .left_values()
+    .keys()
     .map(|x| x.id())
     .max()
     .unwrap();
   let mut nt_id_gen = NonterminalIdGen::from(max_nt_id);
 
   let max_token_id = grammar.tokens
-    .left_values()
+    .keys()
     .map(|x| x.id())
     .max()
     .unwrap();
@@ -46,7 +46,7 @@ pub fn augment(grammar: LoweredGrammar) -> (LoweredGrammar, TokenId) {
       kind: NonterminalKind::User,
     });
 
-    let new_nt_name = format!("_{}", nts.get_by_left(&nt).unwrap());
+    let new_nt_name = format!("_{}", nts[&nt]);
     nts.insert(new_start_nt, new_nt_name);
 
     new_start_nt

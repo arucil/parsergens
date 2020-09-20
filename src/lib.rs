@@ -30,6 +30,9 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
     ParserKind::Slr => {
       lr::build(&grammar, lr::ParserKind::Slr).unwrap()
     }
+    ParserKind::Lr => {
+      lr::build(&grammar, lr::ParserKind::Clr).unwrap()
+    }
     _ => todo!()
   };
 

@@ -1,12 +1,13 @@
 #![feature(type_alias_impl_trait)]
 
-use grammar::{TokenId, Map, BiMap, NonterminalIdGen};
+use grammar::{TokenId, Map, NonterminalIdGen};
 use std::ops::Range;
-use builder::{Builder, LrStateCalculation};
+use builder::{Builder, LrCalculation};
 
 pub use grammar::{UserState, NonterminalKind, ProductionKind, GrammarError};
 
 mod slr;
+mod clr;
 mod ffn;
 mod augment;
 mod builder;
@@ -27,7 +28,7 @@ pub struct Parser {
   pub start: Map<String, (u32, u32)>,
   pub eof_index: usize,
   pub lexer: Option<grammar::Lexer>,
-  pub tokens: BiMap<TokenId, String>,
+  pub tokens: Map<TokenId, String>,
   pub user_code: Vec<String>,
   pub user_state: Vec<UserState>,
 }
@@ -55,7 +56,7 @@ pub enum Symbol {
   Nonterminal(u32),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
   GrammarError(GrammarError),
   ShiftReduceConflict,
@@ -73,7 +74,8 @@ pub enum ParserKind {
 
 pub fn build(input: &str, kind: ParserKind) -> Result<Parser, Error> {
   match kind {
-    ParserKind::Slr => build_parser::<slr::SlrStateCalc>(input),
+    ParserKind::Slr => build_parser::<slr::SlrCalc>(input),
+    ParserKind::Clr => build_parser::<clr::ClrCalc>(input),
     _ => todo!()
   }
 }
@@ -81,7 +83,7 @@ pub fn build(input: &str, kind: ParserKind) -> Result<Parser, Error> {
 fn build_parser<T>(
   input: &str
 ) -> Result<Parser, Error>
-  where T: LrStateCalculation
+  where T: LrCalculation
 {
   let grammar = grammar::build(input).map_err(Error::GrammarError)?;
   let grammar = grammar.lower();
@@ -117,7 +119,7 @@ fn build_parser<T>(
     NonterminalIdGen::default(),
     |gen, _| Some(gen.gen()))
     .map(|nt| {
-      let name = grammar.nts.get_by_left(&nt).unwrap().clone();
+      let name = grammar.nts[&nt].clone();
       let meta = &grammar.nt_metas[&nt];
       Nonterminal {
         name,
