@@ -16,3 +16,5 @@ grammar:
 - [x] support lifetime in user state. allow omitting lifetime parameter, auto gen
 - [x] move semantic action and type parsing to grammar
 - [ ] ~~generate parser through build.rs~~
+- [ ] integration test under release mode
+- [ ] LALR state: (prod, dot, BitSet), BitSet doesn't take part in Eq, Hash etc

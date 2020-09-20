@@ -1,0 +1,9 @@
+---
+source: tests/eval.rs
+expression: result
+---
+Ok(
+    Ok(
+        8.21,
+    ),
+)

@@ -33,6 +33,15 @@ pub trait LrCalculation {
     action: F,
   ) -> Result<(), Error>
     where F: FnMut(u32) -> Result<(), Error>;
+
+  /// return a Map from old states to new states.
+  fn merge_states(
+    _grammar: &LoweredGrammar,
+    _states: &mut BiMap<BitSet, u32>,
+    _items: &mut BiMap<Self::Item, usize>,
+  ) -> Option<Map<u32, u32>> {
+    None
+  }
 }
 
 pub trait LrItem: Eq + Hash + Ord + Clone {
@@ -56,7 +65,8 @@ pub struct Builder<'a, T>
   items: BiMap<T::Item, usize>,
   /// state -> token -> (shift state, reduce production)
   action: Map<u32, Map<u32, ActionEntry>>,
-  pub goto: Vec<Vec<u32>>,
+  /// state -> non-terminal -> next state
+  goto: Map<u32, Map<u32, u32>>,
   goto_row_len: usize,
   pub start: Map<String, (u32, u32)>,
   eof_token: TokenId,
@@ -79,7 +89,7 @@ impl<'a, T> Builder<'a, T>
       states: BiMap::new(),
       items: BiMap::new(),
       action: Map::new(),
-      goto: vec![],
+      goto: Map::new(),
       goto_row_len: grammar.nts.len(),
       start: Map::new(),
       eof_token,
@@ -100,7 +110,69 @@ impl<'a, T> Builder<'a, T>
       self.start.insert(nt_name, (real_start_nt.id(), start_state));
     }
 
+    if let Some(map) = T::merge_states(
+      &self.grammar, &mut self.states, &mut self.items)
+    {
+      self.map_merged_states(map)?;
+    }
+
     self.resolve_conflicts()?;
+
+    Ok(())
+  }
+
+  fn map_merged_states(&mut self, map: Map<u32, u32>) -> Result<(), Error> {
+    for (_, start_state) in self.start.values_mut() {
+      *start_state = map[&*start_state];
+    }
+
+    let mut new_action = Map::<u32, Map<u32, ActionEntry>>::new();
+
+    for (state, tx) in &self.action {
+      for (token, entry) in tx {
+        let new_state = map[state];
+        let new_entry = new_action.entry(new_state)
+          .or_default()
+          .entry(*token)
+          .or_default();
+
+        if let Some(shift) = &entry.shift {
+          let new_shift = map[shift];
+          if let Some(last_new_shift) = new_entry.shift {
+            assert!(new_shift == last_new_shift);
+          } else {
+            new_entry.shift = Some(new_shift);
+          }
+        }
+
+        if let Some(reduce) = entry.reduce {
+          if let Some(last_new_reduce) = new_entry.reduce {
+            if last_new_reduce != reduce {
+              return Err(Error::ReduceReduceConflict);
+            }
+          }
+          new_entry.reduce = Some(reduce);
+        }
+      }
+    }
+
+    self.action = new_action;
+
+    let mut new_goto = Map::<u32, Map<u32, u32>>::new();
+
+    for (state, tx) in &self.goto {
+      for (nt, next_state) in tx {
+        let new_state = map[state];
+        let new_next_state = map[next_state];
+        let new_entry = new_goto.entry(new_state)
+          .or_default()
+          .entry(*nt)
+          .or_default();
+        *new_entry = new_next_state;
+      }
+    }
+
+    self.goto = new_goto;
 
     Ok(())
   }
@@ -163,7 +235,7 @@ impl<'a, T> Builder<'a, T>
   }
 
   pub fn build_action_table(&self) -> Vec<Vec<i32>> {
-    let mut action = vec![vec![0i32; self.eof_token.id() as usize + 1]; self.goto.len()];
+    let mut action = vec![vec![0i32; self.eof_token.id() as usize + 1]; self.states.len()];
 
     for (state, tx) in &self.action {
       let row = &mut action[*state as usize];
@@ -182,6 +254,19 @@ impl<'a, T> Builder<'a, T>
     }
 
     action
+  }
+
+  pub fn build_goto_table(&self) -> Vec<Vec<u32>> {
+    let mut goto = vec![vec![0u32; self.goto_row_len]; self.states.len()];
+
+    for (state, tx) in &self.goto {
+      let row = &mut goto[*state as usize];
+      for (nt, next_state) in tx {
+        row[*nt as usize] = *next_state + 1;
+      }
+    }
+
+    goto
   }
 
   fn start(&mut self, nt: NonterminalId) -> Result<u32, Error> {
@@ -232,9 +317,10 @@ impl<'a, T> Builder<'a, T>
             entry.shift = Some(to_state_ix);
           }
           Symbol::Nonterminal(nt) => {
-            assert!(self.goto[from_state][nt.id() as usize] == 0);
+            let entry = self.goto[from_state].entry(nt.id()).or_default();
+            assert!(*entry == 0);
 
-            self.goto[from_state][nt.id() as usize] = to_state_ix + 1;
+            *entry = to_state_ix;
           }
         }
 
@@ -288,7 +374,7 @@ impl<'a, T> Builder<'a, T>
       self.states.insert(set.clone(), state);
 
       self.action.insert(state, Map::new());
-      self.goto.push(vec![0; self.goto_row_len]);
+      self.goto.insert(state, Map::new());
 
       state
     }
@@ -369,7 +455,9 @@ impl<'a, T> Builder<'a, T>
 
   pub fn action_goto(self) -> Vec<Vec<i32>> {
     let action = self.build_action_table();
-    action.into_iter().zip(self.goto).map(|(mut row1, row2)| {
+    let goto = self.build_goto_table();
+
+    action.into_iter().zip(goto).map(|(mut row1, row2)| {
       row1.extend(row2.into_iter().map(|x| x as i32));
       row1
     }).collect()

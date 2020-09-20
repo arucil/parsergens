@@ -8,6 +8,7 @@ pub use grammar::{UserState, NonterminalKind, ProductionKind, GrammarError};
 
 mod slr;
 mod clr;
+mod lalr;
 mod ffn;
 mod augment;
 mod builder;
@@ -76,7 +77,7 @@ pub fn build(input: &str, kind: ParserKind) -> Result<Parser, Error> {
   match kind {
     ParserKind::Slr => build_parser::<slr::SlrCalc>(input),
     ParserKind::Clr => build_parser::<clr::ClrCalc>(input),
-    _ => todo!()
+    ParserKind::Lalr => build_parser::<lalr::LalrCalc>(input),
   }
 }
 
@@ -95,6 +96,7 @@ fn build_parser<T>(
   builder.build()?;
 
   let action = builder.build_action_table();
+  let goto = builder.build_goto_table();
 
   let prods = grammar.prods.iter().map(|prod| {
     let symbols = prod.symbols.iter()
@@ -132,7 +134,7 @@ fn build_parser<T>(
 
   Ok(Parser {
     action,
-    goto: builder.goto,
+    goto,
     prods,
     nts,
     start: builder.start,

@@ -1,0 +1,33 @@
+---
+source: lr/src/lalr.rs
+expression: builder.states()
+---
+State 0 (start)
+_S -> . S $
+S -> . C C
+C -> . c C
+C -> . d
+
+State 1
+C -> . c C
+C -> . d
+C -> c . C
+
+State 2
+_S -> S . $
+
+State 3
+C -> . c C
+C -> . d
+S -> C . C
+
+State 4
+C -> d .
+
+State 5
+S -> C C .
+
+State 6
+C -> c C .
+
+

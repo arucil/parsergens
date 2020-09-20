@@ -92,9 +92,10 @@ impl LrCalculation for ClrCalc {
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
 pub struct Lr1Item {
-  prod_ix: usize,
-  dot_ix: usize,
-  token: u32,
+  pub prod_ix: usize,
+  pub dot_ix: usize,
+  // MAX if it's an item of a merged LALR state.
+  pub token: u32,
 }
 
 impl LrItem for Lr1Item {
@@ -138,8 +139,10 @@ impl LrItem for Lr1Item {
       write!(f, " .")?;
     }
 
-    write!(f, "      {}",
-      grammar.tokens.get(&self.token).map(|s|s.as_str()).unwrap_or("$"))?;
+    if self.token != std::u32::MAX {
+      write!(f, "      {}",
+        grammar.tokens.get(&self.token).map(|s|s.as_str()).unwrap_or("$"))?;
+    }
 
     Ok(())
   }

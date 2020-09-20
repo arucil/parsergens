@@ -33,7 +33,9 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
     ParserKind::Lr => {
       lr::build(&grammar, lr::ParserKind::Clr).unwrap()
     }
-    _ => todo!()
+    ParserKind::Lalr => {
+      lr::build(&grammar, lr::ParserKind::Lalr).unwrap()
+    }
   };
 
   let user_code = parser.user_code.join("\n");

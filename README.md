@@ -5,4 +5,4 @@ A collection of toy parser generators
 
 - [x] SLR(1)
 - [x] Canonical LR ( aka LR(1) )
-- [ ] LALR(1)
+- [x] LALR(1)
