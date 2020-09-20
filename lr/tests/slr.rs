@@ -1,11 +1,10 @@
-use lr::slr;
 use insta::assert_snapshot;
 
 mod parse;
 
 #[test]
 fn precedence() {
-  let parser = slr::build(r#"
+  let parser = lr::build(r#"
 %token plus "+"
 %token minus "-"
 %token mult "*"
@@ -42,7 +41,7 @@ E = E plus E    %prec ADD
 
 ARGS = ()
   | E (comma E)*
-  "#).unwrap();
+  "#, lr::ParserKind::Slr).unwrap();
 
   let input = "12 + 3 * x / 5 - 50 - foo ^ -y ^ (-1 == f() + g(3*-4, (p)))";
 

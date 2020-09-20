@@ -28,7 +28,7 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
 
   let parser = match spec.kind {
     ParserKind::Slr => {
-      lr::slr::build(&grammar).unwrap()
+      lr::build(&grammar, lr::ParserKind::Slr).unwrap()
     }
     _ => todo!()
   };
