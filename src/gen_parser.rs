@@ -31,7 +31,7 @@ pub fn gen(
       if nt.kind == NonterminalKind::User {
         nt.name.replace(&['\'', '-'][..], "_")
       } else {
-        format!("_{}", nanoid!(10).replace('~', "_"))
+        format!("_{}", nanoid!(10).replace(&['~', '-'][..], "_"))
       }
     })
     .collect::<Vec<_>>();

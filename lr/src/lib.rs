@@ -1,11 +1,14 @@
+#![feature(type_alias_impl_trait)]
+
 use grammar::{TokenId, Map, BiMap};
 use std::ops::Range;
 
-pub use grammar::{UserState, NonterminalKind, ProductionKind};
+pub use grammar::{UserState, NonterminalKind, ProductionKind, GrammarError};
 
 pub mod slr;
 mod ffn;
 mod augment;
+mod builder;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -49,4 +52,13 @@ pub struct Production {
 pub enum Symbol {
   Token(TokenId),
   Nonterminal(u32),
+}
+
+#[derive(Debug)]
+pub enum Error {
+  GrammarError(GrammarError),
+  ShiftReduceConflict,
+  ReduceReduceConflict,
+  PrecConflict,
+  AssocConflict,
 }
