@@ -6,22 +6,22 @@ use crate::builder::{LrCalculation, LrItem};
 pub enum SlrCalc {}
 
 impl LrCalculation for SlrCalc {
-  type Item = SlrItem;
+  type Item = Lr0Item;
 
   fn start_item(
     start_prod_ix: usize,
     _eof: TokenId,
-  ) -> SlrItem {
-    SlrItem {
+  ) -> Lr0Item {
+    Lr0Item {
       prod_ix: start_prod_ix,
       dot_ix: 0,
     }
   }
 
   fn next_item(
-    item: &SlrItem
-  ) -> SlrItem {
-    SlrItem {
+    item: &Lr0Item
+  ) -> Lr0Item {
+    Lr0Item {
       prod_ix: item.prod_ix,
       dot_ix: item.dot_ix + 1,
     }
@@ -30,17 +30,17 @@ impl LrCalculation for SlrCalc {
   fn closure_step<F>(
     grammar: &LoweredGrammar,
     _ffn: &Ffn,
-    prev: &SlrItem,
+    prev: &Lr0Item,
     mut action: F
   )
-    where F: FnMut(SlrItem)
+    where F: FnMut(Lr0Item)
   {
     let symbols = &grammar.prods[prev.prod_ix()].symbols;
     match &symbols[prev.dot_ix()] {
       Symbol::Token(_) => {}
       Symbol::Nonterminal(nt) => {
         for prod_ix in grammar.nt_metas[nt].range.clone() {
-          action(SlrItem {
+          action(Lr0Item {
             prod_ix,
             dot_ix: 0
           });
@@ -52,7 +52,7 @@ impl LrCalculation for SlrCalc {
   fn reduce_tokens<F>(
     grammar: &LoweredGrammar,
     ffn: &Ffn,
-    item: &SlrItem,
+    item: &Lr0Item,
     action: F,
   ) -> Result<(), Error>
     where F: FnMut(u32) -> Result<(), Error>
@@ -63,12 +63,12 @@ impl LrCalculation for SlrCalc {
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
-pub struct SlrItem {
+pub struct Lr0Item {
   prod_ix: usize,
   dot_ix: usize,
 }
 
-impl LrItem for SlrItem {
+impl LrItem for Lr0Item {
   fn prod_ix(&self) -> usize {
     self.prod_ix
   }
