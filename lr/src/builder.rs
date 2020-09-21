@@ -284,7 +284,7 @@ impl<'a, T> Builder<'a, T>
     queue.push_back(start_state_set);
 
     while let Some(state) = queue.pop_front() {
-      let from_state = self.state(&state) as usize;
+      let from_state = self.state(&state);
       let mut to_states = Map::<Symbol, BitSet>::new();
 
       for item in state.iter() {
@@ -311,13 +311,17 @@ impl<'a, T> Builder<'a, T>
 
         match sym {
           Symbol::Token(token) => {
-            let entry = self.action[from_state].entry(token.id()).or_default();
+            let entry = self.action.get_mut(&from_state).unwrap()
+              .entry(token.id())
+              .or_default();
             assert!(entry.shift.is_none());
 
             entry.shift = Some(to_state_ix);
           }
           Symbol::Nonterminal(nt) => {
-            let entry = self.goto[from_state].entry(nt.id()).or_default();
+            let entry = self.goto.get_mut(&from_state).unwrap()
+              .entry(nt.id())
+              .or_default();
             assert!(*entry == 0);
 
             *entry = to_state_ix;
@@ -380,11 +384,13 @@ impl<'a, T> Builder<'a, T>
     }
   }
 
-  fn reduce(&mut self, from_state: usize, item: &T::Item) -> Result<(), Error> {
+  fn reduce(&mut self, from_state: u32, item: &T::Item) -> Result<(), Error> {
     let action = &mut self.action;
 
     T::reduce_tokens(&self.grammar, &self.ffn, item, |token| {
-      let entry = action[from_state].entry(token).or_default();
+      let entry = action.get_mut(&from_state).unwrap()
+        .entry(token)
+        .or_default();
       if entry.reduce.is_some() {
         return Err(Error::ReduceReduceConflict);
       }
@@ -395,8 +401,10 @@ impl<'a, T> Builder<'a, T>
     })
   }
 
-  fn accept(&mut self, from_state: usize) {
-    let entry = self.action[from_state].entry(self.eof_token.id()).or_default();
+  fn accept(&mut self, from_state: u32) {
+    let entry = self.action.get_mut(&from_state).unwrap()
+      .entry(self.eof_token.id())
+      .or_default();
     entry.reduce = Some(std::i32::MAX as u32);
   }
 }
