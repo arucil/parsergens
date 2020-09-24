@@ -3,7 +3,13 @@ use std::collections::VecDeque;
 use bit_set::BitSet;
 use grammar::{ TokenId, NonterminalId, LoweredGrammar, Symbol, Assoc, BiMap, Map };
 use std::marker::PhantomData;
-use crate::Error;
+use crate::{
+  Error,
+  ShiftReduceConflictError,
+  ReduceReduceConflictError,
+  PrecConflictError,
+  AssocConflictError,
+};
 use crate::ffn::Ffn;
 
 pub trait LrCalculation {
@@ -48,12 +54,20 @@ pub trait LrItem: Eq + Hash + Ord + Clone {
   fn prod_ix(&self) -> usize;
   fn dot_ix(&self) -> usize;
 
-  #[cfg(test)]
   fn fmt(
     &self,
     grammar: &LoweredGrammar,
     f: &mut impl std::fmt::Write
   ) -> std::fmt::Result;
+
+  fn to_string(
+    &self,
+    grammar: &LoweredGrammar
+  ) -> String {
+    let mut s = String::new();
+    self.fmt(grammar, &mut s).unwrap();
+    s
+  }
 }
 
 pub struct Builder<'a, T>
@@ -148,7 +162,23 @@ impl<'a, T> Builder<'a, T>
         if let Some(reduce) = entry.reduce {
           if let Some(last_new_reduce) = new_entry.reduce {
             if last_new_reduce != reduce {
-              return Err(Error::ReduceReduceConflict);
+              let lookahead = self.grammar.tokens[token].clone();
+              let reduce1 = self.grammar.prods[last_new_reduce as usize].to_string(
+                &self.grammar);
+              let reduce2 = self.grammar.prods[reduce as usize].to_string(
+                &self.grammar);
+
+              let state_items = state_items(
+                &self.grammar,
+                self.states.get_by_right(&state).unwrap(),
+                &self.items);
+
+              return Err(Error::ReduceReduceConflict(ReduceReduceConflictError {
+                lookahead,
+                state_items,
+                reduce1,
+                reduce2,
+              }));
             }
           }
           new_entry.reduce = Some(reduce);
@@ -178,33 +208,79 @@ impl<'a, T> Builder<'a, T>
   }
 
   fn resolve_conflicts(&mut self) -> Result<(), Error> {
-    for (_, tx) in &mut self.action {
-      for (_, ActionEntry { shift, reduce }) in tx {
+    let grammar = &self.grammar;
+    let states = &self.states;
+    let items = &self.items;
+
+    for (state, tx) in &mut self.action {
+      for (token, ActionEntry { shift, reduce }) in tx {
         if let (&&mut Some(shift_state), &&mut Some(reduce_prod)) = (&shift, &reduce) {
           let (reduce_assoc, reduce_prec) = self.grammar.prods[reduce_prod as usize]
             .prec
-            .ok_or(Error::ShiftReduceConflict)?;
+            .ok_or_else(|| {
+              let shift = grammar.tokens[token].clone();
 
-          let mut shift_prec = None;
+              let state_items = state_items(
+                grammar,
+                states.get_by_right(state).unwrap(),
+                items);
+
+              let reduce = grammar.prods[reduce_prod as usize].to_string(grammar);
+
+              Error::ShiftReduceConflict(ShiftReduceConflictError {
+                state_items,
+                shift,
+                reduce,
+              })
+            })?;
+
+          let mut shift_prec: Option<(Assoc, u32, usize)> = None;
           for item in self.states.get_by_right(&shift_state).unwrap().iter() {
             let item = self.items.get_by_right(&item).unwrap();
             if item.dot_ix() == 0 {
               continue;
             }
+
             if let Some((assoc, prec)) = self.grammar.prods[item.prod_ix()].prec {
-              if let Some((last_assoc, last_prec)) = shift_prec {
+              if let Some((last_assoc, last_prec, last_prod_ix)) = shift_prec {
                 if last_prec != prec {
-                  return Err(Error::PrecConflict);
+                  let state_items = state_items(
+                    &self.grammar,
+                    self.states.get_by_right(&shift_state).unwrap(),
+                    &self.items);
+                  let prod1 = self.grammar.prods[last_prod_ix].to_string(
+                    &self.grammar);
+                  let prod2 = self.grammar.prods[item.prod_ix()].to_string(
+                    &self.grammar);
+
+                  return Err(Error::PrecConflict(PrecConflictError {
+                    state_items,
+                    prod1,
+                    prod2,
+                  }));
                 } else if last_assoc != assoc {
-                  return Err(Error::AssocConflict);
+                  let state_items = state_items(
+                    &self.grammar,
+                    self.states.get_by_right(&shift_state).unwrap(),
+                    &self.items);
+                  let prod1 = self.grammar.prods[last_prod_ix].to_string(
+                    &self.grammar);
+                  let prod2 = self.grammar.prods[item.prod_ix()].to_string(
+                    &self.grammar);
+
+                  return Err(Error::AssocConflict(AssocConflictError {
+                    state_items,
+                    prod1,
+                    prod2,
+                  }));
                 }
               } else {
-                shift_prec = Some((assoc, prec));
+                shift_prec = Some((assoc, prec, item.prod_ix()));
               }
             }
           }
 
-          if let Some((shift_assoc, shift_prec)) = shift_prec {
+          if let Some((shift_assoc, shift_prec, _)) = shift_prec {
             if shift_prec == reduce_prec {
               if shift_assoc == reduce_assoc {
                 match shift_assoc {
@@ -225,7 +301,21 @@ impl<'a, T> Builder<'a, T>
               *shift = None;
             }
           } else {
-            return Err(Error::ShiftReduceConflict);
+            let shift = self.grammar.tokens[token].clone();
+
+            let state_items = state_items(
+              &self.grammar,
+              self.states.get_by_right(state).unwrap(),
+              &self.items);
+
+            let reduce = self.grammar.prods[reduce_prod as usize].to_string(
+              &self.grammar);
+
+            return Err(Error::ShiftReduceConflict(ShiftReduceConflictError {
+              state_items,
+              shift,
+              reduce,
+            }));
           }
         }
       }
@@ -386,13 +476,30 @@ impl<'a, T> Builder<'a, T>
 
   fn reduce(&mut self, from_state: u32, item: &T::Item) -> Result<(), Error> {
     let action = &mut self.action;
+    let states = &self.states;
+    let items = &self.items;
+    let grammar=  &self.grammar;
 
     T::reduce_tokens(&self.grammar, &self.ffn, item, |token| {
       let entry = action.get_mut(&from_state).unwrap()
         .entry(token)
         .or_default();
-      if entry.reduce.is_some() {
-        return Err(Error::ReduceReduceConflict);
+      if let Some(last_reduce) = entry.reduce {
+        let lookahead = grammar.tokens[&token].clone();
+        let reduce1 = grammar.prods[last_reduce as usize].to_string(&grammar);
+        let reduce2 = grammar.prods[item.prod_ix()].to_string(&grammar);
+
+        let state_items = state_items(
+          grammar,
+          states.get_by_right(&from_state).unwrap(),
+          items);
+
+        return Err(Error::ReduceReduceConflict(ReduceReduceConflictError {
+          state_items,
+          lookahead,
+          reduce1,
+          reduce2,
+        }));
       }
       assert!(entry.shift.is_none());
 
@@ -422,6 +529,17 @@ fn store_item<I>(
     items.insert(item, len);
     len
   }
+}
+
+fn state_items<I: LrItem>(
+  grammar: &LoweredGrammar,
+  state: &BitSet,
+  items: &BiMap<I, usize>,
+) -> Vec<String> {
+  state.iter().map(|item| {
+    let item = items.get_by_right(&item).unwrap();
+    item.to_string(grammar)
+  }).collect()
 }
 
 #[cfg(test)]

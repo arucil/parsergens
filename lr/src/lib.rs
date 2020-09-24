@@ -60,10 +60,39 @@ pub enum Symbol {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
   GrammarError(GrammarError),
-  ShiftReduceConflict,
-  ReduceReduceConflict,
-  PrecConflict,
-  AssocConflict,
+  ShiftReduceConflict(ShiftReduceConflictError),
+  ReduceReduceConflict(ReduceReduceConflictError),
+  PrecConflict(PrecConflictError),
+  AssocConflict(AssocConflictError),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShiftReduceConflictError {
+  pub state_items: Vec<String>,
+  pub shift: String,
+  pub reduce: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReduceReduceConflictError {
+  pub state_items: Vec<String>,
+  pub lookahead: String,
+  pub reduce1: String,
+  pub reduce2: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PrecConflictError {
+  pub state_items: Vec<String>,
+  pub prod1: String,
+  pub prod2: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AssocConflictError {
+  pub state_items: Vec<String>,
+  pub prod1: String,
+  pub prod2: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

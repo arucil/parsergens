@@ -1,4 +1,5 @@
 use std::ops::Range;
+use std::fmt;
 use crate::{
   Grammar, NonterminalIdGen, Item, Lexer, TokenId, NonterminalId, Assoc,
   Set, Map, UserState,
@@ -251,6 +252,25 @@ fn make_production_name(
   buf.push(suffix);
 
   buf
+}
+
+impl Production {
+  pub fn fmt(&self, grammar: &LoweredGrammar, f: &mut impl fmt::Write) -> fmt::Result {
+    write!(f, "{} ->", grammar.nts[&self.nt])?;
+    for sym in &self.symbols {
+      match sym {
+        Symbol::Token(tok) => write!(f, " {}", grammar.tokens[tok])?,
+        Symbol::Nonterminal(nt) => write!(f, " {}", grammar.nts[nt])?,
+      }
+    }
+    Ok(())
+  }
+
+  pub fn to_string(&self, grammar: &LoweredGrammar) -> String {
+    let mut s = String::new();
+    self.fmt(grammar, &mut s).unwrap();
+    s
+  }
 }
 
 #[cfg(test)]

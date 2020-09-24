@@ -77,7 +77,6 @@ impl LrItem for Lr0Item {
     self.dot_ix
   }
 
-  #[cfg(test)]
   fn fmt(
     &self,
     grammar: &LoweredGrammar,
@@ -122,7 +121,6 @@ mod tests {
   use crate::ffn;
   use crate::augment;
   use crate::builder::Builder;
-  use crate::Error;
 
   fn prepare(input: &str) -> (LoweredGrammar, TokenId, Ffn) {
     let grammar = grammar::build(input).unwrap();
@@ -275,6 +273,6 @@ A = d
 
     let result = builder.build();
 
-    assert_eq!(result, Err(Error::ShiftReduceConflict));
+    assert_debug_snapshot!(result);
   }
 }

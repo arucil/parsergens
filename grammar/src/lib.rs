@@ -48,9 +48,9 @@ pub type Set<K> = indexmap::IndexSet<K>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GrammarError {
-  kind: GrammarErrorKind,
-  message: String,
-  span: (usize, usize),
+  pub kind: GrammarErrorKind,
+  pub message: String,
+  pub span: (usize, usize),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -136,7 +136,9 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     if !token_decls.is_empty() || !skip_decls.is_empty() {
       return Err(GrammarError {
         kind: GrammarErrorKind::TokenDeclConflict,
-        message: format!("token declaration conflict"),
+        message: format!(
+          "token declaration and external \
+          token declaration cannot exist simultaneously"),
         span: (0, grammar.len()),
       });
     }

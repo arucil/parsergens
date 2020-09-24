@@ -107,7 +107,6 @@ impl LrItem for Lr1Item {
     self.dot_ix
   }
 
-  #[cfg(test)]
   fn fmt(
     &self,
     grammar: &LoweredGrammar,

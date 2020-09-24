@@ -6,8 +6,8 @@ use syn::*;
 use quote::{ToTokens, quote};
 use std::fs;
 use std::path::Path;
-use std::io::prelude::*;
 use parser_spec::ParserKind;
+use grammar::{GrammarError, GrammarErrorKind};
 
 mod parser_spec;
 mod gen_token_enum;
@@ -18,24 +18,31 @@ mod tpl_engine;
 #[proc_macro_error]
 #[proc_macro]
 pub fn parsergen(expr: TokenStream) -> TokenStream {
+  use std::io::prelude::*;
+
   let spec = parse_macro_input!(expr as parser_spec::ParserSpec);
 
   let source = spec.file_path.span().source_file().path();
   let source_path = source.parent().unwrap().join(spec.file_path.value());
   let source_path = dunce::canonicalize(source_path).unwrap();
 
-  let grammar = fs::read_to_string(source_path).unwrap();
+  let grammar = fs::read_to_string(&source_path).unwrap();
 
   let parser = match spec.kind {
     ParserKind::Slr => {
-      lr::build(&grammar, lr::ParserKind::Slr).unwrap()
+      lr::build(&grammar, lr::ParserKind::Slr)
     }
     ParserKind::Lr => {
-      lr::build(&grammar, lr::ParserKind::Clr).unwrap()
+      lr::build(&grammar, lr::ParserKind::Clr)
     }
     ParserKind::Lalr => {
-      lr::build(&grammar, lr::ParserKind::Lalr).unwrap()
+      lr::build(&grammar, lr::ParserKind::Lalr)
     }
+  };
+
+  let parser = match parser {
+    Ok(parser) => parser,
+    Err(err) => report(source_path, grammar, err),
   };
 
   let user_code = parser.user_code.join("\n");
@@ -83,6 +90,157 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
   ).into()
 }
 
+fn report(
+  path: impl AsRef<Path>,
+  input: impl AsRef<str>,
+  err: lr::Error
+) -> ! {
+  match err {
+    lr::Error::GrammarError(err) => report_grammar_error(path, input, err),
+    lr::Error::ReduceReduceConflict(err) => report_rr_conflict(err),
+    lr::Error::ShiftReduceConflict(err) => report_sr_conflict(err),
+    lr::Error::PrecConflict(err) => report_prec_conflict(err),
+    lr::Error::AssocConflict(err) => report_assoc_conflict(err),
+  }
+}
+
+fn report_grammar_error(
+  path: impl AsRef<Path>,
+  input: impl AsRef<str>,
+  err: GrammarError
+) -> ! {
+  use std::fmt::Write;
+
+  let lines = input.as_ref()[..err.span.0].split('\n').collect::<Vec<_>>();
+  let line = lines.len() + 1;
+  let col = lines.last().unwrap().chars().count() + 1;
+  let error = match err.kind {
+    GrammarErrorKind::MissingDecl => "missing declaration",
+    GrammarErrorKind::NameConflict => "name conflict",
+    GrammarErrorKind::ParseError => "syntax error",
+    GrammarErrorKind::NameNotFound => "name not found",
+    GrammarErrorKind::TokenDeclConflict => "token declaration conflict",
+  };
+
+  let mut buf = String::new();
+  writeln!(&mut buf,
+    "{} at {}:{}:{}",
+    error,
+    path.as_ref().display(),
+    line,
+    col
+  ).unwrap();
+  writeln!(&mut buf,
+    "message: {}", err.message
+  ).unwrap();
+
+  panic!("{}", buf)
+}
+
+fn report_rr_conflict(
+  err: lr::ReduceReduceConflictError
+) -> ! {
+  use std::fmt::Write;
+
+  let mut buf = String::new();
+
+  writeln!(&mut buf,
+    "reduce-reduce conflict at state:\n"
+  ).unwrap();
+
+  for item in &err.state_items {
+    writeln!(&mut buf,
+      "  {}", item,
+    ).unwrap();
+  }
+
+  writeln!(&mut buf,
+    "\nwhich can be reduced by:\n\n  {}\n\nor:\n\n  {}\n\nwhen the lookahead is {}",
+    err.reduce1,
+    err.reduce2,
+    err.lookahead,
+  ).unwrap();
+
+  panic!("{}", buf)
+}
+
+fn report_sr_conflict(
+  err: lr::ShiftReduceConflictError
+) -> ! {
+  use std::fmt::Write;
+
+  let mut buf = String::new();
+
+  writeln!(&mut buf,
+    "shift-reduce conflict at state:\n"
+  ).unwrap();
+
+  for item in &err.state_items {
+    writeln!(&mut buf,
+      "  {}", item,
+    ).unwrap();
+  }
+
+  writeln!(&mut buf,
+    "\nwhich can shift {}\nor reduce by:\n\n  {}",
+    err.shift,
+    err.reduce,
+  ).unwrap();
+
+  panic!("{}", buf)
+}
+
+fn report_prec_conflict(
+  err: lr::PrecConflictError
+) -> ! {
+  use std::fmt::Write;
+
+  let mut buf = String::new();
+
+  writeln!(&mut buf,
+    "precedence conflict at state:\n"
+  ).unwrap();
+
+  for item in &err.state_items {
+    writeln!(&mut buf,
+      "  {}", item,
+    ).unwrap();
+  }
+
+  writeln!(&mut buf,
+    "\nthe production:\n\n  {}\n\nand the production:\n\n  {}\n\nhave different precedence",
+    err.prod1,
+    err.prod2,
+  ).unwrap();
+
+  panic!("{}", buf)
+}
+
+fn report_assoc_conflict(
+  err: lr::AssocConflictError
+) -> ! {
+  use std::fmt::Write;
+
+  let mut buf = String::new();
+
+  writeln!(&mut buf,
+    "associativity conflict at state:\n"
+  ).unwrap();
+
+  for item in &err.state_items {
+    writeln!(&mut buf,
+      "  {}", item,
+    ).unwrap();
+  }
+
+  writeln!(&mut buf,
+    "\nthe production:\n\n  {}\n\nand the production:\n\n  {}\n\nhave different associativity",
+    err.prod1,
+    err.prod2,
+  ).unwrap();
+
+  panic!("{}", buf)
+}
 
 trait ExpectWith {
   type Ok;

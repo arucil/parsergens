@@ -1,4 +1,3 @@
-#![feature(proc_macro_hygiene)]
 
 use insta::assert_debug_snapshot;
 
