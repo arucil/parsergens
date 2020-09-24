@@ -18,4 +18,4 @@ grammar:
 - [ ] ~~generate parser through build.rs~~
 - [x] integration test under release mode
 - [ ] LALR state: (prod, dot, BitSet), BitSet doesn't take part in Eq, Hash etc
-- [x] error reporting
+- [ ] error reporting
