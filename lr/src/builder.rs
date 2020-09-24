@@ -112,6 +112,7 @@ impl<'a, T> Builder<'a, T>
   }
 
   pub fn build(&mut self) -> Result<(), Error> {
+    println!(">>>>>>>>>>>>>>>>>>>>>>> start");
     for &start_nt in &self.grammar.start_nts {
       let start_state = self.start(start_nt)?;
       let start_prod_ix = self.grammar.nt_metas[&start_nt].range.start;
@@ -122,6 +123,7 @@ impl<'a, T> Builder<'a, T>
         };
       let nt_name = self.grammar.nts.get(&real_start_nt).unwrap().clone();
       self.start.insert(nt_name, (real_start_nt.id(), start_state));
+    println!(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> states: {}", self.states.len());
     }
 
     if let Some(map) = T::merge_states(
