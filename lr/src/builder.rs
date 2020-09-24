@@ -1,7 +1,7 @@
 use std::hash::Hash;
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
 use bit_set::BitSet;
-use grammar::{ TokenId, NonterminalId, LoweredGrammar, Symbol, Assoc, BiMap, Map };
+use grammar::{ TokenId, NonterminalId, LoweredGrammar, Symbol, Assoc, Map, BiMap };
 use std::marker::PhantomData;
 use crate::{
   Error,
@@ -45,7 +45,7 @@ pub trait LrCalculation {
     _grammar: &LoweredGrammar,
     _states: &mut BiMap<BitSet, u32>,
     _items: &mut BiMap<Self::Item, usize>,
-  ) -> Option<Map<u32, u32>> {
+  ) -> Option<HashMap<u32, u32>> {
     None
   }
 }
@@ -82,7 +82,7 @@ pub struct Builder<'a, T>
   /// state -> non-terminal -> next state
   goto: Map<u32, Map<u32, u32>>,
   goto_row_len: usize,
-  pub start: Map<String, (u32, u32)>,
+  pub start: HashMap<String, (u32, u32)>,
   eof_token: TokenId,
   _marker: PhantomData<T>,
 }
@@ -105,13 +105,15 @@ impl<'a, T> Builder<'a, T>
       action: Map::new(),
       goto: Map::new(),
       goto_row_len: grammar.nts.len(),
-      start: Map::new(),
+      start: HashMap::new(),
       eof_token,
       _marker: PhantomData,
     }
   }
 
   pub fn build(&mut self) -> Result<(), Error> {
+    {
+    let _g = flame::start_guard("build");
     println!(">>>>>>>>>>>>>>>>>>>>>>> start");
     for &start_nt in &self.grammar.start_nts {
       let start_state = self.start(start_nt)?;
@@ -123,21 +125,24 @@ impl<'a, T> Builder<'a, T>
         };
       let nt_name = self.grammar.nts.get(&real_start_nt).unwrap().clone();
       self.start.insert(nt_name, (real_start_nt.id(), start_state));
-    println!(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> states: {}", self.states.len());
     }
+    println!(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> states: {},items:{}", self.states.len(),self.items.len());
 
     if let Some(map) = T::merge_states(
       &self.grammar, &mut self.states, &mut self.items)
     {
       self.map_merged_states(map)?;
     }
+    println!(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> states: {},items:{}", self.states.len(),self.items.len());
 
     self.resolve_conflicts()?;
+  }
+  flame::dump_html(&mut std::fs::File::create("flame-graph.html").unwrap()).unwrap();
 
     Ok(())
   }
 
-  fn map_merged_states(&mut self, map: Map<u32, u32>) -> Result<(), Error> {
+  fn map_merged_states(&mut self, map: HashMap<u32, u32>) -> Result<(), Error> {
     for (_, start_state) in self.start.values_mut() {
       *start_state = map[&*start_state];
     }
@@ -362,20 +367,23 @@ impl<'a, T> Builder<'a, T>
   }
 
   fn start(&mut self, nt: NonterminalId) -> Result<u32, Error> {
+    let _g = flame::start_guard(format!("start {}", nt.id()));
     let start_prod = self.grammar.nt_metas[&nt].range.start;
     let start_item = store_item(&mut self.items,
       T::start_item(start_prod, self.eof_token));
-    let start_state_set = self.closure({
+    let mut start_state_set = {
       let mut set = BitSet::new();
       set.insert(start_item);
       set
-    });
+    };
+    self.closure(&mut start_state_set);
     let start_state = self.state(&start_state_set);
 
     let mut queue = VecDeque::new();
     queue.push_back(start_state_set);
 
     while let Some(state) = queue.pop_front() {
+      let _g = flame::start_guard("iterate");
       let from_state = self.state(&state);
       let mut to_states = Map::<Symbol, BitSet>::new();
 
@@ -396,8 +404,8 @@ impl<'a, T> Builder<'a, T>
         to_states.entry(symbols[item.dot_ix()].clone()).or_default().insert(new_item);
       }
 
-      for (sym, to_state) in to_states {
-        let to_state = self.closure(to_state);
+      for (sym, mut to_state) in to_states {
+        self.closure(&mut to_state);
         let is_new_state = !self.states.contains_left(&to_state);
         let to_state_ix = self.state(&to_state);
 
@@ -429,37 +437,24 @@ impl<'a, T> Builder<'a, T>
     Ok(start_state)
   }
 
-  fn closure(&mut self, initial: BitSet) -> BitSet {
-    let mut result = initial.clone();
-    let mut last = initial;
+  fn closure(&mut self, result: &mut BitSet) {
+    let _g = flame::start_guard("closure");
+    let mut new = result.iter().collect::<Vec<_>>();
 
-    loop {
-      let mut new = BitSet::new();
-      for i in last.iter() {
-        let item = self.items.get_by_right(&i).unwrap().clone();
-        let symbols = &self.grammar.prods[item.prod_ix()].symbols;
-        if item.dot_ix() < symbols.len() {
-          let items = &mut self.items;
+    while let Some(i) = new.pop() {
+      let item = self.items.get_by_right(&i).unwrap().clone();
+      let symbols = &self.grammar.prods[item.prod_ix()].symbols;
+      if item.dot_ix() < symbols.len() {
+        let items = &mut self.items;
 
-          T::closure_step(&self.grammar, &self.ffn, &item, |new_item| {
-            let item = store_item(items, new_item);
-            if !result.contains(item) {
-              new.insert(item);
-            }
-          })
-        }
+        T::closure_step(&self.grammar, &self.ffn, &item, |new_item| {
+          let item = store_item(items, new_item);
+          if result.insert(item) {
+            new.push(item);
+          }
+        })
       }
-
-      if new.is_empty() {
-        break;
-      }
-
-      result.union_with(&new);
-
-      last = new;
     }
-
-    result
   }
 
   fn state(&mut self, set: &BitSet) -> u32 {
@@ -477,6 +472,7 @@ impl<'a, T> Builder<'a, T>
   }
 
   fn reduce(&mut self, from_state: u32, item: &T::Item) -> Result<(), Error> {
+    let _g = flame::start_guard("reduce");
     let action = &mut self.action;
     let states = &self.states;
     let items = &self.items;

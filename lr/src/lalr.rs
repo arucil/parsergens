@@ -1,10 +1,10 @@
-use grammar::{ LoweredGrammar, TokenId };
+use std::collections::HashMap;
+use grammar::{ LoweredGrammar, TokenId, BiMap };
 use bit_set::BitSet;
 use crate::Error;
 use crate::ffn::Ffn;
 use crate::builder::LrCalculation;
 use crate::clr::{ClrCalc, Lr1Item};
-use grammar::{Map, BiMap};
 
 pub enum LalrCalc {}
 
@@ -24,6 +24,7 @@ impl LrCalculation for LalrCalc {
     ClrCalc::next_item(item)
   }
 
+  #[inline(always)]
   fn closure_step<F>(
     grammar: &LoweredGrammar,
     ffn: &Ffn,
@@ -35,6 +36,7 @@ impl LrCalculation for LalrCalc {
     ClrCalc::closure_step(grammar, ffn, prev, action)
   }
 
+  #[inline(always)]
   fn reduce_tokens<F>(
     grammar: &LoweredGrammar,
     ffn: &Ffn,
@@ -50,10 +52,10 @@ impl LrCalculation for LalrCalc {
     _grammar: &LoweredGrammar,
     states: &mut BiMap<BitSet, u32>,
     items: &mut BiMap<Lr1Item, usize>,
-  ) -> Option<Map<u32, u32>> {
+  ) -> Option<HashMap<u32, u32>> {
     let mut new_states = BiMap::<BitSet, u32>::new();
     let mut new_items = BiMap::new();
-    let mut map = Map::new();
+    let mut map = HashMap::new();
 
     for (state, state_id) in &*states {
       let new_state = state.iter().map(|item| {
@@ -290,6 +292,5 @@ field-init-exprs =
 
     builder.build().unwrap();
 
-    assert_snapshot!(builder.states());
   }
 }

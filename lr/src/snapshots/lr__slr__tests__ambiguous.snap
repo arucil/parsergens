@@ -1,0 +1,16 @@
+---
+source: lr/src/slr.rs
+expression: result
+---
+Err(
+    ShiftReduceConflict(
+        ShiftReduceConflictError {
+            state_items: [
+                "S -> d . c",
+                "A -> d .",
+            ],
+            shift: "c",
+            reduce: "A -> d",
+        },
+    ),
+)

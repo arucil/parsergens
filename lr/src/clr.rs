@@ -29,6 +29,7 @@ impl LrCalculation for ClrCalc {
     }
   }
 
+  #[inline(always)]
   fn closure_step<F>(
     grammar: &LoweredGrammar,
     ffn: &Ffn,
@@ -78,6 +79,7 @@ impl LrCalculation for ClrCalc {
     }
   }
 
+  #[inline(always)]
   fn reduce_tokens<F>(
     _grammar: &LoweredGrammar,
     _ffn: &Ffn,

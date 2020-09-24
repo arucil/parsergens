@@ -2,6 +2,7 @@
 
 use grammar::{TokenId, Map, NonterminalIdGen};
 use std::ops::Range;
+use std::collections::HashMap;
 use builder::{Builder, LrCalculation};
 
 pub use grammar::{UserState, NonterminalKind, ProductionKind, GrammarError};
@@ -26,7 +27,7 @@ pub struct Parser {
   pub prods: Vec<Production>,
   pub nts: Vec<Nonterminal>,
   /// non-terminal name -> (non-terminal id, starting state)
-  pub start: Map<String, (u32, u32)>,
+  pub start: HashMap<String, (u32, u32)>,
   pub eof_index: usize,
   pub lexer: Option<grammar::Lexer>,
   pub tokens: Map<TokenId, String>,
