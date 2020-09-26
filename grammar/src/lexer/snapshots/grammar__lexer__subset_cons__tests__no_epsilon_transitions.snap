@@ -1,5 +1,5 @@
 ---
-source: grammar/src/lexer/powerset_cons.rs
+source: grammar/src/lexer/subset_cons.rs
 expression: "(nfa, dfa)"
 ---
 (
@@ -8,13 +8,21 @@ expression: "(nfa, dfa)"
             (
                 State(0),
                 Some(
-                    1,
+                    0,
                 ),
             ): {
                 State(0),
             },
             (
                 State(0),
+                Some(
+                    1,
+                ),
+            ): {
+                State(1),
+            },
+            (
+                State(1),
                 Some(
                     0,
                 ),
@@ -23,12 +31,6 @@ expression: "(nfa, dfa)"
                 State(2),
             },
             (
-                State(0),
-                None,
-            ): {
-                State(1),
-            },
-            (
                 State(1),
                 Some(
                     1,
@@ -37,23 +39,18 @@ expression: "(nfa, dfa)"
                 State(1),
             },
             (
-                State(1),
-                None,
+                State(2),
+                Some(
+                    1,
+                ),
             ): {
+                State(1),
                 State(2),
             },
             (
                 State(2),
                 Some(
                     0,
-                ),
-            ): {
-                State(2),
-            },
-            (
-                State(2),
-                Some(
-                    1,
                 ),
             ): {
                 State(2),
@@ -61,15 +58,16 @@ expression: "(nfa, dfa)"
         },
         state_letters: {
             State(0): {
-                1,
                 0,
+                1,
             },
             State(1): {
+                0,
                 1,
             },
             State(2): {
-                0,
                 1,
+                0,
             },
         },
         accept_states: {
@@ -84,20 +82,20 @@ expression: "(nfa, dfa)"
         transitions: {
             (
                 State(0),
-                1,
+                0,
             ): State(0),
             (
                 State(0),
-                0,
-            ): State(1),
-            (
-                State(1),
                 1,
             ): State(1),
             (
                 State(1),
                 0,
             ): State(2),
+            (
+                State(1),
+                1,
+            ): State(1),
             (
                 State(2),
                 0,
@@ -108,8 +106,6 @@ expression: "(nfa, dfa)"
             ): State(2),
         },
         accept_states: {
-            State(0): "final",
-            State(1): "final",
             State(2): "final",
         },
     },

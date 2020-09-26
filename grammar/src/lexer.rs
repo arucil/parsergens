@@ -12,7 +12,7 @@ mod nfa_builder;
 mod dfa;
 mod dfa_builder;
 mod tabular_dfa;
-mod powerset_cons;
+mod subset_cons;
 mod util;
 pub mod build;
 pub mod tokens;

@@ -1,5 +1,6 @@
 use std::hash::Hash;
 use std::fmt::{self, Debug};
+use std::borrow::Borrow;
 use super::dfa::Dfa;
 use super::nfa_builder::NfaBuilder;
 use crate::{Map, Set};
@@ -29,7 +30,13 @@ impl<A, P, V> Nfa<A, P, V>
         V: Eq + Hash + Clone
 {
   pub fn to_dfa(&self, start: State) -> Dfa<A, V> {
-    super::powerset_cons::powerset(self, start)
+    super::subset_cons::powerset(self, start)
+  }
+}
+
+impl Borrow<u32> for State {
+  fn borrow(&self) -> &u32 {
+    &self.0
   }
 }
 

@@ -121,29 +121,17 @@ fn epsilon_closure<A, P, V>(
   where A: Eq + Hash,
         P: PartialOrd,
 {
-  let mut result = initial.clone();
-  let mut last = initial;
+  let mut result = initial;
+  let mut new = result.iter().map(|x| x as u32).collect::<Vec<_>>();
 
-  loop {
-    let mut new = BitSet::new();
-    for i in last.iter() {
-      for next in nfa.transitions.get(&(NfaState(i as u32), None))
-        .into_iter()
-        .flat_map(|x| x)
-      {
-        if !result.contains(next.0 as usize) {
-          new.insert(next.0 as usize);
+  while let Some(i) = new.pop() {
+    if let Some(nexts) = nfa.transitions.get(&(NfaState(i), None)) {
+      for next in nexts {
+        if result.insert(next.0 as usize) {
+          new.push(next.0);
         }
       }
     }
-
-    if new.is_empty() {
-      break;
-    }
-
-    result.union_with(&new);
-
-    last = new;
   }
 
   result

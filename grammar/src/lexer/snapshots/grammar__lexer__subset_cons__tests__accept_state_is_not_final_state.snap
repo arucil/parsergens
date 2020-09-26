@@ -1,5 +1,5 @@
 ---
-source: grammar/src/lexer/powerset_cons.rs
+source: grammar/src/lexer/subset_cons.rs
 expression: "(nfa, dfa)"
 ---
 (
