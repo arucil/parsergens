@@ -19,3 +19,4 @@ grammar:
 - [x] integration test in release mode
 - [ ] LALR state: (prod, dot, BitSet), BitSet doesn't take part in Eq, Hash etc
 - [ ] error reporting
+- [ ] use raw identifiers in generated code

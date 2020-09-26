@@ -112,6 +112,7 @@ impl<'a, T> Builder<'a, T>
   }
 
   pub fn build(&mut self) -> Result<(), Error> {
+    let time = std::time::Instant::now();
     {
     let _g = flame::start_guard("build");
     println!(">>>>>>>>>>>>>>>>>>>>>>> start");
@@ -134,6 +135,7 @@ impl<'a, T> Builder<'a, T>
       self.map_merged_states(map)?;
     }
     println!(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> states: {},items:{}", self.states.len(),self.items.len());
+    println!(">>>>>>> time: {}", std::time::Instant::now().duration_since(time).as_millis());
 
     self.resolve_conflicts()?;
   }
