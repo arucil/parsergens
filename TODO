@@ -23,3 +23,6 @@ grammar:
 - [ ] assign prec to token or production
 - [ ] literal token
 - [ ] use minimal integer type in generated code
+- [ ] improve DFA table compression
+- [ ] merge ACCEPT into REDUCE
+- [ ] parse_expr().with_input()

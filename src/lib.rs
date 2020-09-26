@@ -9,6 +9,7 @@ use std::path::Path;
 use parser_spec::ParserKind;
 use grammar::{GrammarError, GrammarErrorKind};
 
+mod indent_writer;
 mod parser_spec;
 mod gen_token_enum;
 mod gen_lexer;

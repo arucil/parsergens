@@ -2,24 +2,26 @@ use grammar::{Lexer, Map, TokenId};
 use grammar::lexer::State;
 use std::path::Path;
 use itertools::Itertools;
+use std::fmt::{self, Write};
+use super::indent_writer::IndentWriter;
 
 pub fn gen(
   lexer: &Option<Lexer>,
-  tokens: &Map<TokenId, String>
-) -> String {
+  tokens: &Map<TokenId, String>,
+  w: &mut IndentWriter<impl Write>,
+) -> fmt::Result {
   let lexer = if let Some(lexer) = lexer {
     lexer
   } else {
-    return String::new();
+    return Ok(());
   };
 
-  let dfa_tx_len = lexer.dfa.transitions.len();
-  let tx = lexer.dfa.transitions.iter().map(|(a,b)| format!("({}, {})", a, b)).join(", ");
+  gen_transition_table(&lexer.dfa.transitions, w)?;
 
-  let state_base_len = lexer.dfa.state_base.len();
-  let base = lexer.dfa.state_base.iter().join(", ");
+  gen_displacement_table(&lexer.dfa.state_disp, w)?;
 
-  let accept_states = (0..state_base_len as u32).map(|s| {
+  let num_states = lexer.dfa.state_disp.len();
+  let accept_states = (0..num_states as u32).map(|s| {
     if let Some(token) = lexer.dfa.accept_states.get(&State(s)) {
       if tokens.contains_key(token) {
         token.id() as i32 + 1
@@ -50,4 +52,30 @@ pub fn gen(
       _ => panic!("unknown param: {}", name),
     }
   }).unwrap()
+}
+
+fn gen_transition_table(
+  transitions: &[(u32, u32)],
+  w: &mut impl Write,
+) -> fmt::Result {
+  write!(w, "static DFA_TRANSITIONS: [(u32, u32); {}] = [", transitions.len())?;
+
+  for t in transitions {
+    write!(w, "({}, {}), ", t.0, t.1)?;
+  }
+
+  writeln!(w, "];")
+}
+
+fn gen_displacement_table(
+  disp: &[usize],
+  w: &mut impl Write,
+) -> fmt::Result {
+  write!(w, "static DFA_STATE_DISP: [usize; {}] = [", disp.len())?;
+
+  for t in disp {
+    write!(w, "{}, ", t)?;
+  }
+
+  writeln!(w, "];")
 }

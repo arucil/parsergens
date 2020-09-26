@@ -10,7 +10,8 @@ pub use super::dfa::State;
 #[derive(Debug)]
 pub struct TabularDfa<V> {
   pub start: u32,
-  pub state_base: Vec<usize>,
+  // state displacement table
+  pub state_disp: Vec<usize>,
   pub transitions: Vec<(u32, u32)>,
   pub accept_states: Map<State, V>,
 }
@@ -21,7 +22,7 @@ impl<V> TabularDfa<V> {
   }
 
   pub fn transition(&self, state: State, c: u32) -> Option<State> {
-    let tx = self.transitions[self.state_base[state.0 as usize] + c as usize];
+    let tx = self.transitions[self.state_disp[state.0 as usize] + c as usize];
     if tx.0 == state.0 && tx.1 != 0 {
       Some(State(tx.1 - 1))
     } else {
@@ -44,7 +45,7 @@ impl<V> From<Dfa<u32, V>> for TabularDfa<V> {
       .max().unwrap()
       + 1;
 
-    let mut state_base = vec![];
+    let mut state_disp = vec![];
     let mut transitions = vec![];
     let mut row_mask = bitvec![0; last_letter as usize + 1];
     let mut base = 0;
@@ -76,7 +77,7 @@ impl<V> From<Dfa<u32, V>> for TabularDfa<V> {
         row_mask.rotate_left(1);
       }
 
-      state_base.push(base);
+      state_disp.push(base);
 
       transitions.resize(base + last_letter as usize + 1, (state, 0));
 
@@ -95,7 +96,7 @@ impl<V> From<Dfa<u32, V>> for TabularDfa<V> {
 
     Self {
       start: dfa.start,
-      state_base,
+      state_disp,
       transitions,
       accept_states: dfa.accept_states,
     }
