@@ -20,3 +20,6 @@ grammar:
 - [ ] LALR state: (prod, dot, BitSet), BitSet doesn't take part in Eq, Hash etc
 - [ ] error reporting
 - [ ] use raw identifiers in generated code
+- [ ] assign prec to token or production
+- [ ] literal token
+- [ ] use minimal integer type in generated code
