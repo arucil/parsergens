@@ -1,17 +1,16 @@
 use grammar::{Lexer, Map, TokenId, Set};
 use grammar::lexer::State;
-use std::fmt::{self, Write};
-use super::IndentWriter;
+use codegen::Scope;
 
 pub fn gen(
   lexer: &Option<Lexer>,
   tokens: &Map<TokenId, String>,
-  w: &mut IndentWriter<impl Write>,
-) -> fmt::Result {
+  scope: &mut Scope,
+) {
   let lexer = if let Some(lexer) = lexer {
     lexer
   } else {
-    return Ok(());
+    return;
   };
 
   super::gen_1d_table("DFA_TRANSITIONS", "(u32, u32)", &lexer.dfa.transitions, w)?;

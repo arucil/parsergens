@@ -10,6 +10,7 @@ use parser_spec::ParserKind;
 use grammar::{GrammarError, GrammarErrorKind};
 use indent_writer::IndentWriter;
 use std::fmt::{self, Write, Debug};
+use codegen::Module;
 
 mod indent_writer;
 mod parser_spec;
@@ -82,28 +83,23 @@ fn gen_mod(
   vis: &str,
   mod_name: &str,
   parser: &lr::Parser,
-  w: &mut IndentWriter<impl Write>,
-) -> fmt::Result {
-  writeln!(w, "{} mod {} {{", vis, mod_name)?;
+) -> Module {
+  let mo = Module::new(mod_name);
+  mo.vis(vis);
+  let scope = mo.scope();
 
-  w.indent();
+  scope.raw("#![allow(dead_code, non_camel_case_types, unused_parens, unused_mut)]");
+  scope.raw("#![allow(unused_variables, unused_braces, non_snake_case)]");
 
-  writeln!(w, "{}", r##"
-#![allow(dead_code, non_camel_case_types, unused_parens, unused_mut)]
-#![allow(unused_variables, unused_braces, non_snake_case)]
-  "##.trim_end())?;
-
-  for code in parser.user_code {
-    writeln!(w, "{}", code)?;
+  for code in &parser.user_code {
+    scope.raw(code);
   }
 
-  let tokens = gen_token_enum::gen(&parser.tokens, &mut w)?;
-  let lexer = gen_lexer::gen(&parser.lexer, &tokens, &mut w)?;
-  let parser = gen_parser::gen(&parser, &mut w)?;
+  let tokens = gen_token_enum::gen(&parser.tokens, scope);
+  let lexer = gen_lexer::gen(&parser.lexer, &tokens, scope);
+  let parser = gen_parser::gen(&parser, &mut w);
 
-  w.dedent();
-
-  writeln!(w, "}}")
+  mo
 }
 
 fn gen_1d_table(
