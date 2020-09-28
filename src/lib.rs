@@ -8,6 +8,8 @@ use std::fs;
 use std::path::Path;
 use parser_spec::ParserKind;
 use grammar::{GrammarError, GrammarErrorKind};
+use indent_writer::IndentWriter;
+use std::fmt::{self, Write, Debug};
 
 mod indent_writer;
 mod parser_spec;
@@ -46,32 +48,17 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
     Err(err) => report(source_path, grammar, err),
   };
 
-  let user_code = parser.user_code.join("\n");
+  let mut output = IndentWriter::new(String::new());
 
-  let (token_enum, tokens) = gen_token_enum::gen(&parser.tokens);
-  let lexer = gen_lexer::gen(&parser.lexer, &tokens);
-  let parser = gen_parser::gen(&parser);
+  let vis = spec.vis.to_token_stream().to_string();
+  let mod_name = spec.mod_name.to_token_stream().to_string();
 
-  let vis = spec.vis;
-  let mod_name = spec.mod_name;
-
-  let output = format!(
-    r##"
-{vis} mod {mod_name} {{
-  #![allow(dead_code, non_camel_case_types, unused_parens, unused_mut)]
-  #![allow(unused_variables, unused_braces, non_snake_case)]
-  {user_code}
-  {token_enum}
-  {lexer}
-  {parser}
-}}
-    "##,
-    vis = vis.to_token_stream(),
-    mod_name = mod_name.to_token_stream(),
-    user_code = user_code,
-    token_enum = token_enum,
-    lexer = lexer,
-    parser = parser);
+  gen_mod(
+    &vis,
+    &mod_name,
+    &parser,
+    &mut output
+  ).unwrap();
 
   let output_file = format!("{}.rs", mod_name);
 
@@ -84,11 +71,87 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
     .open(&output_path)
     .expect(&format!("path: {:?}", output_path));
 
-  writeln!(&mut file, "{}", output).unwrap();
+  writeln!(&mut file, "{}", output.into_inner()).unwrap();
 
   quote!(
     include!(concat!(env!("OUT_DIR"), "/", #output_file));
   ).into()
+}
+
+fn gen_mod(
+  vis: &str,
+  mod_name: &str,
+  parser: &lr::Parser,
+  w: &mut IndentWriter<impl Write>,
+) -> fmt::Result {
+  writeln!(w, "{} mod {} {{", vis, mod_name)?;
+
+  w.indent();
+
+  writeln!(w, "{}", r##"
+#![allow(dead_code, non_camel_case_types, unused_parens, unused_mut)]
+#![allow(unused_variables, unused_braces, non_snake_case)]
+  "##.trim_end())?;
+
+  for code in parser.user_code {
+    writeln!(w, "{}", code)?;
+  }
+
+  let tokens = gen_token_enum::gen(&parser.tokens, &mut w)?;
+  let lexer = gen_lexer::gen(&parser.lexer, &tokens, &mut w)?;
+  let parser = gen_parser::gen(&parser, &mut w)?;
+
+  w.dedent();
+
+  writeln!(w, "}}")
+}
+
+fn gen_1d_table(
+  table_name: &str,
+  cell_type: &str,
+  table: &[impl Debug],
+  w: &mut impl Write,
+) -> fmt::Result {
+  write!(w,
+    "static {}: [{}; {}] = [",
+    table_name,
+    cell_type,
+    table.len())?;
+
+  for t in table {
+    write!(w, "{:?}, ", t)?;
+  }
+
+  writeln!(w, "];")
+}
+
+fn gen_2d_table(
+  table_name: &str,
+  cell_type: &str,
+  table: &[Vec<impl Debug>],
+  w: &mut IndentWriter<impl Write>,
+) -> fmt::Result {
+  let rows = table.len();
+  let cols = table[0].len();
+
+  writeln!(w,
+    "static {}: [[{}; {}]; {}] = [",
+    table_name,
+    cell_type,
+    table[0].len(),
+    table.len())?;
+
+  w.indent();
+  for row in table {
+    write!(w, "[")?;
+    for x in row {
+      write!(w, "{:?}, ", x)?;
+    }
+    writeln!(w, "]")?;
+  }
+  w.dedent();
+
+  writeln!(w, "]")
 }
 
 fn report(
@@ -110,8 +173,6 @@ fn report_grammar_error(
   input: impl AsRef<str>,
   err: GrammarError
 ) -> ! {
-  use std::fmt::Write;
-
   let lines = input.as_ref()[..err.span.0].split('\n').collect::<Vec<_>>();
   let line = lines.len() + 1;
   let col = lines.last().unwrap().chars().count() + 1;
@@ -141,8 +202,6 @@ fn report_grammar_error(
 fn report_rr_conflict(
   err: lr::ReduceReduceConflictError
 ) -> ! {
-  use std::fmt::Write;
-
   let mut buf = String::new();
 
   writeln!(&mut buf,
@@ -168,8 +227,6 @@ fn report_rr_conflict(
 fn report_sr_conflict(
   err: lr::ShiftReduceConflictError
 ) -> ! {
-  use std::fmt::Write;
-
   let mut buf = String::new();
 
   writeln!(&mut buf,
@@ -194,8 +251,6 @@ fn report_sr_conflict(
 fn report_prec_conflict(
   err: lr::PrecConflictError
 ) -> ! {
-  use std::fmt::Write;
-
   let mut buf = String::new();
 
   writeln!(&mut buf,
@@ -220,8 +275,6 @@ fn report_prec_conflict(
 fn report_assoc_conflict(
   err: lr::AssocConflictError
 ) -> ! {
-  use std::fmt::Write;
-
   let mut buf = String::new();
 
   writeln!(&mut buf,

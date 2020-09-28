@@ -1,5 +1,4 @@
 use std::fmt::{self, Write};
-use std::ops::{Deref, DerefMut};
 
 pub struct IndentWriter<W> {
   inner: W,
@@ -7,7 +6,6 @@ pub struct IndentWriter<W> {
   indent: usize,
 }
 
-pub struct Indented<'a, W>(&'a mut IndentWriter<W>);
 
 impl<W: Write> IndentWriter<W> {
   pub fn new(inner: W) -> Self {
@@ -22,27 +20,17 @@ impl<W: Write> IndentWriter<W> {
     write!(&mut self.inner, "{:1$}", "", self.indent * 2)
   }
 
-  pub fn indent(&mut self) -> Indented<W> {
+  pub fn indent(&mut self) {
     self.indent += 1;
-    Indented(self)
+  }
+
+  pub fn dedent(&mut self) {
+    assert!(self.indent > 0);
+    self.indent -= 1;
   }
 
   pub fn into_inner(self) -> W {
     self.inner
-  }
-}
-
-impl<'a, W: Write> Deref for Indented<'a, W> {
-  type Target = IndentWriter<W>;
-
-  fn deref(&self) -> &Self::Target {
-    self.0
-  }
-}
-
-impl<'a, W: Write> DerefMut for Indented<'a, W> {
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    self.0
   }
 }
 
