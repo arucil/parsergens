@@ -21,7 +21,7 @@ regex = "1.3.9"
 once_cell = "1.4.1"
 quote = "1.0.7"
 nanoid = "0.3.0"
-codegen = "0.1.3"
+codegen = { git = "https://github.com/arucil/codegen.git" }
 
 [workspace]
 members = [
