@@ -8,11 +8,10 @@ use std::fs;
 use std::path::Path;
 use parser_spec::ParserKind;
 use grammar::{GrammarError, GrammarErrorKind};
-use indent_writer::IndentWriter;
-use std::fmt::{self, Write, Debug};
-use codegen::Module;
+use std::fmt::{self, Write};
+use codegen::{Module, Scope, Formatter, Format};
+use itertools::Itertools;
 
-mod indent_writer;
 mod parser_spec;
 mod gen_token_enum;
 mod gen_lexer;
@@ -49,17 +48,14 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
     Err(err) => report(source_path, grammar, err),
   };
 
-  let mut output = IndentWriter::new(String::new());
-
   let vis = spec.vis.to_token_stream().to_string();
   let mod_name = spec.mod_name.to_token_stream().to_string();
 
-  gen_mod(
+  let module = gen_mod(
     &vis,
     &mod_name,
     &parser,
-    &mut output
-  ).unwrap();
+  );
 
   let output_file = format!("{}.rs", mod_name);
 
@@ -72,7 +68,12 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
     .open(&output_path)
     .expect(&format!("path: {:?}", output_path));
 
-  writeln!(&mut file, "{}", output.into_inner()).unwrap();
+  let mut output = String::new();
+  let mut fmt = Formatter::new(&mut output);
+  fmt.set_indent(2);
+  module.fmt(&mut fmt).unwrap();
+
+  writeln!(&mut file, "{}", output).unwrap();
 
   quote!(
     include!(concat!(env!("OUT_DIR"), "/", #output_file));
@@ -97,7 +98,7 @@ fn gen_mod(
 
   let tokens = gen_token_enum::gen(&parser.tokens, scope);
   let lexer = gen_lexer::gen(&parser.lexer, &tokens, scope);
-  let parser = gen_parser::gen(&parser, &mut w);
+  let parser = gen_parser::gen(&parser, scope);
 
   mo
 }
@@ -105,49 +106,28 @@ fn gen_mod(
 fn gen_1d_table(
   table_name: &str,
   cell_type: &str,
-  table: &[impl Debug],
-  w: &mut impl Write,
-) -> fmt::Result {
-  write!(w,
-    "static {}: [{}; {}] = [",
-    table_name,
-    cell_type,
-    table.len())?;
-
-  for t in table {
-    write!(w, "{:?}, ", t)?;
-  }
-
-  writeln!(w, "];")
+  table: &[impl fmt::Debug],
+  scope: &mut Scope,
+) {
+  let ty = format!("[{}; {}]", cell_type, table.len());
+  let value = table.iter().map(|x| format!("{:?}", x)).join(", ");
+  scope.new_static(table_name, ty).value(value);
 }
 
 fn gen_2d_table(
   table_name: &str,
   cell_type: &str,
-  table: &[Vec<impl Debug>],
-  w: &mut IndentWriter<impl Write>,
-) -> fmt::Result {
+  table: &[Vec<impl fmt::Debug>],
+  scope: &mut Scope,
+) {
   let rows = table.len();
   let cols = table[0].len();
 
-  writeln!(w,
-    "static {}: [[{}; {}]; {}] = [",
-    table_name,
-    cell_type,
-    table[0].len(),
-    table.len())?;
-
-  w.indent();
-  for row in table {
-    write!(w, "[")?;
-    for x in row {
-      write!(w, "{:?}, ", x)?;
-    }
-    writeln!(w, "]")?;
-  }
-  w.dedent();
-
-  writeln!(w, "]")
+  let ty = format!("[[{}; {}]; {}]", cell_type, cols, rows);
+  let value = table.iter().map(|row|
+    format!("[{}]", row.iter().map(|x| format!("{:?}", x)).join(", ")))
+    .join(", ");
+  scope.new_static(table_name, ty).value(value);
 }
 
 fn report(

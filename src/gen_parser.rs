@@ -2,19 +2,18 @@ use lr::{Parser, Symbol, Nonterminal, NonterminalKind, ProductionKind, Productio
 use heck::SnakeCase;
 use itertools::Itertools;
 use nanoid::nanoid;
-use std::fmt::{self, Write};
-use super::IndentWriter;
+use codegen::{Scope, Variant, EnumVariant, Function};
 
 pub fn gen(
   parser: &Parser,
-  w: &mut IndentWriter<impl Write>,
-) -> fmt::Result {
+  scope: &mut Scope,
+) {
 
-  super::gen_2d_table("ACTION", "i32", &parser.action, w)?;
-  super::gen_2d_table("GOTO", "u32", &parser.goto, w)?;
+  super::gen_2d_table("ACTION", "i32", &parser.action, scope);
+  super::gen_2d_table("GOTO", "u32", &parser.goto, scope);
   super::gen_1d_table("PRODUCTIONS", "(usize, u32)",
     &parser.prods.iter().map(|prod| (prod.rhs_len, prod.nt)).collect::<Vec<_>>(),
-    w)?;
+    scope);
 
   let nt_names = parser.nts.iter()
     .map(|nt| {
@@ -30,18 +29,18 @@ pub fn gen(
     .map(|nt| compute_nt_type(nt, parser))
     .collect::<Vec<_>>();
 
-  gen_nt_enum(&nt_names, &nt_types, w)?;
-  gen_nt_enum_impl(&nt_names, &nt_types, w)?;
+  gen_nt_enum(&nt_names, &nt_types, scope);
+  gen_nt_enum_impl(&nt_names, &nt_types, scope);
 
-  gen_parser_struct(w)?;
-  gen_input_func(w)?;
-  gen_parse_error_struct(w)?;
+  gen_parser_struct(scope);
+  gen_input_func(scope);
+  gen_parse_error_struct(scope);
 
   let user_state = parser.user_state.iter().map(|x| &x.state).join(", ");
 
-  gen_reduce_func(&parser.prods, &nt_names, &nt_types, &user_state, w)?;
+  gen_reduce_func(&parser.prods, &nt_names, &nt_types, &user_state, scope);
 
-  gen_parse_impl(&parser, &nt_names, &nt_types, w)?;
+  gen_parser_impl(&parser, &nt_names, &nt_types, scope);
 
   let user_state_names = (0..parser.user_state.len()).map(|i| {
     format!("us_{}", i)
@@ -66,101 +65,108 @@ pub fn gen(
 fn gen_nt_enum(
   nt_names: &[String],
   nt_types: &[String],
-  w: &mut impl Write,
-) -> fmt::Result {
-  writeln!(w, "{}", r##"
-enum NtType<'input> {
-  _Token(Token<'input>),
-  "##.trim_end())?;
+  scope: &mut Scope,
+) {
+  let enu = scope.new_enum("NtType")
+    .generic("'input")
+    .push_variant({
+      let mut v = Variant::new("_Token");
+      v.tuple("Token<'input>");
+      v
+    });
 
   for (name, ty) in nt_names.iter().zip(nt_types) {
-    writeln!(w, "  {}({}),", name, ty)?;
+    enu.push_variant({
+      let mut v = Variant::new(name);
+      v.tuple(ty);
+      v
+    });
   }
-
-  Ok(())
 }
 
 fn gen_nt_enum_impl(
   nt_names: &[String],
   nt_types: &[String],
-  w: &mut impl Write,
-) -> fmt::Result {
-  writeln!(w, "{}", r##"
-impl<'input> NtType<'input> {
-  fn assert_token(self) -> Token<'input> {
-    match self {
-      Self::_Token(tok) => tok,
-      _ => unreachable!(),
-    }
-  }
-  "##.trim_end())?;
+  scope: &mut Scope,
+) {
+  let imp = scope.new_impl("NtType")
+    .generic("'input")
+    .target_generic("'input");
+
+  imp.new_fn("assert_token")
+    .arg_self()
+    .ret("Token<'input>")
+    .line(r"
+match self {
+  Self::_Token(tok) => tok,
+  _ => unreachable!(),
+}
+");
 
   for (name, ty) in nt_names.iter().zip(nt_types) {
-    writeln!(w,
-      r##"
-  fn assert_{nt_name}(self) -> {nt_type} {{
-    match self {{
-      Self::{nt_name}(v) => v,
-      _ => unreachable!(),
-    }}
-  }}"##,
-      nt_name = name,
-      nt_type = ty,
-    )?;
+    imp.new_fn(format!("assert_{}", name))
+      .ret(ty)
+      .arg_self()
+      .line(format!(r"
+match self {{
+  Self::{}(v) => v,
+  _ => unreachable!(),
+}}
+", name));
   }
-
-  Ok(())
 }
 
 fn gen_parser_struct(
-  w: &mut impl Write,
-) -> fmt::Result {
-  writeln!(w, "{}", r##"
-pub struct Parser<'input, I> {
-  tokens: I,
-  token: Option<Token<'input>>,
-  token_kind: usize,
-}
-  "##.trim_end())
+  scope: &mut Scope,
+) {
+  scope.new_struct("Parser")
+    .generic("'input")
+    .generic("I")
+    .field("tokens", "I")
+    .field("token", "Option<Token<'input>>")
+    .field("token_kind", "usize");
 }
 
 fn gen_input_func(
-  w: &mut impl Write,
-) -> fmt::Result {
-  writeln!(w, "{}", r##"
-pub fn with_input<'input>(
-  input: &'input str,
-) -> Parser<'input, Tokens<'input>> {
-  Parser::new(lex(input))
-}
-  "##.trim_end())?;
+  scope: &mut Scope,
+) {
+  scope.new_fn("with_input")
+    .generic("'input")
+    .arg("input", "&'input str")
+    .ret("Parser<'input, Tokens<'input>>")
+    .line("Parser::new(lex(input))");
 
-  writeln!(w, "{}", r##"
-pub fn with_tokens<'input, I>(
-  tokens: I,
-) -> Parser<'input, I::IntoIter>
-  where I: IntoIterator<Item=::std::result::Result<Token<'input>, Error>>
-{
-  Parser::new(tokens.into_iter())
-}
-  "##.trim_end())
+  scope.new_fn("with_tokens")
+    .generic("'input")
+    .generic("I")
+    .arg("tokens", "I")
+    .ret("Parser<'input, I::IntoIter>")
+    .bound("I", "IntoIterator<Item=::std::result::Result<Token<'input>, Error>>")
+    .line("Parser::new(tokens.into_iter())");
 }
 
 fn gen_parse_error_struct(
-  w: &mut impl Write,
-) -> fmt::Result {
-  writeln!(w, "{}", r##"
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseError<'input> {
-  InvalidChar {
-    char: char,
-    start: usize,
-    end: usize,
-  },
-  InvalidToken(Token<'input>),
-  UnexpectedEof,
-}
-  "##.trim_end())
+  scope: &mut Scope,
+) {
+  scope.new_enum("ParseError")
+    .derive("Debug")
+    .derive("Clone")
+    .derive("PartialEq")
+    .derive("Eq")
+    .generic("'input")
+    .push_variant({
+      let mut v = Variant::new("InvalidChar");
+      v.named("char", "char")
+        .named("start", "usize")
+        .named("end", "usize");
+      v
+    })
+    .push_variant({
+      let mut v = Variant::new("InvalidToken");
+      v.tuple("Token<'input>");
+      v
+    })
+    .push_variant(Variant::new("UnexpectedEof"));
 }
 
 fn gen_reduce_func(
@@ -168,28 +174,20 @@ fn gen_reduce_func(
   nt_names: &[String],
   nt_types: &[String],
   user_state: &str,
-  w: &mut IndentWriter<impl Write>,
-) -> fmt::Result {
-  writeln!(w, r##"
-fn reduce<'input>(
-  nt: usize,
-  rhs: Vec<NtType<'input>>,
-  user_state: &mut ({user_state}),
-) -> NtType<'input> {{
-  match nt {{"##,
-  user_state = user_state);
+  scope: &mut Scope,
+) {
+  let func = scope.new_fn("reduce")
+    .generic("'input")
+    .arg("nt", "usize")
+    .arg("rhs", "Vec<NtType<'input>>")
+    .arg("user_state", format!("&mut ({})", user_state))
+    .ret("NtType<'input>")
+    .line("match nt {");
 
-  w.indent();
-  w.indent();
-  gen_prod_actions(prods, nt_names, nt_types, user_state, w)?;
-  w.dedent();
-  w.dedent();
+  gen_prod_actions(prods, nt_names, nt_types, user_state, func);
 
-  writeln!(w, "{}", r##"
-    _ => unreachable!(),
-  }
-}
-  "##.trim_end())
+  func.line("  _ => unreachable!(),")
+    .line("}");
 }
 
 fn compute_nt_type(
@@ -233,55 +231,41 @@ fn gen_prod_actions(
   nt_names: &[String],
   nt_types: &[String],
   user_state: &str,
-  w: &mut IndentWriter<impl Write>,
-) -> fmt::Result {
+  func: &mut Function,
+) {
   for (i, prod) in prods.iter().enumerate() {
     if let Some(action) = &prod.action {
-      gen_user_prod_action(i, prod, nt_names, nt_types, user_state, action, w)?;
+      gen_user_prod_action(i, prod, nt_names, nt_types, user_state, action, func);
     } else {
       match prod.kind {
         ProductionKind::Ordinary => {
-          writeln!(w,
-            r##"{i} => NtType::{nt_name}(()),"##,
-            i = i,
-            nt_name = nt_names[i],
-          )?;
+          func.line(format!("  {} => NtType::{}(())", i, nt_names[i]));
         }
         ProductionKind::RepetitionEpsilon => {
-          writeln!(w,
-            r##"{i} => NtType::{nt_name}(vec![]),"##,
-            i = i,
-            nt_name = nt_names[i],
-          )?;
+          func.line(format!("  {} => NtType::{}(vec![])", i, nt_names[i]));
         }
         ProductionKind::RepetitionFirst => {
-          writeln!(w, "{} => {{", i)?;
-          w.indent();
-          writeln!(w, "let mut rhs = rhs.into_iter();")?;
-          write!(w,
-            "NtType::{nt_name}(vec![(",
-            nt_name = nt_names[i])?;
-          gen_prod_action_init_args(&prod.symbols, &nt_names, w)?;
-          writeln!(w, ")])")?;
-          w.dedent();
-          writeln!(w, "}}")?;
+          func.line(format!("  {} => {{", i));
+          func.line("    let mut rhs = rhs.into_iter();");
+          func.line(format!("    NtType::{}(vec![(", nt_names[i]));
+          gen_prod_action_init_args(&prod.symbols, &nt_names, func);
+          func.line("    )])");
+          func.line("  }");
         }
         ProductionKind::RepetitionRest => {
-          writeln!(w, "{} => {{", i)?;
-          w.indent();
-          writeln!(w, "let mut rhs = rhs.into_iter();")?;
-          writeln!(w, "let mut result = rhs.next().unwrap().assert_{}()", nt_names[i])?;
-          write!(w, "result.push((")?;
-          gen_prod_action_init_args(&prod.symbols[1..], &nt_names, w)?;
-          writeln!(w, "))")?;
-          writeln!(w, "NtType::{}(result)", nt_names[i])?;
-          w.dedent();
-          writeln!(w, "}}")?;
+          func.line(format!("  {} => {{", i));
+          func.line("    let mut rhs = rhs.into_iter();");
+          func.line(format!("    let mut result = rhs.next().unwrap().assert_{}()",
+            nt_names[i]));
+          func.line("    result.push((");
+          gen_prod_action_init_args(&prod.symbols[1..], &nt_names, func);
+          func.line("    ));");
+          func.line(format!("    NtType::{}(result)", nt_names[i]));
+          func.line("  }");
         }
       }
     }
   }
-  Ok(())
 }
 
 fn gen_user_prod_action(
@@ -291,94 +275,71 @@ fn gen_user_prod_action(
   nt_types: &[String],
   action: &str,
   user_state: &str,
-  w: &mut IndentWriter<impl Write>,
-) -> fmt::Result {
-  writeln!(w, "{} => {{", index)?;
+  func: &mut Function,
+) {
+  func.line(format!("  {} => {{", index));
+  func.line("    fn semantic_action<'input>(");
+  func.line(format!("      state: &mut ({})", user_state));
 
-  w.indent();
-  writeln!(w, "{}", r##"fn semantic_action<'input>("##)?;
-
-  w.indent();
-  writeln!(w, "state: &mut ({}),", user_state)?;
   for (i, sym) in prod.symbols.iter().enumerate() {
     match sym {
       Symbol::Token(_) => {
-        writeln!(w,
-          "mut __{i}: Token<'input>,",
-          i = i)?;
+        func.line(format!("      mut __{}: Token<'input>,", i));
       }
       Symbol::Nonterminal(nt) => {
-        writeln!(w,
-          "mut __{i}: {ty},",
-          i = i,
-          ty = nt_types[*nt as usize])?;
+        func.line(format!("      mut __{}: {},", i, nt_types[*nt as usize]));
       }
     }
   }
-  w.dedent();
 
-  writeln!(w, ") -> {} {{", nt_types[index])?;
+  func.line(format!("    ) -> {} {{\n{}\n}}", nt_types[index], action));
 
-  w.indent();
-  writeln!(w, "{}", action)?;
-  w.dedent();
-  writeln!(w, "}}")?;
+  func.line(format!("    NtType::{}(semantic_action(user_state,", nt_names[index]));
 
-  write!(w,
-    "NtType::{nt_name}(semantic_action(user_state, ",
-    nt_name = nt_names[index])?;
-
-  gen_prod_action_init_args(&prod.symbols, &nt_names, w)?;
-  writeln!(w, "))")?;
-
-  w.dedent();
-  writeln!(w, "}}")
+  gen_prod_action_init_args(&prod.symbols, &nt_names, func);
+  func.line("    ))");
+  func.line("  }");
 }
 
 fn gen_prod_action_init_args(
   symbols: &[Symbol],
   nt_names: &[String],
-  w: &mut impl Write,
-) -> fmt::Result {
+  func: &mut Function,
+) {
   for sym in symbols {
     match sym {
       Symbol::Token(_) => {
-        write!(w, r##"rhs.next().unwrap().assert_token(), "##)?;
+        func.line("      rhs.next().unwrap().assert_token(),");
       }
       Symbol::Nonterminal(nt) => {
-        write!(w,
-          r##"rhs.next().unwrap().assert_{nt_name}(), "##,
-          nt_name = &nt_names[*nt as usize],
-        )?;
+        func.line("      rhs.next().unwrap().assert_token(),");
+        func.line(format!("      rhs.next().unwrap().assert_{}(),", nt_names[*nt as usize]));
       }
     }
   }
-  Ok(())
 }
 
 fn gen_parser_impl(
   parser: &Parser,
-  w: &mut IndentWriter<impl Write>
-) -> fmt::Result {
-  writeln!(w, "{}", r##"
-impl<'input, I> Parser<'input, I>
-  where I: Iterator<Item=::std::result::Result<Token<'input>, Error>>
-{
-  "##.trim_end())?;
-  w.indent();
+  scope: &mut Scope,
+) {
+  let imp = scope.new_impl("Parser")
+    .generic("'input")
+    .generic("I")
+    .target_generic("'input")
+    .target_generic("I")
+    .bound("I", "Iterator<Item=::std::result::Result<Token<'input>, Error>>");
 
-  writeln!(w, "{}", r##"
-fn new(tokens: I) -> Self {
-  Self {
-    tokens,
-    token: None,
-    token_kind: 0,
-  }
+  imp.new_fn("new")
+    .arg("tokens", "I")
+    .ret("Self")
+    .line(r"
+Self {
+  tokens,
+  token: None,
+  token_kind: 0,
 }
-  "##.trim_end())?;
-
-  writeln!(w, "{}", r##"
-  "##.trim_end())?;
+");
 }
 
 fn compute_start_fn(

@@ -1,6 +1,7 @@
 use grammar::{Lexer, Map, TokenId, Set};
 use grammar::lexer::State;
-use codegen::Scope;
+use codegen::{Scope, Function};
+use itertools::Itertools;
 
 pub fn gen(
   lexer: &Option<Lexer>,
@@ -13,9 +14,9 @@ pub fn gen(
     return;
   };
 
-  super::gen_1d_table("DFA_TRANSITIONS", "(u32, u32)", &lexer.dfa.transitions, w)?;
-  super::gen_1d_table("DFA_STATE_DISP", "usize", &lexer.dfa.state_disp, w)?;
-  super::gen_1d_table("LEXER_CHAR_INTERVALS", "u32", &lexer.char_intervals, w)?;
+  super::gen_1d_table("DFA_TRANSITIONS", "(u32, u32)", &lexer.dfa.transitions, scope);
+  super::gen_1d_table("DFA_STATE_DISP", "usize", &lexer.dfa.state_disp, scope);
+  super::gen_1d_table("LEXER_CHAR_INTERVALS", "u32", &lexer.char_intervals, scope);
 
   /*
   let num_states = lexer.dfa.state_disp.len();
@@ -32,207 +33,183 @@ pub fn gen(
   }).join(", ");
   */
 
-  writeln!(w, "{}", r##"
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Token<'input> {
-  pub kind: TokenKind,
-  pub text: &'input str,
-  pub start: usize,
-  pub end: usize,
-}
-    "##.trim_end())?;
+  scope.new_struct("Token")
+    .generic("'input")
+    .derive("Debug")
+    .derive("Clone")
+    .derive("PartialEq")
+    .derive("Eq")
+    .field_pub("kind", "TokenKind")
+    .field_pub("text", "&'input str")
+    .field_pub("start", "usize")
+    .field_pub("end", "usize");
 
-  writeln!(w, "{}", r##"
-#[derive(Debug, Clone)]
-pub struct Tokens<'input> {
-  input: &'input str,
-  pos: usize,
-}
-    "##.trim_end())?;
+  scope.new_struct("Tokens")
+    .generic("'input")
+    .field("input", "&'input str")
+    .field("pos", "usize");
 
-  writeln!(w, "{}", r##"
-#[derive(Debug, Clone)]
-pub struct Error {
-  pub char: char,
-  pub start: usize,
-  pub end: usize,
-}
-    "##.trim_end())?;
+  scope.new_struct("Error")
+    .derive("Debug")
+    .derive("Clone")
+    .field_pub("char", "char")
+    .field_pub("start", "usize")
+    .field_pub("end", "usize");
 
-  writeln!(w, "{}", r##"
-pub fn lex(input: &str) -> Tokens {
-  Tokens::new(input)
-}
-    "##.trim_end())?;
+  scope.new_fn("lex")
+    .vis("pub")
+    .arg("input", "&str")
+    .ret("Tokens")
+    .line("Tokens::new(input)");
 
-  writeln!(w, "{}", r##"
-impl<'input> Tokens<'input> {
-  fn new(input: &'input str) -> Self {
-    Self {
-      input,
-      pos: 0,
-    }
-  }
+  let impl_toks = scope.new_impl("Tokens")
+    .generic("'input")
+    .target_generic("'input");
+  impl_toks.new_fn("new")
+    .arg("input", "&'input str")
+    .ret("Self")
+    .line("Self {\n  input,\n  pos: 0,\n}");
+  impl_toks.new_fn("peek_char")
+    .arg_mut_self()
+    .ret("Option<char>")
+    .line("self.input[self.pos..].chars().next()");
+  impl_toks.new_fn("advance")
+    .arg_mut_self()
+    .line("self.pos += 1;")
+    .line(r"
+while !self.input.is_char_boundary(self.pos) {
+  self.pos += 1;
+}");
 
-  fn peek_char(&mut self) -> Option<char> {
-    self.input[self.pos..].chars().next()
-  }
-
-  fn advance(&mut self) {
-    self.pos += 1;
-    while !self.input.is_char_boundary(self.pos) {
-      self.pos += 1;
-    }
-  }
-}
-    "##.trim_end())?;
-
-  writeln!(w, "{}", r##"
-pub fn find_char_interval(char: u32, char_intervals: &[u32]) -> u32 {
-  let mut lo = 0;
-  let mut hi = char_intervals.len();
-
-  while lo < hi {
-    let mid = (lo + hi) / 2;
-    if char_intervals[mid] > char {
-      hi = mid;
-    } else {
-      lo = mid + 1;
-    }
-  }
-
-  lo as u32 - 1
-}
-    "##.trim_end())?;
-
-  writeln!(w, "{}", r##"
-fn transition(state: u32, c: u32) -> Option<u32> {
-  let tx = DFA_TRANSITIONS[DFA_STATE_DISP[state as usize] + c as usize];
-  if tx.0 == state && tx.1 != 0 {
-    Some(tx.1 - 1)
+  scope.new_fn("find_char_interval")
+    .arg("char", "u32")
+    .arg("char_intervals", "&[u32]")
+    .ret("u32")
+    .line("let mut lo = 0;")
+    .line("let mut hi = char_intervals.len();")
+    .line(r"
+while lo < hi {
+  let mid = (lo + hi) / 2;
+  if char_intervals[mid] > char {
+    hi = mid;
   } else {
-    None
+    lo = mid + 1;
   }
 }
-    "##.trim_end())?;
+")
+    .line("lo as u32 - 1");
 
-  writeln!(w, "{}", r##"
-impl<'input> Iterator for Tokens<'input> {
-  type Item = ::std::result::Result<Token<'input>, Error>;
+  scope.new_fn("transition")
+    .arg("state", "u32")
+    .arg("c", "u32")
+    .ret("Option<u32>")
+    .line("let tx = DFA_TRANSITIONS[DFA_STATE_DISP[state as usize] + c as usize];")
+    .line(r"
+if tx.0 == state && tx.1 != 0 {
+  Some(tx.1 - 1)
+} else {
+  None
+}
+");
 
-  fn next(&mut self) -> ::std::option::Option<Self::Item> {
-    use ::std::option::Option::{self, *};
+  let impl_iter_toks = scope.new_impl("Tokens")
+    .generic("'input")
+    .target_generic("'input")
+    .impl_trait("Iterator");
+  impl_iter_toks.associate_type("Item", "::std::result::Result<Token<'input>, Error>");
 
-    if self.pos == self.input.len() {
-      return Option::None;
+  let impl_iter_toks_next = impl_iter_toks.new_fn("next")
+    .arg_mut_self()
+    .ret("::std::option::Option<Self::Item>")
+    .line("use ::std::option::Option::{self, *};")
+    .line(r"
+if self.pos == self.input.len() {
+  return Option::None;
+}
+")
+    .line(format!("let mut state = {};", lexer.dfa.start))
+    .line(format!("let mut start = self.pos;"))
+    .line(format!("let mut end = start;"))
+    .line(format!("let mut token_kind: Option<TokenKind> = None;"))
+    .line(r"
+loop {
+  let no_move;
+
+  match self.peek_char() {
+    Some(c) => {
+      let char_interval = find_char_interval(
+        c as u32, &LEXER_CHAR_INTERVALS);
+
+      if let Some(next_state) = transition(state, char_interval) {
+        self.advance();
+        state = next_state;
+        no_move = false;
+      } else {
+        no_move = true;
+      }
     }
-    "##.trim_end())?;
-
-  writeln!(w, "    let mut state = {};", lexer.dfa.start)?;
-
-  writeln!(w, "{}", r##"
-    let mut start = self.pos;
-    let mut end = start;
-    let mut token_kind: Option<TokenKind> = None;
-
-    loop {
-      let no_move;
-
-      match self.peek_char() {
-        Some(c) => {
-          let char_interval = find_char_interval(
-            c as u32, &LEXER_CHAR_INTERVALS);
-
-          if let Some(next_state) = transition(state, char_interval) {
-            self.advance();
-            state = next_state;
-            no_move = false;
-          } else {
-            no_move = true;
-          }
-        }
-        None => {
-          no_move = true;
-        }
-      }
-
-      if no_move {
-        self.pos = end;
-
-        if end == start {
-          let char = self.peek_char().unwrap();
-          let start = self.pos;
-          self.advance();
-          let end = self.pos;
-
-          return Some(Err(Error {
-            char,
-            start,
-            end,
-          }));
-        } else if let Some(kind) = token_kind {
-          return Some(Ok(Token {
-            kind,
-            text: &self.input[start..end],
-            start,
-            end,
-          }));
-        } else if end == self.input.len() {
-          return None;
-        } else {
-          state = DFA_START;
-          start = end;
-          continue;
-        }
-      }
-    "##.trim_end())?;
-
-  gen_accept_states(&lexer.dfa.accept_states, &lexer.skip, w)?;
-
-  writeln!(w, "{}", r##"
+    None => {
+      no_move = true;
     }
   }
-}
-    "##.trim_end())?;
 
-  Ok(())
+  if no_move {
+    self.pos = end;
+
+    if end == start {
+      let char = self.peek_char().unwrap();
+      let start = self.pos;
+      self.advance();
+      let end = self.pos;
+
+      return Some(Err(Error {
+        char,
+        start,
+        end,
+      }));
+    } else if let Some(kind) = token_kind {
+      return Some(Ok(Token {
+        kind,
+        text: &self.input[start..end],
+        start,
+        end,
+      }));
+    } else if end == self.input.len() {
+      return None;
+    } else {
+      state = DFA_START;
+      start = end;
+      continue;
+    }");
+
+  gen_accept_states(&lexer.dfa.accept_states, &lexer.skip, impl_iter_toks_next);
+
+  impl_iter_toks_next.line("  }")
+    .line("}");
 }
 
 fn gen_accept_states(
   accept_states: &Map<State, TokenId>,
   skip: &Set<TokenId>,
-  w: &mut impl Write,
-) -> fmt::Result {
-  writeln!(w, "{}", r##"      match state {"##)?;
+  func: &mut Function,
+) {
+  func.line("  match state {");
 
   if !skip.is_empty() {
-    write!(w, "        ")?;
-    let mut bar = false;
-    for (state, token) in accept_states {
-      if skip.contains(token) {
-        if bar {
-          write!(w, "| ")?;
-        }
-        bar = true;
-        write!(w, "{} ", state.0)?;
-      }
-    }
-    writeln!(w, "{}", r##"=> { end = self.pos; token_kind = None; }"##)?;
+    func.line(format!("    {} => {{ end = self.pos; token_kind = None; }}",
+      accept_states.iter().filter(|&(_, tok)| skip.contains(tok))
+        .map(|(state, _)| state.0.to_string())
+        .join(" | ")));
   }
 
   for (state, token) in accept_states {
     if !skip.contains(token) {
-      writeln!(w,
-        "{} => {{ end = self.pos; token_kind = Some({}); }}",
+      func.line(format!("    {} => {{ end = self.pos; token_kind = Some({}); }}",
         state.0,
-        token.id())?;
+        token.id()));
     }
   }
 
-  writeln!(w, "{}", r##"
-        _ => {}
-      }
-  "##.trim_end())?;
-
-  Ok(())
+  func.line("    _ => {}");
+  func.line("  }");
 }
