@@ -10,7 +10,7 @@ use crate::{
   PrecConflictError,
   AssocConflictError,
 };
-use crate::ffn::Ffn;
+use crate::first::FirstAndNullable;
 
 pub trait LrCalculation {
   type Item: LrItem;
@@ -26,7 +26,7 @@ pub trait LrCalculation {
 
   fn closure_step<F>(
     grammar: &LoweredGrammar,
-    ffn: &Ffn,
+    fan: &FirstAndNullable,
     prev: &Self::Item,
     action: F,
   )
@@ -34,7 +34,7 @@ pub trait LrCalculation {
 
   fn reduce_tokens<F>(
     grammar: &LoweredGrammar,
-    ffn: &Ffn,
+    fan: &FirstAndNullable,
     item: &Self::Item,
     action: F,
   ) -> Result<(), Error>
@@ -74,7 +74,7 @@ pub struct Builder<'a, T>
   where T: LrCalculation
 {
   grammar: &'a LoweredGrammar,
-  ffn: Ffn,
+  fan: FirstAndNullable,
   states: BiMap<BitSet, u32>,
   items: BiMap<T::Item, usize>,
   /// state -> token -> (shift state, reduce production)
@@ -96,10 +96,10 @@ struct ActionEntry {
 impl<'a, T> Builder<'a, T>
   where T: LrCalculation
 {
-  pub fn new(grammar: &'a LoweredGrammar, eof_token: TokenId, ffn: Ffn) -> Self {
+  pub fn new(grammar: &'a LoweredGrammar, eof_token: TokenId, fan: FirstAndNullable) -> Self {
     Builder {
       grammar: &grammar,
-      ffn,
+      fan,
       states: BiMap::new(),
       items: BiMap::new(),
       action: Map::new(),
@@ -443,7 +443,7 @@ impl<'a, T> Builder<'a, T>
       if item.dot_ix() < symbols.len() {
         let items = &mut self.items;
 
-        T::closure_step(&self.grammar, &self.ffn, &item, |new_item| {
+        T::closure_step(&self.grammar, &self.fan, &item, |new_item| {
           let item = store_item(items, new_item);
           if result.insert(item) {
             new.push(item);
@@ -473,7 +473,7 @@ impl<'a, T> Builder<'a, T>
     let items = &self.items;
     let grammar=  &self.grammar;
 
-    T::reduce_tokens(&self.grammar, &self.ffn, item, |token| {
+    T::reduce_tokens(&self.grammar, &self.fan, item, |token| {
       let entry = action.get_mut(&from_state).unwrap()
         .entry(token)
         .or_default();

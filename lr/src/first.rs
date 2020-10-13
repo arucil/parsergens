@@ -5,81 +5,20 @@ use bitvec::prelude::*;
 use grammar::{LoweredGrammar, NonterminalId, Symbol};
 use crate::Map;
 
-#[derive(Default, Debug)]
-pub struct Ffn {
+#[derive(Debug, Clone)]
+pub struct FirstAndNullable {
   pub first: Map<NonterminalId, BitSet>,
-  pub follow: Map<NonterminalId, BitSet>,
   pub nullable: BitSet,
 }
 
-pub fn compute(grammar: &LoweredGrammar) -> Ffn {
+pub fn compute(grammar: &LoweredGrammar) -> FirstAndNullable {
   let nullable = compute_nullable(grammar);
   let first = compute_first(grammar, &nullable);
-  let follow = compute_follow(grammar, &nullable, &first);
 
-  Ffn {
-    nullable,
+  FirstAndNullable {
     first,
-    follow
+    nullable,
   }
-}
-
-fn compute_follow(
-  grammar: &LoweredGrammar,
-  nullable: &BitSet,
-  first: &Map<NonterminalId, BitSet>,
-) -> Map<NonterminalId, BitSet> {
-  let mut follow = Map::<NonterminalId, BitSet>::new();
-
-  loop {
-    let mut changed = false;
-
-    for prod in &grammar.prods {
-      let mut sym_follow = None;
-      for symbol in prod.symbols.iter().rev() {
-        match symbol {
-          Symbol::Token(token) => {
-            sym_follow = Some({
-              let mut set = BitSet::new();
-              set.insert(token.id() as usize);
-              set
-            });
-          }
-          Symbol::Nonterminal(nt) => {
-            if sym_follow.is_none() {
-              sym_follow = Some(follow.get(&prod.nt).cloned().unwrap_or_default());
-            }
-
-            let nt_follow = follow.entry(*nt).or_default();
-            let old = (*nt_follow).clone();
-
-            match sym_follow {
-              None => unreachable!(),
-              Some(mut sf) => {
-                nt_follow.union_with(&sf);
-                if *nt_follow != old {
-                  changed = true;
-                }
-
-                sym_follow = Some(if nullable.contains(nt.id() as usize) {
-                  sf.union_with(&first[nt]);
-                  sf
-                } else {
-                  first[nt].clone()
-                });
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if !changed {
-      break;
-    }
-  }
-
-  follow
 }
 
 fn compute_first(
@@ -196,7 +135,7 @@ mod tests {
   use insta::assert_debug_snapshot;
 
   #[test]
-  fn ffn_simple() {
+  fn simple() {
     let grammar = grammar::build(r#"
 %token a "a"
 %token c "c"
@@ -215,13 +154,13 @@ X = Y
     "#).unwrap();
 
     let lowered = grammar.lower();
-    let ffn = compute(&lowered);
+    let first = compute(&lowered);
 
-    assert_debug_snapshot!(ffn);
+    assert_debug_snapshot!(first);
   }
 
   #[test]
-  fn ffn_recursive() {
+  fn recursive() {
     let grammar = grammar::build(r#"
 %token int "1"
 %token id "a"
@@ -246,13 +185,13 @@ PARAM-LIST = ()
     "#).unwrap();
 
     let lowered = grammar.lower();
-    let ffn = compute(&lowered);
+    let first = compute(&lowered);
 
-    assert_debug_snapshot!(ffn);
+    assert_debug_snapshot!(first);
   }
 
   #[test]
-  fn ffn_ll_expr() {
+  fn ll_expr() {
     let grammar = grammar::build(r#"
 %token plus "+"
 %token mult "*"
@@ -279,8 +218,8 @@ F = num
     "#).unwrap();
 
     let lowered = grammar.lower();
-    let ffn = compute(&lowered);
+    let first = compute(&lowered);
 
-    assert_debug_snapshot!(ffn);
+    assert_debug_snapshot!(first);
   }
 }

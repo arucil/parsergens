@@ -9,9 +9,10 @@ pub use grammar::{UserState, NonterminalKind, ProductionKind, GrammarError};
 
 mod clr;
 mod lalr;
-mod ffn;
+mod first;
 mod augment;
 mod builder;
+mod build_lalr;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -116,9 +117,9 @@ fn build_parser<T>(
   let grammar = grammar::build(input).map_err(Error::GrammarError)?;
   let grammar = grammar.lower();
   let (grammar, eof_token) = augment::augment(grammar);
-  let ffn = ffn::compute(&grammar);
+  let fan = first::compute(&grammar);
 
-  let mut builder = Builder::<T>::new(&grammar, eof_token, ffn);
+  let mut builder = Builder::<T>::new(&grammar, eof_token, fan);
 
   builder.build()?;
 

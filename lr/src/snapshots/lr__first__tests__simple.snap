@@ -1,8 +1,8 @@
 ---
-source: lr/src/ffn.rs
-expression: ffn
+source: lr/src/first.rs
+expression: first
 ---
-Ffn {
+FirstAndNullable {
     first: {
         NonterminalId(
             1,
@@ -17,25 +17,6 @@ Ffn {
         },
         NonterminalId(
             0,
-        ): {
-            0,
-            1,
-            2,
-        },
-    },
-    follow: {
-        NonterminalId(
-            0,
-        ): {},
-        NonterminalId(
-            1,
-        ): {
-            0,
-            1,
-            2,
-        },
-        NonterminalId(
-            2,
         ): {
             0,
             1,

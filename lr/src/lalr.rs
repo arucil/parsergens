@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use grammar::{ LoweredGrammar, TokenId, BiMap };
 use bit_set::BitSet;
 use crate::Error;
-use crate::ffn::Ffn;
 use crate::builder::LrCalculation;
 use crate::clr::{ClrCalc, Lr1Item};
+use crate::first::FirstAndNullable;
 
 pub enum LalrCalc {}
 
@@ -27,25 +27,25 @@ impl LrCalculation for LalrCalc {
   #[inline(always)]
   fn closure_step<F>(
     grammar: &LoweredGrammar,
-    ffn: &Ffn,
+    fan: &FirstAndNullable,
     prev: &Lr1Item,
     action: F
   )
     where F: FnMut(Lr1Item)
   {
-    ClrCalc::closure_step(grammar, ffn, prev, action)
+    ClrCalc::closure_step(grammar, fan, prev, action)
   }
 
   #[inline(always)]
   fn reduce_tokens<F>(
     grammar: &LoweredGrammar,
-    ffn: &Ffn,
+    fan: &FirstAndNullable,
     item: &Lr1Item,
     action: F,
   ) -> Result<(), Error>
     where F: FnMut(u32) -> Result<(), Error>
   {
-    ClrCalc::reduce_tokens(grammar, ffn, item, action)
+    ClrCalc::reduce_tokens(grammar, fan, item, action)
   }
 
   fn merge_states(
@@ -100,16 +100,16 @@ mod tests {
   use super::*;
   use insta::{assert_debug_snapshot, assert_snapshot};
   use grammar::{ TokenId, LoweredGrammar };
-  use crate::ffn::Ffn;
-  use crate::ffn;
+  use crate::first::FirstAndNullable;
+  use crate::first;
   use crate::augment;
   use crate::builder::Builder;
 
-  fn prepare(input: &str) -> (LoweredGrammar, TokenId, Ffn) {
+  fn prepare(input: &str) -> (LoweredGrammar, TokenId, FirstAndNullable) {
     let grammar = grammar::build(input).unwrap();
     let grammar = grammar.lower();
     let (grammar, eof_token) = augment::augment(grammar);
-    let ffn = ffn::compute(&grammar);
+    let ffn = first::compute(&grammar);
 
     (grammar, eof_token, ffn)
   }
