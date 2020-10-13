@@ -10,7 +10,6 @@ pub(crate) struct ParserSpec {
 }
 
 pub(crate) enum ParserKind {
-  Slr,
   Lr,
   Lalr,
 }
@@ -38,7 +37,6 @@ impl Parse for ParserSpec {
     let file_path = content.parse::<LitStr>()?;
 
     let kind = match kind.to_string().to_ascii_lowercase().as_str() {
-      "slr" => ParserKind::Slr,
       "lr" => ParserKind::Lr,
       "lalr" => ParserKind::Lalr,
       _ => abort!(kind, "unsupported parser type"),

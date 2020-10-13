@@ -1,5 +1,5 @@
 ---
-source: lr/tests/slr.rs
+source: lr/tests/lalr.rs
 expression: "parse::parse(&parser, input, \"E\").join(\"\\n\")"
 ---
 shift  12

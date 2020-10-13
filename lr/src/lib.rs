@@ -7,7 +7,6 @@ use builder::{Builder, LrCalculation};
 
 pub use grammar::{UserState, NonterminalKind, ProductionKind, GrammarError};
 
-mod slr;
 mod clr;
 mod lalr;
 mod ffn;
@@ -98,14 +97,12 @@ pub struct AssocConflictError {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParserKind {
-  Slr,
   Clr,
   Lalr,
 }
 
 pub fn build(input: &str, kind: ParserKind) -> Result<Parser, Error> {
   match kind {
-    ParserKind::Slr => build_parser::<slr::SlrCalc>(input),
     ParserKind::Clr => build_parser::<clr::ClrCalc>(input),
     ParserKind::Lalr => build_parser::<lalr::LalrCalc>(input),
   }

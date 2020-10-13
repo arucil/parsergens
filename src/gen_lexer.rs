@@ -18,6 +18,8 @@ pub fn gen(
   super::gen_1d_table("DFA_STATE_DISP", "usize", &lexer.dfa.state_disp, scope);
   super::gen_1d_table("LEXER_CHAR_INTERVALS", "u32", &lexer.char_intervals, scope);
 
+  scope.new_const("DFA_START", "u32").value(lexer.dfa.start.to_string());
+
   /*
   let num_states = lexer.dfa.state_disp.len();
   let accept_states = (0..num_states as u32).map(|s| {
@@ -34,6 +36,7 @@ pub fn gen(
   */
 
   scope.new_struct("Token")
+    .vis("pub")
     .generic("'input")
     .derive("Debug")
     .derive("Clone")
@@ -45,11 +48,13 @@ pub fn gen(
     .field_pub("end", "usize");
 
   scope.new_struct("Tokens")
+    .vis("pub")
     .generic("'input")
     .field("input", "&'input str")
     .field("pos", "usize");
 
   scope.new_struct("Error")
+    .vis("pub")
     .derive("Debug")
     .derive("Clone")
     .field_pub("char", "char")
@@ -127,7 +132,7 @@ if self.pos == self.input.len() {
   return Option::None;
 }
 ")
-    .line(format!("let mut state = {};", lexer.dfa.start))
+    .line("let mut state = DFA_START;")
     .line(format!("let mut start = self.pos;"))
     .line(format!("let mut end = start;"))
     .line(format!("let mut token_kind: Option<TokenKind> = None;"))
@@ -180,17 +185,18 @@ loop {
       state = DFA_START;
       start = end;
       continue;
-    }");
+    }
+  }");
 
-  gen_accept_states(&lexer.dfa.accept_states, &lexer.skip, impl_iter_toks_next);
+  gen_accept_states(&lexer.dfa.accept_states, &lexer.skip, tokens, impl_iter_toks_next);
 
-  impl_iter_toks_next.line("  }")
-    .line("}");
+  impl_iter_toks_next.line("  }");
 }
 
 fn gen_accept_states(
   accept_states: &Map<State, TokenId>,
   skip: &Set<TokenId>,
+  tokens: &Map<TokenId, String>,
   func: &mut Function,
 ) {
   func.line("  match state {");
@@ -204,9 +210,9 @@ fn gen_accept_states(
 
   for (state, token) in accept_states {
     if !skip.contains(token) {
-      func.line(format!("    {} => {{ end = self.pos; token_kind = Some({}); }}",
+      func.line(format!("    {} => {{ end = self.pos; token_kind = Some(TokenKind::{}); }}",
         state.0,
-        token.id()));
+        tokens[&token.id()]));
     }
   }
 

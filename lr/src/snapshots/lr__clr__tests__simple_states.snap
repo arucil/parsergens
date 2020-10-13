@@ -3,7 +3,7 @@ source: lr/src/clr.rs
 expression: builder.states()
 ---
 State 0 (start)
-_S -> . S $      $
+_S -> . S      $
 S -> . A a      $
 S -> . b A c      $
 S -> . d c      $
@@ -11,7 +11,7 @@ S -> . b d a      $
 A -> . d      a
 
 State 1
-_S -> S . $      $
+_S -> S .      $
 
 State 2
 S -> A . a      $

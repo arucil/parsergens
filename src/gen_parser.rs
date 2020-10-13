@@ -2,7 +2,7 @@ use lr::{Parser, Symbol, Nonterminal, NonterminalKind, ProductionKind, Productio
 use heck::SnakeCase;
 use itertools::Itertools;
 use nanoid::nanoid;
-use codegen::{Scope, Variant, EnumVariant, Function};
+use codegen::{Scope, Variant, EnumVariant, Function, Impl};
 
 pub fn gen(
   parser: &Parser,
@@ -36,30 +36,12 @@ pub fn gen(
   gen_input_func(scope);
   gen_parse_error_struct(scope);
 
-  let user_state = parser.user_state.iter().map(|x| &x.state).join(", ");
+  let user_state_tuple = format!("({})",
+    parser.user_state.iter().map(|x| &x.state).join(", "));
 
-  gen_reduce_func(&parser.prods, &nt_names, &nt_types, &user_state, scope);
+  gen_reduce_func(&parser.prods, &nt_names, &nt_types, &user_state_tuple, scope);
 
-  gen_parser_impl(&parser, &nt_names, &nt_types, scope);
-
-  let user_state_names = (0..parser.user_state.len()).map(|i| {
-    format!("us_{}", i)
-  }).collect::<Vec<_>>();
-
-  let user_state_params = user_state_names.iter()
-    .zip(parser.user_state.iter())
-    .map(|(name, ty)| {
-      format!(r##"{name} : {ty}"##, name = name, ty = ty.state)
-    }).join(", ");
-
-  let start_fn = compute_start_fn(
-    parser,
-    &nt_names,
-    &nt_types,
-    &user_state_names.join(", "),
-    &user_state_params);
-
-  let eof = parser.eof_index;
+  gen_parser_impl(&parser, &nt_names, &nt_types, &user_state_tuple, scope);
 }
 
 fn gen_nt_enum(
@@ -104,7 +86,13 @@ match self {
 ");
 
   for (name, ty) in nt_names.iter().zip(nt_types) {
-    imp.new_fn(format!("assert_{}", name))
+    let fn_nt_name = if name.starts_with("r#") {
+      &name[2..]
+    } else {
+      name
+    };
+
+    imp.new_fn(format!("assert_{}", fn_nt_name))
       .ret(ty)
       .arg_self()
       .line(format!(r"
@@ -120,6 +108,7 @@ fn gen_parser_struct(
   scope: &mut Scope,
 ) {
   scope.new_struct("Parser")
+    .vis("pub")
     .generic("'input")
     .generic("I")
     .field("tokens", "I")
@@ -131,12 +120,14 @@ fn gen_input_func(
   scope: &mut Scope,
 ) {
   scope.new_fn("with_input")
+    .vis("pub")
     .generic("'input")
     .arg("input", "&'input str")
     .ret("Parser<'input, Tokens<'input>>")
     .line("Parser::new(lex(input))");
 
   scope.new_fn("with_tokens")
+    .vis("pub")
     .generic("'input")
     .generic("I")
     .arg("tokens", "I")
@@ -149,6 +140,7 @@ fn gen_parse_error_struct(
   scope: &mut Scope,
 ) {
   scope.new_enum("ParseError")
+    .vis("pub")
     .derive("Debug")
     .derive("Clone")
     .derive("PartialEq")
@@ -173,18 +165,18 @@ fn gen_reduce_func(
   prods: &[Production],
   nt_names: &[String],
   nt_types: &[String],
-  user_state: &str,
+  user_state_tuple: &str,
   scope: &mut Scope,
 ) {
   let func = scope.new_fn("reduce")
     .generic("'input")
     .arg("nt", "usize")
     .arg("rhs", "Vec<NtType<'input>>")
-    .arg("user_state", format!("&mut ({})", user_state))
+    .arg("user_state", format!("&mut {}", user_state_tuple))
     .ret("NtType<'input>")
     .line("match nt {");
 
-  gen_prod_actions(prods, nt_names, nt_types, user_state, func);
+  gen_prod_actions(prods, nt_names, nt_types, user_state_tuple, func);
 
   func.line("  _ => unreachable!(),")
     .line("}");
@@ -230,24 +222,25 @@ fn gen_prod_actions(
   prods: &[Production],
   nt_names: &[String],
   nt_types: &[String],
-  user_state: &str,
+  user_state_tuple: &str,
   func: &mut Function,
 ) {
   for (i, prod) in prods.iter().enumerate() {
+    let nt = prod.nt as usize;
     if let Some(action) = &prod.action {
-      gen_user_prod_action(i, prod, nt_names, nt_types, user_state, action, func);
+      gen_user_prod_action(i, prod, nt_names, nt_types, action, user_state_tuple, func);
     } else {
       match prod.kind {
         ProductionKind::Ordinary => {
-          func.line(format!("  {} => NtType::{}(())", i, nt_names[i]));
+          func.line(format!("  {} => NtType::{}(()),", i, nt_names[nt]));
         }
         ProductionKind::RepetitionEpsilon => {
-          func.line(format!("  {} => NtType::{}(vec![])", i, nt_names[i]));
+          func.line(format!("  {} => NtType::{}(vec![]),", i, nt_names[nt]));
         }
         ProductionKind::RepetitionFirst => {
           func.line(format!("  {} => {{", i));
           func.line("    let mut rhs = rhs.into_iter();");
-          func.line(format!("    NtType::{}(vec![(", nt_names[i]));
+          func.line(format!("    NtType::{}(vec![(", nt_names[nt]));
           gen_prod_action_init_args(&prod.symbols, &nt_names, func);
           func.line("    )])");
           func.line("  }");
@@ -255,12 +248,12 @@ fn gen_prod_actions(
         ProductionKind::RepetitionRest => {
           func.line(format!("  {} => {{", i));
           func.line("    let mut rhs = rhs.into_iter();");
-          func.line(format!("    let mut result = rhs.next().unwrap().assert_{}()",
-            nt_names[i]));
+          func.line(format!("    let mut result = rhs.next().unwrap().assert_{}();",
+            nt_names[nt]));
           func.line("    result.push((");
           gen_prod_action_init_args(&prod.symbols[1..], &nt_names, func);
           func.line("    ));");
-          func.line(format!("    NtType::{}(result)", nt_names[i]));
+          func.line(format!("    NtType::{}(result)", nt_names[nt]));
           func.line("  }");
         }
       }
@@ -274,12 +267,13 @@ fn gen_user_prod_action(
   nt_names: &[String],
   nt_types: &[String],
   action: &str,
-  user_state: &str,
+  user_state_tuple: &str,
   func: &mut Function,
 ) {
   func.line(format!("  {} => {{", index));
+  func.line("    let mut rhs = rhs.into_iter();");
   func.line("    fn semantic_action<'input>(");
-  func.line(format!("      state: &mut ({})", user_state));
+  func.line(format!("      state: &mut {},", user_state_tuple));
 
   for (i, sym) in prod.symbols.iter().enumerate() {
     match sym {
@@ -292,9 +286,10 @@ fn gen_user_prod_action(
     }
   }
 
-  func.line(format!("    ) -> {} {{\n{}\n}}", nt_types[index], action));
+  func.line(format!("    ) -> {} {{\n{}\n}}", nt_types[prod.nt as usize], action));
 
-  func.line(format!("    NtType::{}(semantic_action(user_state,", nt_names[index]));
+  func.line(format!("    NtType::{}(semantic_action(user_state,",
+    nt_names[prod.nt as usize]));
 
   gen_prod_action_init_args(&prod.symbols, &nt_names, func);
   func.line("    ))");
@@ -312,8 +307,13 @@ fn gen_prod_action_init_args(
         func.line("      rhs.next().unwrap().assert_token(),");
       }
       Symbol::Nonterminal(nt) => {
-        func.line("      rhs.next().unwrap().assert_token(),");
-        func.line(format!("      rhs.next().unwrap().assert_{}(),", nt_names[*nt as usize]));
+        let nt_name = &nt_names[*nt as usize];
+        let nt_name = if nt_name.starts_with("r#") {
+          &nt_name[2..]
+        } else {
+          nt_name
+        };
+        func.line(format!("      rhs.next().unwrap().assert_{}(),", nt_name));
       }
     }
   }
@@ -321,6 +321,9 @@ fn gen_prod_action_init_args(
 
 fn gen_parser_impl(
   parser: &Parser,
+  nt_names: &[String],
+  nt_types: &[String],
+  user_state_tuple: &str,
   scope: &mut Scope,
 ) {
   let imp = scope.new_impl("Parser")
@@ -340,37 +343,131 @@ Self {
   token_kind: 0,
 }
 ");
+
+  let user_state_names = (0..parser.user_state.len()).map(|i| {
+    format!("us_{}", i)
+  }).collect::<Vec<_>>();
+
+  gen_start_fn(
+    parser,
+    &nt_names,
+    &nt_types,
+    &user_state_names,
+    imp);
+
+  gen_get_token_fn(parser.eof_index, imp);
+
+  gen_parse_fn(user_state_tuple, imp);
 }
 
-fn compute_start_fn(
+fn gen_start_fn(
   parser: &Parser,
   nt_names: &[String],
   nt_types: &[String],
-  user_state_names: &str,
-  user_state_params: &str,
-) -> String {
-  parser.start.iter().map(|(name, (nt, state))| {
+  user_state_names: &[String],
+  imp: &mut Impl,
+) {
+  for (name, (nt, state)) in &parser.start {
     let name = name.replace(&['\'', '-'][..], "_");
     let fn_name = format!("parse_{}", name.to_snake_case());
     let ty = &nt_types[*nt as usize];
 
     let nt_name = format!("{}", nt_names[*nt as usize]);
 
-    format!(
-      r##"
-      pub fn {fn_name}(
-        &mut self,
-        {user_state_params}
-      ) -> ::std::result::Result<{ty}, ParseError<'input>> {{
-        Ok(self.parse({state} as usize, ({user_state_names}))?.assert_{nt_name}())
-      }}
-      "##,
-      fn_name = fn_name,
-      user_state_params = user_state_params,
-      user_state_names = user_state_names,
-      nt_name = nt_name,
+    let func = imp.new_fn(fn_name)
+      .vis("pub")
+      .arg_mut_self();
+
+    for (name, ty) in user_state_names.iter().zip(&parser.user_state) {
+      func.arg(name, &ty.state);
+    }
+
+    func.ret(format!("::std::result::Result<{}, ParseError<'input>>", ty));
+
+    let nt_name = if nt_name.starts_with("r#") {
+      &nt_name[2..]
+    } else {
+      &nt_name
+    };
+
+    func.line(format!(
+      "Ok(self.parse({state} as usize, ({user_state_names}))?.assert_{nt_name}())",
       state = state,
-      ty = ty,
-    )
-  }).join("\n")
+      nt_name = nt_name,
+      user_state_names = user_state_names.join(", ")));
+  }
+}
+
+fn gen_get_token_fn(
+  eof: usize,
+  imp: &mut Impl,
+) {
+  imp.new_fn("get_token")
+    .arg_mut_self()
+    .ret("::std::result::Result<(), ParseError<'input>>")
+    .line(r"
+let token = self.tokens.next()
+  .transpose()
+  .map_err(|err| ParseError::InvalidChar {
+    char: err.char,
+    start: err.start,
+    end: err.end,
+  })?;")
+    .line(format!(r"
+if let Some(token) = &token {{
+  self.token_kind = token.kind as usize;
+}} else {{
+  self.token_kind = {};
+}}", eof))
+    .line(r"self.token = token;")
+    .line("Ok(())");
+}
+
+fn gen_parse_fn(
+  user_state_tuple: &str,
+  imp: &mut Impl,
+) {
+  imp.new_fn("parse")
+    .arg_mut_self()
+    .arg_mut("state", "usize")
+    .arg_mut("user_state", user_state_tuple)
+    .ret("::std::result::Result<NtType<'input>, ParseError<'input>>")
+    .line("let mut stack = ::std::vec::Vec::<(usize, NtType)>::new();")
+    .line("self.get_token()?;")
+    .line(r#"
+loop {
+  let action = ACTION[state][self.token_kind];
+
+  if action > 0 {
+    stack.push((state, NtType::_Token(self.token.take().unwrap())));
+    state = (action - 1) as usize;
+    self.get_token()?;
+  } else if action == ::std::i32::MIN {
+    return Ok(stack.pop().unwrap().1);
+  } else if action < 0 {
+    let prod = (!action) as usize;
+    let (rhs_len, nt) = PRODUCTIONS[prod];
+    let state0 = if rhs_len == 0 {
+      state
+    } else {
+      stack[stack.len() - rhs_len].0
+    };
+
+    state = GOTO[state0 as usize][nt as usize] as usize - 1;
+
+    let rhs = stack.drain(stack.len() - rhs_len..)
+      .map(|(_, x)| x)
+      .collect::<Vec<_>>();
+    let ty = reduce(prod, rhs, &mut user_state);
+
+    stack.push((state0, ty));
+  } else {
+    if let Some(token) = self.token.take() {
+      return Err(ParseError::InvalidToken(token));
+    } else {
+      return Err(ParseError::UnexpectedEof);
+    }
+  }
+}
+"#);
 }

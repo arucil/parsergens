@@ -41,7 +41,7 @@ E = E plus E    %prec ADD
 
 ARGS = ()
   | E (comma E)*
-  "#, lr::ParserKind::Slr).unwrap();
+  "#, lr::ParserKind::Lalr).unwrap();
 
   let input = "12 + 3 * x / 5 - 50 - foo ^ -y ^ (-1 == f() + g(3*-4, (p)))";
 

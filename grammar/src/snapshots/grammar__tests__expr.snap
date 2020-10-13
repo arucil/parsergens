@@ -298,7 +298,7 @@ Ok(
             Lexer {
                 dfa: TabularDfa {
                     start: 11,
-                    state_base: [
+                    state_disp: [
                         0,
                         0,
                         0,

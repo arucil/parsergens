@@ -286,6 +286,7 @@ field-init-exprs =
   "##;
 
   #[test]
+  #[ignore]
   fn tiger_states() {
     let (grammar, eof_token, ffn) = prepare(TIGER);
     let mut builder = Builder::<LalrCalc>::new(&grammar, eof_token, ffn);

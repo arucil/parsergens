@@ -112,10 +112,6 @@ impl<'a, T> Builder<'a, T>
   }
 
   pub fn build(&mut self) -> Result<(), Error> {
-    let time = std::time::Instant::now();
-    {
-    let _g = flame::start_guard("build");
-    println!(">>>>>>>>>>>>>>>>>>>>>>> start");
     for &start_nt in &self.grammar.start_nts {
       let start_state = self.start(start_nt)?;
       let start_prod_ix = self.grammar.nt_metas[&start_nt].range.start;
@@ -127,19 +123,14 @@ impl<'a, T> Builder<'a, T>
       let nt_name = self.grammar.nts.get(&real_start_nt).unwrap().clone();
       self.start.insert(nt_name, (real_start_nt.id(), start_state));
     }
-    println!(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> states: {},items:{}", self.states.len(),self.items.len());
 
     if let Some(map) = T::merge_states(
       &self.grammar, &mut self.states, &mut self.items)
     {
       self.map_merged_states(map)?;
     }
-    println!(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> states: {},items:{}", self.states.len(),self.items.len());
-    println!(">>>>>>> time: {}", std::time::Instant::now().duration_since(time).as_millis());
 
     self.resolve_conflicts()?;
-  }
-  flame::dump_html(&mut std::fs::File::create("flame-graph.html").unwrap()).unwrap();
 
     Ok(())
   }
@@ -369,7 +360,6 @@ impl<'a, T> Builder<'a, T>
   }
 
   fn start(&mut self, nt: NonterminalId) -> Result<u32, Error> {
-    let _g = flame::start_guard(format!("start {}", nt.id()));
     let start_prod = self.grammar.nt_metas[&nt].range.start;
     let start_item = store_item(&mut self.items,
       T::start_item(start_prod, self.eof_token));
@@ -385,7 +375,6 @@ impl<'a, T> Builder<'a, T>
     queue.push_back(start_state_set);
 
     while let Some(state) = queue.pop_front() {
-      let _g = flame::start_guard("iterate");
       let from_state = self.state(&state);
       let mut to_states = Map::<Symbol, BitSet>::new();
 
@@ -393,14 +382,20 @@ impl<'a, T> Builder<'a, T>
         let item = self.items.get_by_right(&item).unwrap().clone();
         let symbols = &self.grammar.prods[item.prod_ix()].symbols;
         if item.dot_ix() == symbols.len() {
-          self.reduce(from_state, &item)?;
+          if item.prod_ix() == start_prod  {
+            self.accept(from_state);
+          } else {
+            self.reduce(from_state, &item)?;
+          }
           continue;
         }
 
+        /*
         if item.dot_ix() == 1 && item.prod_ix() == start_prod {
           self.accept(from_state);
           continue;
         }
+        */
 
         let new_item = store_item(&mut self.items, T::next_item(&item));
         to_states.entry(symbols[item.dot_ix()].clone()).or_default().insert(new_item);
@@ -440,7 +435,6 @@ impl<'a, T> Builder<'a, T>
   }
 
   fn closure(&mut self, result: &mut BitSet) {
-    let _g = flame::start_guard("closure");
     let mut new = result.iter().collect::<Vec<_>>();
 
     while let Some(i) = new.pop() {
@@ -474,7 +468,6 @@ impl<'a, T> Builder<'a, T>
   }
 
   fn reduce(&mut self, from_state: u32, item: &T::Item) -> Result<(), Error> {
-    let _g = flame::start_guard("reduce");
     let action = &mut self.action;
     let states = &self.states;
     let items = &self.items;

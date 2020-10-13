@@ -1,9 +1,0 @@
----
-source: tests/state.rs
-expression: env
----
-{
-    "a1": 8.21,
-    "b": 20.21,
-    "c": 31.553886269982033,
-}

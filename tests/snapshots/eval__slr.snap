@@ -1,9 +1,0 @@
----
-source: tests/eval.rs
-expression: tokens
----
-Ok(
-    Ok(
-        8.21,
-    ),
-)

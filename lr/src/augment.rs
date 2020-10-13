@@ -34,7 +34,7 @@ pub fn augment(grammar: LoweredGrammar) -> (LoweredGrammar, TokenId) {
       kind: ProductionKind::Ordinary,
       symbols: vec![
         Symbol::Nonterminal(nt),
-        Symbol::Token(eof_token),
+        //Symbol::Token(eof_token),
       ],
       prec: None,
       action: None,

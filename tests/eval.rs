@@ -1,15 +1,6 @@
 
 use insta::assert_debug_snapshot;
 
-parsergens::parsergen!(mod slr_parser: SLR("fixtures/expr_eval.pg"));
-
-#[test]
-fn slr() {
-  let result = slr_parser::with_input(r"(3.2 * 51 + 1) / 20     ")
-    .parse_expr();
-  assert_debug_snapshot!(result);
-}
-
 parsergens::parsergen!(mod clr_parser: LR("fixtures/expr_eval.pg"));
 
 #[test]

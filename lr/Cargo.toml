@@ -12,7 +12,6 @@ bit-set = "0.5.2"
 indexmap = "1.6.0"
 bimap = "0.5.2"
 bitvec = "0.19.0"
-flame = "0.2.2"
 
 [dev-dependencies]
 insta = "0.16.1"

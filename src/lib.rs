@@ -16,7 +16,6 @@ mod parser_spec;
 mod gen_token_enum;
 mod gen_lexer;
 mod gen_parser;
-mod tpl_engine;
 
 #[proc_macro_error]
 #[proc_macro]
@@ -32,9 +31,6 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
   let grammar = fs::read_to_string(&source_path).unwrap();
 
   let parser = match spec.kind {
-    ParserKind::Slr => {
-      lr::build(&grammar, lr::ParserKind::Slr)
-    }
     ParserKind::Lr => {
       lr::build(&grammar, lr::ParserKind::Clr)
     }
@@ -85,20 +81,22 @@ fn gen_mod(
   mod_name: &str,
   parser: &lr::Parser,
 ) -> Module {
-  let mo = Module::new(mod_name);
+  let mut mo = Module::new(mod_name);
   mo.vis(vis);
   let scope = mo.scope();
 
-  scope.raw("#![allow(dead_code, non_camel_case_types, unused_parens, unused_mut)]");
-  scope.raw("#![allow(unused_variables, unused_braces, non_snake_case)]");
+  scope.new_attr("allow").arg_delimited(
+    "dead_code, non_camel_case_types, unused_parens, unused_mut");
+  scope.new_attr("allow").arg_delimited(
+    "unused_variables, unused_braces, non_snake_case");
 
   for code in &parser.user_code {
     scope.raw(code);
   }
 
   let tokens = gen_token_enum::gen(&parser.tokens, scope);
-  let lexer = gen_lexer::gen(&parser.lexer, &tokens, scope);
-  let parser = gen_parser::gen(&parser, scope);
+  gen_lexer::gen(&parser.lexer, &tokens, scope);
+  gen_parser::gen(&parser, scope);
 
   mo
 }
@@ -111,6 +109,7 @@ fn gen_1d_table(
 ) {
   let ty = format!("[{}; {}]", cell_type, table.len());
   let value = table.iter().map(|x| format!("{:?}", x)).join(", ");
+  let value = format!("[{}]", value);
   scope.new_static(table_name, ty).value(value);
 }
 
@@ -127,6 +126,7 @@ fn gen_2d_table(
   let value = table.iter().map(|row|
     format!("[{}]", row.iter().map(|x| format!("{:?}", x)).join(", ")))
     .join(", ");
+  let value = format!("[{}]", value);
   scope.new_static(table_name, ty).value(value);
 }
 
