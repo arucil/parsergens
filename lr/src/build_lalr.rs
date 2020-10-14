@@ -1,13 +1,14 @@
 use std::collections::{HashMap, VecDeque};
 use grammar::{LoweredGrammar, Symbol, Map, NonterminalId};
 use bit_set::BitSet;
+use std::fmt::{self, Write};
 use crate::first::FirstAndNullable;
-use crate::Error;
+use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError};
 
 /// Lookahead set of an item.
 type LookaheadSet = Map<u32, BitSet>;
 
-struct Builder<'a> {
+pub struct Builder<'a> {
   grammar: &'a LoweredGrammar,
   state_store: StateStore,
   item_store: ItemStore,
@@ -37,7 +38,7 @@ struct Lr0Item {
 }
 
 impl<'a> Builder<'a> {
-  fn new(grammar: &'a LoweredGrammar) -> Self {
+  pub fn new(grammar: &'a LoweredGrammar) -> Self {
     Self {
       grammar,
       state_store: Default::default(),
@@ -51,16 +52,7 @@ impl<'a> Builder<'a> {
   }
 }
 
-pub fn build(
-  grammar: &LoweredGrammar
-) -> Result<(), Error> {
-  let mut builder = Builder::new(grammar);
-  let start_nts = build_states(&mut builder, grammar);
-
-  Ok(())
-}
-
-fn build_states(
+pub fn build_states(
   builder: &mut Builder,
   grammar: &LoweredGrammar,
 ) -> HashMap<String, (u32, u32)> {
@@ -80,6 +72,84 @@ fn build_states(
   }
 
   start_nts
+}
+
+/// returns ACTION table and GOTO table.
+/// 
+/// entry in ACTION table:
+/// - positive: shift
+/// - negative: reduce
+/// - zero: error
+///
+/// entry in GOTO table:
+/// - positive: goto
+/// - zero: error
+pub fn build_tables(
+  builder: &Builder,
+) -> Result<(Vec<Vec<i32>>, Vec<Vec<u32>>), Error> {
+  let num_states = builder.state_store.states.len();
+  let mut action = vec![vec![0i32; builder.eof as usize + 1]; num_states];
+  let mut goto = vec![vec![0u32; builder.grammar.nts.len()]; num_states];
+
+  for (from_state, tx) in builder.state_store.goto.iter().enumerate() {
+    let (item_set, lookaheads) = &builder.state_store.states[from_state];
+    for item_ix in item_set.iter() {
+      let item = builder.item_store.items[item_ix];
+      let symbols = &builder.grammar.prods[item.prod_ix].symbols;
+      // shift
+      if item.dot_ix < symbols.len() {
+        let sym = &symbols[item.dot_ix];
+        let to_state = tx[sym];
+        match sym {
+          Symbol::Token(tok) => {
+            let old = &mut action[from_state][tok.id() as usize];
+            if *old < 0 {
+              // TODO
+            } else {
+              assert!(*old == 0);
+              *old = to_state as i32 + 1;
+            }
+          }
+          Symbol::Nonterminal(nt) => {
+            goto[from_state][nt.id() as usize] = to_state + 1;
+          }
+        }
+      } else {
+        // reduce
+        for lookahead in lookaheads[&(item_ix as u32)].iter() {
+          let old = &mut action[from_state][lookahead];
+          if *old > 0 {
+            // TODO
+          } else if *old < 0 {
+            let lookahead = builder.grammar.tokens[lookahead].clone();
+            let reduce1 = builder.grammar.prods[!*old as usize].to_string(
+              &builder.grammar);
+            let reduce2 = builder.grammar.prods[item.prod_ix].to_string(
+              &builder.grammar);
+
+            let state_items = item_set.iter()
+              .map(|item_ix| {
+                let mut buf = String::new();
+                builder.fmt_item(&lookaheads[item_ix], item_ix, &mut buf).unwrap();
+                buf
+              })
+              .collect();
+
+            return Err(Error::ReduceReduceConflict(ReduceReduceConflictError {
+              lookahead,
+              state_items,
+              reduce1,
+              reduce2,
+            }));
+          } else {
+            *old = !(item.prod_ix as i32);
+          }
+        }
+      }
+    }
+  }
+
+  Ok((action, goto))
 }
 
 fn start(
@@ -248,9 +318,6 @@ fn store_item(
 }
 
 #[cfg(test)]
-use std::fmt::{Write, self};
-
-#[cfg(test)]
 impl<'a> Builder<'a> {
   fn states(
     &self,
@@ -275,9 +342,8 @@ impl<'a> Builder<'a> {
       writeln!(fmt)?;
 
       for item_ix in item_set.iter() {
-        let item = &self.item_store.items[item_ix];
         let lookaheads = &lookaheads[&(item_ix as u32)];
-        self.fmt_item(lookaheads, item, fmt)?;
+        self.fmt_item(lookaheads, item_ix, fmt)?;
 
         writeln!(fmt)?;
       }
@@ -287,13 +353,16 @@ impl<'a> Builder<'a> {
 
     Ok(())
   }
+}
 
+impl<'a> Builder<'a> {
   fn fmt_item(
     &self,
     lookaheads: &BitSet,
-    item: &Lr0Item,
+    item_ix: usize,
     fmt: &mut impl Write,
   ) -> fmt::Result {
+    let item = self.item_store.items[item_ix];
     let nt = self.grammar.prods[item.prod_ix].nt;
     let symbols = &self.grammar.prods[item.prod_ix].symbols;
 

@@ -19,6 +19,7 @@ pub struct Grammar {
   pub nt_metas: Map<NonterminalId, NonterminalMetadata>,
   pub lexer: Option<Lexer>,
   pub tokens: Map<TokenId, String>,
+  pub token_precs: Map<TokenId, (Assoc, u32)>,
   pub user_code: Vec<String>,
   pub user_state: Vec<UserState>,
 }

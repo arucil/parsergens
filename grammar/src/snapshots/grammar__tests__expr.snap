@@ -574,6 +574,7 @@ Ok(
                 8,
             ): "IDENT",
         },
+        token_precs: {},
         user_code: [],
         user_state: [],
     },

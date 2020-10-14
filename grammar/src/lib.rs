@@ -278,6 +278,14 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     });
   }
 
+  let token_precs = tokens.iter().filter_map(|(&tok, name)| {
+    if let Some(&(assoc, prec)) = assocs.get(name) {
+      Some((tok, (assoc, prec)))
+    } else {
+      None
+    }
+  }).collect();
+
   let nts = nts.into_iter().collect();
   let tokens = tokens.into_iter().collect();
 
@@ -288,6 +296,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     nt_metas,
     lexer,
     tokens,
+    token_precs,
     user_code,
     user_state,
   })

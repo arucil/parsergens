@@ -13,6 +13,7 @@ pub struct LoweredGrammar {
   pub nt_metas: Map<NonterminalId, LoweredNonterminalMetadata>,
   pub lexer: Option<Lexer>,
   pub tokens: Map<TokenId, String>,
+  pub token_precs: Map<TokenId, (Assoc, u32)>,
   pub user_code: Vec<String>,
   pub user_state: Vec<UserState>,
 }
@@ -69,6 +70,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
     nt_metas: Map::new(),
     lexer: grammar.lexer,
     tokens: grammar.tokens,
+    token_precs: grammar.token_precs,
     user_code: grammar.user_code,
     user_state: grammar.user_state,
   };
