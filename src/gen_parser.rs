@@ -368,7 +368,7 @@ fn gen_start_fn(
   imp: &mut Impl,
 ) {
   for (name, (nt, state)) in &parser.start {
-    let name = name.replace(&['\'', '-'][..], "_");
+    let name = name.replace(&['\'', '-'][..], "__");
     let fn_name = format!("parse_{}", name.to_snake_case());
     let ty = &nt_types[*nt as usize];
 

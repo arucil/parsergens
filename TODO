@@ -26,3 +26,4 @@ grammar:
 - [ ] improve DFA table compression
 - [ ] merge ACCEPT into REDUCE
 - [ ] parse_expr().with_input()
+- [ ] test S -> xx S | epsilon

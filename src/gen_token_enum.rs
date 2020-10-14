@@ -17,7 +17,7 @@ pub fn gen(
 
   let mut token_names = Map::new();
   for (id, name) in tokens {
-    let name = name.replace(&['\'', '-'][..], "_").to_camel_case();
+    let name = name.replace(&['\'', '-'][..], "__").to_camel_case();
     en.new_variant(&name).discriminant(id.id().to_string());
     token_names.insert(*id, name);
   }
