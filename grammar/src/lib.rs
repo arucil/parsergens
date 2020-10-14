@@ -210,6 +210,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         }
       };
 
+      // TODO right most token prec
       let prec = match &alt.1.prec {
         Some(name) => {
           Some(assocs.get(&name.1)
