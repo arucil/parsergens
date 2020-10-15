@@ -6,19 +6,17 @@ use crate::first::FirstAndNullable;
 use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError, EntryPoint};
 use crate::builder::{Builder, StateStore, ItemStore};
 
-/// Lookahead set of an item.
-type LookaheadSet = HashMap<u32, BitSet>;
-
-type LalrBuilder<'a> = Builder<'a, LookaheadSet, Lr0Item>;
+type ClrBuilder<'a> = Builder<'a, (), Lr1Item>;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Lr0Item {
+pub struct Lr1Item {
   prod_ix: usize,
   dot_ix: usize,
+  lookahead: u32,
 }
 
 pub fn build_states(
-  builder: &mut LalrBuilder,
+  builder: &mut ClrBuilder,
   grammar: &LoweredGrammar,
 ) -> HashMap<String, EntryPoint> {
   let fan = crate::first::compute(grammar);
@@ -54,14 +52,14 @@ pub fn build_states(
 /// - positive: goto
 /// - zero: error
 pub fn build_tables(
-  builder: &LalrBuilder,
+  builder: &ClrBuilder,
 ) -> Result<(Vec<Vec<i32>>, Vec<Vec<u32>>), Error> {
   let num_states = builder.state_store.states.len();
   let mut action = vec![vec![0i32; builder.eof as usize + 1]; num_states];
   let mut goto = vec![vec![0u32; builder.grammar.nts.len()]; num_states];
 
   for (from_state, tx) in builder.state_store.goto.iter().enumerate() {
-    let (item_set, lookaheads) = &builder.state_store.states[from_state];
+    let (item_set, _) = &builder.state_store.states[from_state];
     for item_ix in item_set.iter() {
       let item = builder.item_store.items[item_ix];
       let symbols = &builder.grammar.prods[item.prod_ix].symbols;
@@ -82,12 +80,10 @@ pub fn build_tables(
                 SrConflictResolution::Conflict => return Err(make_sr_conflict_error(
                   builder,
                   item_set,
-                  lookaheads,
                   tok.id(),
                   !*old as usize))
               }
             } else {
-              assert!(*old == 0 || *old == to_state as i32 + 1);
               *old = to_state as i32 + 1;
             }
           }
@@ -97,37 +93,33 @@ pub fn build_tables(
         }
       } else {
         // reduce
-        for lookahead in lookaheads[&(item_ix as u32)].iter() {
-          let old = &mut action[from_state][lookahead];
-          if *old > 0 {
-            match resolve_sr_conflict(&builder.grammar, item.prod_ix, lookahead as u32) {
-              SrConflictResolution::Shift => {
-                // do nothing
-              }
-              SrConflictResolution::Reduce => {
-                *old = !(item.prod_ix as i32);
-              }
-              SrConflictResolution::Error => {
-                *old = 0;
-              }
-              SrConflictResolution::Conflict => return Err(make_sr_conflict_error(
-                builder,
-                item_set,
-                lookaheads,
-                lookahead as u32,
-                item.prod_ix))
+        let old = &mut action[from_state][item.lookahead as usize];
+        if *old > 0 {
+          match resolve_sr_conflict(&builder.grammar, item.prod_ix, item.lookahead) {
+            SrConflictResolution::Shift => {
+              // do nothing
             }
-          } else if *old < 0 {
-            return Err(make_rr_conflict_error(
+            SrConflictResolution::Reduce => {
+              *old = !(item.prod_ix as i32);
+            }
+            SrConflictResolution::Error => {
+              *old = 0;
+            }
+            SrConflictResolution::Conflict => return Err(make_sr_conflict_error(
               builder,
               item_set,
-              lookaheads,
-              lookahead as u32,
-              !*old as usize,
-              item.prod_ix));
-          } else {
-            *old = !(item.prod_ix as i32);
+              item.lookahead,
+              item.prod_ix))
           }
+        } else if *old < 0 {
+          return Err(make_rr_conflict_error(
+            builder,
+            item_set,
+            item.lookahead,
+            !*old as usize,
+            item.prod_ix));
+        } else {
+          *old = !(item.prod_ix as i32);
         }
       }
     }
@@ -167,9 +159,8 @@ fn resolve_sr_conflict(
 }
 
 fn make_rr_conflict_error(
-  builder: &LalrBuilder,
+  builder: &ClrBuilder,
   item_set: &BitSet,
-  lookaheads: &LookaheadSet,
   lookahead: u32,
   reduce1: usize,
   reduce2: usize,
@@ -183,7 +174,7 @@ fn make_rr_conflict_error(
   let state_items = item_set.iter()
     .map(|item_ix| {
       let mut buf = String::new();
-      builder.fmt_item(&lookaheads[&(item_ix as u32)], item_ix, &mut buf).unwrap();
+      builder.fmt_item(item_ix, &mut buf).unwrap();
       buf
     })
     .collect();
@@ -197,9 +188,8 @@ fn make_rr_conflict_error(
 }
 
 fn make_sr_conflict_error(
-  builder: &LalrBuilder,
+  builder: &ClrBuilder,
   item_set: &BitSet,
-  lookaheads: &LookaheadSet,
   token: u32,
   reduce_prod: usize,
 ) -> Error {
@@ -208,7 +198,7 @@ fn make_sr_conflict_error(
   let state_items = item_set.iter()
     .map(|item_ix| {
       let mut buf = String::new();
-      builder.fmt_item(&lookaheads[&(item_ix as u32)], item_ix, &mut buf).unwrap();
+      builder.fmt_item(item_ix, &mut buf).unwrap();
       buf
     })
     .collect();
@@ -223,40 +213,36 @@ fn make_sr_conflict_error(
 }
 
 fn start(
-  builder: &mut LalrBuilder,
+  builder: &mut ClrBuilder,
   grammar: &LoweredGrammar,
   fan: &FirstAndNullable,
   nt: NonterminalId
 ) -> u32 {
   let start_prod = grammar.nt_metas[&nt].range.start;
   let start_item = store_item(&mut builder.item_store,
-    Lr0Item {
+    Lr1Item {
       prod_ix: start_prod,
       dot_ix: 0,
+      lookahead: builder.eof,
     });
   let mut start_item_set = {
     let mut set = BitSet::new();
     set.insert(start_item as usize);
     set
   };
-  let mut start_lookaheads = {
-    let mut m = HashMap::default();
-    let mut set = BitSet::new();
-    set.insert(builder.eof as usize);
-    m.insert(start_item, set);
-    m
-  };
 
-  closure(builder, grammar, fan, &mut start_item_set, &mut start_lookaheads);
-  let (start_state, _) = store_state(&mut builder.state_store, &start_item_set,
-    start_lookaheads);
+  let start_kernel_item_set = start_item_set.clone();
+  closure(builder, grammar, fan, &mut start_item_set);
+  let start_state = store_state(&mut builder.state_store,
+    start_kernel_item_set,
+    &start_item_set);
 
   let mut queue = VecDeque::new();
   queue.push_back(start_state);
 
   while let Some(from_state) = queue.pop_front() {
-    let (item_set, lookaheads) = &builder.state_store.states[from_state as usize];
-    let mut to_states = Map::<Symbol, (BitSet, LookaheadSet)>::default();
+    let (item_set, _) = &builder.state_store.states[from_state as usize];
+    let mut to_states = Map::<Symbol, BitSet>::default();
 
     for item_ix in item_set.iter() {
       let item = builder.item_store.items[item_ix];
@@ -265,27 +251,31 @@ fn start(
         continue;
       }
 
-      let new_item = store_item(&mut builder.item_store, Lr0Item {
+      let new_item = store_item(&mut builder.item_store, Lr1Item {
         prod_ix: item.prod_ix,
         dot_ix: item.dot_ix + 1,
+        lookahead: item.lookahead,
       });
-      let (to_item_set, to_lookaheads) = to_states.entry(symbols[item.dot_ix].clone())
+      let to_item_set = to_states.entry(symbols[item.dot_ix].clone())
         .or_default();
       to_item_set.insert(new_item as usize);
-      to_lookaheads.entry(new_item).or_default().union_with(
-        &lookaheads[&(item_ix as u32)]);
     }
 
-    for (sym, (mut to_item_set, mut lookaheads)) in to_states {
-      closure(builder, grammar, fan, &mut to_item_set, &mut lookaheads);
-      let (to_state, changed) = store_state(&mut builder.state_store, &to_item_set,
-        lookaheads);
+    for (sym, mut to_item_set) in to_states {
 
-      builder.state_store.goto[from_state as usize].insert(sym, to_state);
-
-      if changed {
-        queue.push_back(to_state);
+      if let Some(&to_state) = builder.state_store.state_indices.get(&to_item_set) {
+        builder.state_store.goto[from_state as usize].insert(sym, to_state);
+        continue;
       }
+
+      let kernel_item_set = to_item_set.clone();
+      closure(builder, grammar, fan, &mut to_item_set);
+      let to_state = store_state(&mut builder.state_store,
+        kernel_item_set,
+        &to_item_set);
+
+      queue.push_back(to_state);
+      builder.state_store.goto[from_state as usize].insert(sym, to_state);
     }
   }
 
@@ -293,11 +283,10 @@ fn start(
 }
 
 fn closure(
-  builder: &mut LalrBuilder,
+  builder: &mut ClrBuilder,
   grammar: &LoweredGrammar,
   fan: &FirstAndNullable,
   item_set: &mut BitSet,
-  lookaheads: &mut LookaheadSet,
 ) {
   let mut new = item_set.iter().collect::<Vec<_>>();
 
@@ -330,20 +319,21 @@ fn closure(
       }
 
       if rest_nullable {
-        first.union_with(&lookaheads[&(i as u32)]);
+        first.insert(item.lookahead as usize);
       }
 
       for prod_ix in grammar.nt_metas[nt].range.clone() {
-        let item = store_item(&mut builder.item_store, Lr0Item {
-          prod_ix,
-          dot_ix: 0,
-        });
+        for lookahead in first.iter() {
+          let item = store_item(&mut builder.item_store, Lr1Item {
+            prod_ix,
+            dot_ix: 0,
+            lookahead: lookahead as u32,
+          });
 
-        if item_set.insert(item as usize) {
-          new.push(item as usize);
+          if item_set.insert(item as usize) {
+            new.push(item as usize);
+          }
         }
-
-        lookaheads.entry(item).or_default().union_with(&first);
       }
     }
   }
@@ -351,32 +341,24 @@ fn closure(
 
 /// return state index and if lookahead set of the state has changed.
 fn store_state(
-  state_store: &mut StateStore<LookaheadSet>,
+  state_store: &mut StateStore<()>,
+  kernel_item_set: BitSet,
   item_set: &BitSet,
-  lookaheads: LookaheadSet,
-) -> (u32, bool) {
+) -> u32 {
   if let Some(&ix) = state_store.state_indices.get(item_set) {
-    let mut changed = false;
-    for (item, old_lookaheads) in &mut state_store.states[ix as usize].1 {
-      for lookahead in lookaheads[item].iter() {
-        if old_lookaheads.insert(lookahead) {
-          changed = true;
-        }
-      }
-    }
-    (ix, changed)
+    ix
   } else {
     let ix = state_store.states.len() as u32;
-    state_store.states.push((item_set.clone(), lookaheads));
-    state_store.state_indices.insert(item_set.clone(), ix);
+    state_store.states.push((item_set.clone(), ()));
+    state_store.state_indices.insert(kernel_item_set, ix);
     state_store.goto.push(HashMap::default());
-    (ix, true)
+    ix
   }
 }
 
 fn store_item(
-  item_store: &mut ItemStore<Lr0Item>,
-  item: Lr0Item,
+  item_store: &mut ItemStore<Lr1Item>,
+  item: Lr1Item,
 ) -> u32 {
   if let Some(&ix) = item_store.item_indices.get(&item) {
     ix
@@ -389,7 +371,7 @@ fn store_item(
 }
 
 #[cfg(test)]
-impl<'a> LalrBuilder<'a> {
+impl<'a> ClrBuilder<'a> {
   fn states(
     &self,
     entry_points: &HashMap<String, EntryPoint>
@@ -404,7 +386,7 @@ impl<'a> LalrBuilder<'a> {
     entry_points: &HashMap<String, EntryPoint>,
     fmt: &mut impl Write,
   ) -> fmt::Result {
-    for (state, (item_set, lookaheads)) in self.state_store.states.iter().enumerate() {
+    for (state, (item_set, _)) in self.state_store.states.iter().enumerate() {
       let state = state as u32;
       write!(fmt, "State {}", state)?;
       if entry_points.values().find(|x| x.start_state == state).is_some() {
@@ -413,8 +395,7 @@ impl<'a> LalrBuilder<'a> {
       writeln!(fmt)?;
 
       for item_ix in item_set.iter() {
-        let lookaheads = &lookaheads[&(item_ix as u32)];
-        self.fmt_item(lookaheads, item_ix, fmt)?;
+        self.fmt_item(item_ix, fmt)?;
 
         writeln!(fmt)?;
       }
@@ -426,10 +407,9 @@ impl<'a> LalrBuilder<'a> {
   }
 }
 
-impl<'a> LalrBuilder<'a> {
+impl<'a> ClrBuilder<'a> {
   fn fmt_item(
     &self,
-    lookaheads: &BitSet,
     item_ix: usize,
     fmt: &mut impl Write,
   ) -> fmt::Result {
@@ -460,19 +440,7 @@ impl<'a> LalrBuilder<'a> {
       write!(fmt, " .")?;
     }
 
-    write!(fmt, "      ")?;
-
-    let mut slash = false;
-    for lookahead in lookaheads.iter() {
-      if slash {
-        write!(fmt, " / ")?;
-      }
-      slash = true;
-
-      let lookahead = lookahead as u32;
-      write!(fmt, "{}",
-        self.grammar.tokens.get(&lookahead).map(|s|s.as_str()).unwrap_or("$"))?;
-    }
+    write!(fmt, "      {}", self.grammar.tokens.get(&item.lookahead).map(|s|s.as_str()).unwrap_or("$"))?;
 
     Ok(())
   }
@@ -515,7 +483,7 @@ C = c C
   #[test]
   fn simple_states() {
     let grammar = prepare(SIMPLE);
-    let mut builder = LalrBuilder::new(&grammar);
+    let mut builder = ClrBuilder::new(&grammar);
     let start_nts = build_states(&mut builder, &grammar);
 
     assert_snapshot!(builder.states(&start_nts));
@@ -524,242 +492,10 @@ C = c C
   #[test]
   fn simple_action_goto() {
     let grammar = prepare(SIMPLE);
-    let mut builder = LalrBuilder::new(&grammar);
+    let mut builder = ClrBuilder::new(&grammar);
     let _start_nts = build_states(&mut builder, &grammar);
     let tables = merge_action_goto(build_tables(&builder).unwrap());
 
     assert_debug_snapshot!(tables);
-  }
-
-  static EPSILON: &str = r#"
-%token plus "+"
-%token mult "*"
-%token num "1"
-%token lparen "("
-%token rparen ")"
-
-%start E
-
-E = T E'
-E' = plus T E'
-   | ()
-T = F T'
-T' = mult F T'
-   | ()
-F = num
-  | lparen E rparen
-  "#;
-
-  #[test]
-  fn epsilon_states() {
-    let grammar = prepare(EPSILON);
-    let mut builder = LalrBuilder::new(&grammar);
-    let start_nts = build_states(&mut builder, &grammar);
-
-    assert_snapshot!(builder.states(&start_nts));
-  }
-
-  #[test]
-  fn epsilon_action_goto() {
-    let grammar = prepare(EPSILON);
-    let mut builder = LalrBuilder::new(&grammar);
-    let _start_nts = build_states(&mut builder, &grammar);
-    let tables = merge_action_goto(build_tables(&builder).unwrap());
-
-    assert_debug_snapshot!(tables);
-  }
-
-  static PRECEDENCE: &str = r#"
-%token minus "-"
-%token mult "*"
-%token pow "^"
-%token equal "=="
-%token lparen "("
-%token rparen ")"
-%token num "1"
-
-%non-assoc equal
-%left-assoc minus
-%left-assoc mult
-%right-assoc pow
-%right-assoc NEG
-
-%start E
-
-E = E minus E
-  | E mult E
-  | E pow E
-  | E equal E
-  | minus E       %prec NEG
-  | lparen E rparen
-  | num
-  "#;
-
-  #[test]
-  fn precedence_states() {
-    let grammar = prepare(PRECEDENCE);
-    let mut builder = LalrBuilder::new(&grammar);
-    let start_nts = build_states(&mut builder, &grammar);
-
-    assert_snapshot!(builder.states(&start_nts));
-  }
-
-  #[test]
-  fn precedence_action_goto() {
-    let grammar = prepare(PRECEDENCE);
-    let mut builder = LalrBuilder::new(&grammar);
-    let _start_nts = build_states(&mut builder, &grammar);
-    let tables = merge_action_goto(build_tables(&builder).unwrap());
-
-    assert_debug_snapshot!(tables);
-  }
-
-  static TIGER: &str = r##"
-%token EQ          "="
-%token NEQ         "<>"
-%token LT          "<"
-%token GT          ">"
-%token LE          "<="
-%token GE          ">="
-%token ASSIGN      ":="
-%token COLON       ":"
-%token COMMA       ","
-%token DOT         "."
-%token SEMI        ";"
-%token PLUS        "+"
-%token MINUS       "-"
-%token TIMES       "*"
-%token DIV         "/"
-%token MOD         "%"
-%token AND         "&"
-%token OR          "|"
-%token LBRACE      "{"
-%token RBRACE      "}"
-%token LPAREN      "("
-%token RPAREN      ")"
-%token LBRACK      "["
-%token RBRACK      "]"
-%token TYPE        "type"
-%token INT         "int"
-%token STRING      "string"
-%token ARRAY       "array"
-%token OF          "of"
-%token VAR         "var"
-%token NIL         "nil"
-%token FUNCTION    "function"
-%token IF          "if"
-%token THEN        "then"
-%token ELSE        "else"
-%token FOR         "for"
-%token TO          "to"
-%token DO          "do"
-%token WHILE       "while"
-%token BREAK       "break"
-%token LET         "let"
-%token IN          "in"
-%token END         "end"
-%token IDENT       /[a-zA-Z][\w_]*/
-%token LIT_INT     /\d+/
-%token LIT_STR     /"([^\\\n]|\\([nt"\\]|\d\d\d))*"/
-
-%skip /[ \n]+/
-
-%non-assoc    CONTROL
-%non-assoc    ARRAY
-%non-assoc    ASSIGN
-%right-assoc  OR
-%right-assoc  AND
-%non-assoc    EQ
-%non-assoc    REL
-%left-assoc   ADD
-%left-assoc   MULT
-%right-assoc  NEG
-%non-assoc    ELSE
-
-%start program
-
-program = expr
-
-decls = (decl)*
-
-decl = type-decl | var-decl | fun-decl
-
-type-decl = TYPE type-id EQ type
-
-type =
-    IDENT
-  | LBRACE type-fields RBRACE
-
-type-fields =
-    ()
-  | IDENT COLON type-id (COMMA IDENT COLON type-id)*
-
-type-id = predef-type | IDENT
-
-predef-type = STRING | INT
-
-var-decl = VAR IDENT (COLON type-id)? ASSIGN expr
-
-fun-decl = FUNCTION IDENT LPAREN type-fields RPAREN (COLON type-id)? EQ expr
-
-lvalue = IDENT lvalue-suffix
-
-lvalue-suffix =
-    ()
-  | DOT IDENT lvalue-suffix
-  | LBRACK expr RBRACK lvalue-suffix
-
-expr =
-    lvalue
-  | lvalue ASSIGN expr %prec ASSIGN
-  | NIL
-  | LPAREN seq-exprs RPAREN
-  | LIT_INT
-  | LIT_STR
-  | MINUS expr %prec NEG
-  | IDENT LPAREN arg-exprs RPAREN
-  | expr MOD expr %prec MULT
-  | expr DIV expr %prec MULT
-  | expr TIMES expr %prec MULT
-  | expr PLUS expr %prec ADD
-  | expr MINUS expr %prec ADD
-  | expr GT expr %prec REL
-  | expr LT expr %prec REL
-  | expr GE expr %prec REL
-  | expr LE expr %prec REL
-  | expr EQ expr %prec EQ
-  | expr NEQ expr %prec EQ
-  | expr AND expr %prec AND
-  | expr OR expr %prec OR
-  | type-id LBRACE field-init-exprs RBRACE
-  | IDENT LBRACK expr RBRACK OF expr %prec ARRAY
-  | predef-type LBRACK expr RBRACK OF expr %prec ARRAY
-  | IF expr THEN expr ELSE expr %prec ELSE
-  | IF expr THEN expr %prec CONTROL
-  | WHILE expr DO expr %prec CONTROL
-  | FOR IDENT ASSIGN expr TO expr DO expr %prec CONTROL
-  | BREAK
-  | LET decls IN seq-exprs END
-
-seq-exprs =
-    ()
-  | expr (SEMI expr)*
-
-arg-exprs =
-    ()
-  | expr (COMMA expr)*
-
-field-init-exprs =
-    ()
-  | IDENT EQ expr (COMMA IDENT EQ expr)*
-  "##;
-
-  #[test]
-  fn tiger_states() {
-    let grammar = prepare(TIGER);
-    let mut builder = LalrBuilder::new(&grammar);
-    let start_nts = build_states(&mut builder, &grammar);
-
-    assert_snapshot!(builder.states(&start_nts));
   }
 }

@@ -2,16 +2,23 @@
 
 use grammar::{TokenId, Map, NonterminalIdGen, HashMap};
 use std::ops::Range;
-use builder::{Builder, LrCalculation};
+use builder::Builder;
 
-pub use grammar::{UserState, NonterminalKind, ProductionKind, GrammarError};
+pub use grammar::{
+  LoweredGrammar,
+  UserState,
+  NonterminalKind,
+  ProductionKind,
+  GrammarError
+};
 
-mod clr;
-mod lalr;
+//mod clr;
+//mod lalr;
 mod first;
 mod augment;
 mod builder;
 mod build_lalr;
+mod build_clr;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -110,27 +117,29 @@ pub enum ParserKind {
 
 pub fn build(input: &str, kind: ParserKind) -> Result<Parser, Error> {
   match kind {
-    ParserKind::Clr => build_parser::<clr::ClrCalc>(input),
-    ParserKind::Lalr => build_parser::<lalr::LalrCalc>(input),
+    ParserKind::Clr => build_parser(
+      input,
+      build_clr::build_states,
+      build_clr::build_tables),
+    ParserKind::Lalr => build_parser(
+      input,
+      build_lalr::build_states,
+      build_lalr::build_tables),
   }
 }
 
-fn build_parser<T>(
-  input: &str
-) -> Result<Parser, Error>
-  where T: LrCalculation
-{
+fn build_parser<StateInfo: Default, LrItem: Default>(
+  input: &str,
+  build_states: fn(&mut Builder<StateInfo, LrItem>, &LoweredGrammar) -> HashMap<String, EntryPoint>,
+  build_tables: fn(&Builder<StateInfo, LrItem>) -> Result<(Vec<Vec<i32>>, Vec<Vec<u32>>), Error>,
+) -> Result<Parser, Error> {
   let grammar = grammar::build(input).map_err(Error::GrammarError)?;
   let grammar = grammar.lower();
-  let (grammar, eof_token) = augment::augment(grammar);
-  let fan = first::compute(&grammar);
+  let grammar = augment::augment(grammar);
 
-  let mut builder = Builder::<T>::new(&grammar, eof_token, fan);
-
-  builder.build()?;
-
-  let action = builder.build_action_table();
-  let goto = builder.build_goto_table();
+  let mut builder = Builder::new(&grammar);
+  let entry_points = build_states(&mut builder, &grammar);
+  let (action, goto) = build_tables(&builder)?;
 
   let prods = grammar.prods.iter().map(|prod| {
     let symbols = prod.symbols.iter()
@@ -171,8 +180,8 @@ fn build_parser<T>(
     goto,
     prods,
     nts,
-    entry_points: builder.entry_points,
-    eof_index: eof_token.id() as usize,
+    entry_points: entry_points,
+    eof_index: builder.eof as usize,
     lexer: grammar.lexer,
     tokens: grammar.tokens,
     user_code: grammar.user_code,

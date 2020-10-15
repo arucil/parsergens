@@ -28,7 +28,7 @@ pub struct Lexer {
 pub struct TokenId(u32);
 
 #[derive(Default)]
-pub struct TokenIdGen(u32);
+pub(crate) struct TokenIdGen(u32);
 
 #[derive(Debug)]
 pub struct Token<'input> {
@@ -43,10 +43,6 @@ impl TokenIdGen {
     let i = self.0;
     self.0 += 1;
     TokenId(i)
-  }
-
-  pub fn from(start: u32) -> Self {
-    Self(start + 1)
   }
 }
 

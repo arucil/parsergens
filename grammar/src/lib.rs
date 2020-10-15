@@ -18,7 +18,7 @@ pub mod lexer;
 pub mod grammar;
 
 pub use crate::grammar::*;
-pub use lexer::{Lexer, TokenId, TokenIdGen};
+pub use lexer::{Lexer, TokenId};
 pub use grammar_parser::ast::Assoc;
 
 use grammar_parser::ast;
@@ -147,7 +147,8 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
 
     lexer = None;
     tokens = ext_token_decls.into_iter()
-      .scan(TokenIdGen::default(), |id_gen, decl| Some((id_gen.gen(), decl.name.1)))
+      .scan(lexer::TokenIdGen::default(),
+        |id_gen, decl| Some((id_gen.gen(), decl.name.1)))
       .collect();
   }
 
