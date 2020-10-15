@@ -231,11 +231,8 @@ fn start(
     set
   };
 
-  let start_kernel_item_set = start_item_set.clone();
   closure(builder, grammar, fan, &mut start_item_set);
-  let start_state = store_state(&mut builder.state_store,
-    start_kernel_item_set,
-    &start_item_set);
+  let start_state = store_state(&mut builder.state_store, start_item_set);
 
   let mut queue = VecDeque::new();
   queue.push_back(start_state);
@@ -268,11 +265,8 @@ fn start(
         continue;
       }
 
-      let kernel_item_set = to_item_set.clone();
       closure(builder, grammar, fan, &mut to_item_set);
-      let to_state = store_state(&mut builder.state_store,
-        kernel_item_set,
-        &to_item_set);
+      let to_state = store_state(&mut builder.state_store, to_item_set);
 
       queue.push_back(to_state);
       builder.state_store.goto[from_state as usize].insert(sym, to_state);
@@ -342,15 +336,14 @@ fn closure(
 /// return state index and if lookahead set of the state has changed.
 fn store_state(
   state_store: &mut StateStore<()>,
-  kernel_item_set: BitSet,
-  item_set: &BitSet,
+  item_set: BitSet,
 ) -> u32 {
-  if let Some(&ix) = state_store.state_indices.get(item_set) {
+  if let Some(&ix) = state_store.state_indices.get(&item_set) {
     ix
   } else {
     let ix = state_store.states.len() as u32;
     state_store.states.push((item_set.clone(), ()));
-    state_store.state_indices.insert(kernel_item_set, ix);
+    state_store.state_indices.insert(item_set, ix);
     state_store.goto.push(HashMap::default());
     ix
   }

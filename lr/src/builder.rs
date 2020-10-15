@@ -12,7 +12,7 @@ pub struct Builder<'a, StateInfo, LrItem> {
 pub struct StateStore<StateInfo> {
   /// state -> (item set, lookahead set)
   pub states: Vec<(BitSet, StateInfo)>,
-  // kernel item set -> state
+  // item set -> state
   pub state_indices: HashMap<BitSet, u32>,
   /// state -> symbol -> next state
   pub goto: Vec<HashMap<Symbol, u32>>,

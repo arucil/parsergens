@@ -248,7 +248,7 @@ fn start(
   };
 
   closure(builder, grammar, fan, &mut start_item_set, &mut start_lookaheads);
-  let (start_state, _) = store_state(&mut builder.state_store, &start_item_set,
+  let (start_state, _) = store_state(&mut builder.state_store, start_item_set,
     start_lookaheads);
 
   let mut queue = VecDeque::new();
@@ -278,7 +278,7 @@ fn start(
 
     for (sym, (mut to_item_set, mut lookaheads)) in to_states {
       closure(builder, grammar, fan, &mut to_item_set, &mut lookaheads);
-      let (to_state, changed) = store_state(&mut builder.state_store, &to_item_set,
+      let (to_state, changed) = store_state(&mut builder.state_store, to_item_set,
         lookaheads);
 
       builder.state_store.goto[from_state as usize].insert(sym, to_state);
@@ -352,10 +352,10 @@ fn closure(
 /// return state index and if lookahead set of the state has changed.
 fn store_state(
   state_store: &mut StateStore<LookaheadSet>,
-  item_set: &BitSet,
+  item_set: BitSet,
   lookaheads: LookaheadSet,
 ) -> (u32, bool) {
-  if let Some(&ix) = state_store.state_indices.get(item_set) {
+  if let Some(&ix) = state_store.state_indices.get(&item_set) {
     let mut changed = false;
     for (item, old_lookaheads) in &mut state_store.states[ix as usize].1 {
       for lookahead in lookaheads[item].iter() {
@@ -368,7 +368,7 @@ fn store_state(
   } else {
     let ix = state_store.states.len() as u32;
     state_store.states.push((item_set.clone(), lookaheads));
-    state_store.state_indices.insert(item_set.clone(), ix);
+    state_store.state_indices.insert(item_set, ix);
     state_store.goto.push(HashMap::default());
     (ix, true)
   }
