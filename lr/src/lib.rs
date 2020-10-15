@@ -128,10 +128,10 @@ pub fn build(input: &str, kind: ParserKind) -> Result<Parser, Error> {
   }
 }
 
-fn build_parser<StateInfo: Default, LrItem: Default>(
+fn build_parser<S: Default, I: Default>(
   input: &str,
-  build_states: fn(&mut Builder<StateInfo, LrItem>, &LoweredGrammar) -> HashMap<String, EntryPoint>,
-  build_tables: fn(&Builder<StateInfo, LrItem>) -> Result<(Vec<Vec<i32>>, Vec<Vec<u32>>), Error>,
+  build_states: fn(&mut Builder<S, I>, &LoweredGrammar) -> HashMap<String, EntryPoint>,
+  build_tables: fn(&Builder<S, I>) -> Result<(Vec<Vec<i32>>, Vec<Vec<u32>>), Error>,
 ) -> Result<Parser, Error> {
   let grammar = grammar::build(input).map_err(Error::GrammarError)?;
   let grammar = grammar.lower();
