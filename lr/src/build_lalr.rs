@@ -74,7 +74,7 @@ pub fn build_tables(
             let old = &mut action[from_state][tok.id() as usize];
             if *old < 0 {
               match resolve_sr_conflict(&builder.grammar, !*old as usize, tok.id()) {
-                SrConflictResolution::Shift => *old = tok.id() as i32 + 1,
+                SrConflictResolution::Shift => *old = to_state as i32 + 1,
                 SrConflictResolution::Reduce => {
                   // do nothing
                 }
@@ -404,25 +404,35 @@ impl<'a> LalrBuilder<'a> {
     entry_points: &HashMap<String, EntryPoint>,
     fmt: &mut impl Write,
   ) -> fmt::Result {
-    for (state, (item_set, lookaheads)) in self.state_store.states.iter().enumerate() {
-      let state = state as u32;
-      write!(fmt, "State {}", state)?;
-      if entry_points.values().find(|x| x.start_state == state).is_some() {
-        write!(fmt, " (start)")?;
-      }
-      writeln!(fmt)?;
+    for i in 0..self.state_store.states.len() {
+      self.fmt_state(entry_points, i, fmt)?;
+    }
 
-      for item_ix in item_set.iter() {
-        let lookaheads = &lookaheads[&(item_ix as u32)];
-        self.fmt_item(lookaheads, item_ix, fmt)?;
+    Ok(())
+  }
 
-        writeln!(fmt)?;
-      }
+  fn fmt_state(
+    &self,
+    entry_points: &HashMap<String, EntryPoint>,
+    state_ix: usize,
+    fmt: &mut impl Write,
+  ) -> fmt::Result {
+    let state = state_ix as u32;
+    let (item_set, lookaheads) = &self.state_store.states[state_ix];
+    write!(fmt, "State {}", state)?;
+    if entry_points.values().find(|x| x.start_state == state).is_some() {
+      write!(fmt, " (start)")?;
+    }
+    writeln!(fmt)?;
+
+    for item_ix in item_set.iter() {
+      let lookaheads = &lookaheads[&(item_ix as u32)];
+      self.fmt_item(lookaheads, item_ix, fmt)?;
 
       writeln!(fmt)?;
     }
 
-    Ok(())
+    writeln!(fmt)
   }
 }
 

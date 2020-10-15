@@ -17,13 +17,14 @@ grammar:
 - [x] move semantic action and type parsing to grammar
 - [ ] ~~generate parser through build.rs~~
 - [x] integration test in release mode
-- [ ] LALR state: (prod, dot, BitSet), BitSet doesn't take part in Eq, Hash etc
+- [x] LALR state: (prod, dot, BitSet), BitSet doesn't take part in Eq, Hash etc
 - [ ] error reporting
 - [x] use raw identifiers in generated code
-- [ ] assign prec to token or production
+- [x] assign prec to token or production
 - [ ] literal token
 - [ ] use minimal integer type in generated code
 - [ ] improve DFA table compression
-- [ ] merge ACCEPT into REDUCE
+- [x] merge ACCEPT into REDUCE
 - [ ] parse_expr().with_input()
 - [ ] test S -> xx S | epsilon
+- [ ] reduce code redundancy in LALR builder and CLR builder

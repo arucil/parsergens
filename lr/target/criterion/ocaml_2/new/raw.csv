@@ -1,0 +1,11 @@
+group,function,value,throughput_num,throughput_type,sample_measured_value,unit,iteration_count
+ocaml,,,,,94658782.0,ns,60
+ocaml,,,,,167573634.0,ns,120
+ocaml,,,,,254233290.0,ns,180
+ocaml,,,,,344652502.0,ns,240
+ocaml,,,,,423129607.0,ns,300
+ocaml,,,,,528042656.0,ns,360
+ocaml,,,,,603521038.0,ns,420
+ocaml,,,,,682854257.0,ns,480
+ocaml,,,,,804632172.0,ns,540
+ocaml,,,,,876466154.0,ns,600
