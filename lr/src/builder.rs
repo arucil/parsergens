@@ -1,7 +1,7 @@
 use std::hash::Hash;
-use std::collections::{VecDeque, HashMap};
+use std::collections::VecDeque;
 use bit_set::BitSet;
-use grammar::{ TokenId, NonterminalId, LoweredGrammar, Symbol, Assoc, Map, BiMap };
+use grammar::{ TokenId, NonterminalId, LoweredGrammar, Symbol, Assoc, Map, BiMap, HashMap };
 use std::marker::PhantomData;
 use crate::{
   Error,
@@ -9,6 +9,7 @@ use crate::{
   ReduceReduceConflictError,
   PrecConflictError,
   AssocConflictError,
+  EntryPoint,
 };
 use crate::first::FirstAndNullable;
 
@@ -82,7 +83,7 @@ pub struct Builder<'a, T>
   /// state -> non-terminal -> next state
   goto: Map<u32, Map<u32, u32>>,
   goto_row_len: usize,
-  pub start: HashMap<String, (u32, u32)>,
+  pub entry_points: HashMap<String, EntryPoint>,
   eof_token: TokenId,
   _marker: PhantomData<T>,
 }
@@ -102,10 +103,10 @@ impl<'a, T> Builder<'a, T>
       fan,
       states: BiMap::new(),
       items: BiMap::new(),
-      action: Map::new(),
-      goto: Map::new(),
+      action: Map::default(),
+      goto: Map::default(),
       goto_row_len: grammar.nts.len(),
-      start: HashMap::new(),
+      entry_points: HashMap::default(),
       eof_token,
       _marker: PhantomData,
     }
@@ -121,7 +122,11 @@ impl<'a, T> Builder<'a, T>
           _ => unreachable!(),
         };
       let nt_name = self.grammar.nts.get(&real_start_nt).unwrap().clone();
-      self.start.insert(nt_name, (real_start_nt.id(), start_state));
+      self.entry_points.insert(nt_name, EntryPoint {
+        real_start_nt: real_start_nt.id(),
+        start_state,
+        accept_prod: start_prod_ix,
+      });
     }
 
     if let Some(map) = T::merge_states(
@@ -136,11 +141,11 @@ impl<'a, T> Builder<'a, T>
   }
 
   fn map_merged_states(&mut self, map: HashMap<u32, u32>) -> Result<(), Error> {
-    for (_, start_state) in self.start.values_mut() {
+    for EntryPoint { start_state, .. } in self.entry_points.values_mut() {
       *start_state = map[&*start_state];
     }
 
-    let mut new_action = Map::<u32, Map<u32, ActionEntry>>::new();
+    let mut new_action = Map::<u32, Map<u32, ActionEntry>>::default();
 
     for (state, tx) in &self.action {
       for (token, entry) in tx {
@@ -188,7 +193,7 @@ impl<'a, T> Builder<'a, T>
 
     self.action = new_action;
 
-    let mut new_goto = Map::<u32, Map<u32, u32>>::new();
+    let mut new_goto = Map::<u32, Map<u32, u32>>::default();
 
     for (state, tx) in &self.goto {
       for (nt, next_state) in tx {
@@ -334,11 +339,7 @@ impl<'a, T> Builder<'a, T>
           assert!(entry.reduce.is_none());
           row[*token as usize] = new_state as i32 + 1;
         } else if let Some(prod) = entry.reduce {
-          row[*token as usize] = if prod == std::i32::MAX as u32 {
-            std::i32::MIN
-          } else {
-            !(prod as i32)
-          };
+          row[*token as usize] = !(prod as i32);
         }
       }
     }
@@ -376,17 +377,13 @@ impl<'a, T> Builder<'a, T>
 
     while let Some(state) = queue.pop_front() {
       let from_state = self.state(&state);
-      let mut to_states = Map::<Symbol, BitSet>::new();
+      let mut to_states = Map::<Symbol, BitSet>::default();
 
       for item in state.iter() {
         let item = self.items.get_by_right(&item).unwrap().clone();
         let symbols = &self.grammar.prods[item.prod_ix()].symbols;
         if item.dot_ix() == symbols.len() {
-          if item.prod_ix() == start_prod  {
-            self.accept(from_state);
-          } else {
-            self.reduce(from_state, &item)?;
-          }
+          self.reduce(from_state, &item)?;
           continue;
         }
 
@@ -460,8 +457,8 @@ impl<'a, T> Builder<'a, T>
       let state = self.states.len() as u32;
       self.states.insert(set.clone(), state);
 
-      self.action.insert(state, Map::new());
-      self.goto.insert(state, Map::new());
+      self.action.insert(state, Map::default());
+      self.goto.insert(state, Map::default());
 
       state
     }
@@ -499,13 +496,6 @@ impl<'a, T> Builder<'a, T>
       entry.reduce = Some(item.prod_ix() as u32);
       Ok(())
     })
-  }
-
-  fn accept(&mut self, from_state: u32) {
-    let entry = self.action.get_mut(&from_state).unwrap()
-      .entry(self.eof_token.id())
-      .or_default();
-    entry.reduce = Some(std::i32::MAX as u32);
   }
 }
 
@@ -554,7 +544,7 @@ impl<'a, T> Builder<'a, T>
 
     for (state_set, state) in states {
       write!(fmt, "State {}", state)?;
-      if self.start.values().find(|x| x.1 == state).is_some() {
+      if self.entry_points.values().find(|x| x.start_state == state).is_some() {
         write!(fmt, " (start)")?;
       }
       writeln!(fmt)?;

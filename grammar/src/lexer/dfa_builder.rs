@@ -15,8 +15,8 @@ impl<A, V> DfaBuilder<A, V>
   pub fn new() -> Self {
     Self {
       counter: 0,
-      transitions: Map::new(),
-      accept_states: Map::new(),
+      transitions: Map::default(),
+      accept_states: Map::default(),
     }
   }
 

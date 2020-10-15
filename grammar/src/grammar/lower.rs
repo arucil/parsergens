@@ -67,7 +67,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
     prods: vec![],
     start_nts: grammar.start_nts,
     nts: grammar.nts,
-    nt_metas: Map::new(),
+    nt_metas: Map::default(),
     lexer: grammar.lexer,
     tokens: grammar.tokens,
     token_precs: grammar.token_precs,

@@ -26,7 +26,12 @@ Ok(
                         ),
                     ),
                 ],
-                prec: None,
+                prec: Some(
+                    (
+                        LeftAssoc,
+                        0,
+                    ),
+                ),
                 action: None,
             },
             Rule {
@@ -50,7 +55,12 @@ Ok(
                         ),
                     ),
                 ],
-                prec: None,
+                prec: Some(
+                    (
+                        LeftAssoc,
+                        0,
+                    ),
+                ),
                 action: None,
             },
             Rule {
@@ -74,7 +84,12 @@ Ok(
                         ),
                     ),
                 ],
-                prec: None,
+                prec: Some(
+                    (
+                        LeftAssoc,
+                        1,
+                    ),
+                ),
                 action: None,
             },
             Rule {
@@ -98,7 +113,12 @@ Ok(
                         ),
                     ),
                 ],
-                prec: None,
+                prec: Some(
+                    (
+                        LeftAssoc,
+                        1,
+                    ),
+                ),
                 action: None,
             },
             Rule {
@@ -173,7 +193,12 @@ Ok(
                         ),
                     ),
                 ],
-                prec: None,
+                prec: Some(
+                    (
+                        NonAssoc,
+                        2,
+                    ),
+                ),
                 action: None,
             },
             Rule {
@@ -574,7 +599,32 @@ Ok(
                 8,
             ): "IDENT",
         },
-        token_precs: {},
+        token_precs: {
+            TokenId(
+                0,
+            ): (
+                LeftAssoc,
+                0,
+            ),
+            TokenId(
+                1,
+            ): (
+                LeftAssoc,
+                0,
+            ),
+            TokenId(
+                2,
+            ): (
+                LeftAssoc,
+                1,
+            ),
+            TokenId(
+                3,
+            ): (
+                LeftAssoc,
+                1,
+            ),
+        },
         user_code: [],
         user_state: [],
     },

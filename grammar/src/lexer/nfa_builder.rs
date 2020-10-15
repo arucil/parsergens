@@ -16,9 +16,9 @@ impl<A, P, V> NfaBuilder<A, P, V>
   pub fn new() -> Self {
     Self {
       counter: 0,
-      transitions: Map::new(),
-      state_letters: Map::new(),
-      accept_states: Map::new(),
+      transitions: Map::default(),
+      state_letters: Map::default(),
+      accept_states: Map::default(),
     }
   }
 

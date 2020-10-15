@@ -6,7 +6,8 @@ pub  fn parse<'a>(
   start: &str
 ) -> Vec<String> {
   let mut events = vec![];
-  let mut state = parser.start[start].1;
+  let mut state = parser.entry_points[start].start_state;
+  let accept_prod = parser.entry_points[start].accept_prod;
   let mut stack: Vec<(u32, String)> = vec![];
   let mut tokens = parser.lexer.as_ref().unwrap().lex(input);
   let mut token = tokens.next().transpose().unwrap();
@@ -27,12 +28,14 @@ pub  fn parse<'a>(
       stack.push((state, token_text.to_owned()));
       state = (action - 1) as u32;
       token = tokens.next().transpose().unwrap();
-    } else if action == std::i32::MIN {
-      events.push(format!("accept"));
-      break;
     } else if action < 0 {
+      if !action as usize == accept_prod {
+        events.push(format!("accept"));
+        break;
+      }
+
       let mut event = format!("reduce ");
-      let prod = &parser.prods[(!action) as usize];
+      let prod = &parser.prods[!action as usize];
       let state0 = if prod.rhs_len == 0 {
         state
       } else {

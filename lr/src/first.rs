@@ -25,7 +25,7 @@ fn compute_first(
   grammar: &LoweredGrammar,
   nullable: &BitSet
 ) -> Map<NonterminalId, BitSet> {
-  let mut first = Map::<NonterminalId, BitSet>::new();
+  let mut first = Map::<NonterminalId, BitSet>::default();
 
   for &nt in grammar.nts.keys() {
     compute_nonterminal_first(grammar, nullable, &mut first, &mut BitSet::new(), nt);

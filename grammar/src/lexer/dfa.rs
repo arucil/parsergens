@@ -44,7 +44,7 @@ impl<A, V> Dfa<A, V>
   /// Hopcroft's algorithm
   pub fn minimize<'a>(&'a self) -> Self {
     let mut states = self.accept_states.iter()
-      .fold(Map::<&'a V, BitSet>::new(), |mut map, (state, value)| {
+      .fold(Map::<&'a V, BitSet>::default(), |mut map, (state, value)| {
         map.entry(value).or_default().insert(state.0 as usize);
         map
       })
@@ -66,7 +66,7 @@ impl<A, V> Dfa<A, V>
     states.insert(non_accept_states);
 
     let to_states = self.transitions.iter()
-      .fold(Map::<(A, u32), BitSet>::new(), |mut to_states, ((src, c), dest)| {
+      .fold(Map::<(A, u32), BitSet>::default(), |mut to_states, ((src, c), dest)| {
         to_states.entry((c.clone(), dest.0)).or_default().insert(src.0 as usize);
         to_states
       });
@@ -127,7 +127,7 @@ impl<A, V> Dfa<A, V>
       .collect::<Map<_, _>>();
 
     let old_new_states = new_states.iter()
-      .fold(Map::<State, State>::new(), |mut map, (set, new_state)| {
+      .fold(Map::<State, State>::default(), |mut map, (set, new_state)| {
         for old_state in set {
           map.insert(State(old_state as u32), *new_state);
         }

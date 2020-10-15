@@ -27,8 +27,10 @@ use grammar_parser::regex::{RegexError, RegexErrorKind};
 use grammar_parser::UserParseError;
 use lexer::LexerError;
 
+pub type HashMap<K, V> = std::collections::HashMap<K, V, fnv::FnvBuildHasher>;
+
 #[cfg(not(debug_assertions))]
-pub type Map<K, V> = std::collections::HashMap<K, V>;
+pub type Map<K, V> = HashMap<K, V>;
 
 #[cfg(debug_assertions)]
 pub type Map<K, V> = indexmap::IndexMap<K, V>;
@@ -88,10 +90,10 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     }
   }
 
-  let assocs = assoc_decls.into_iter()
-    .flat_map(|decl| {
+  let assocs = assoc_decls.into_iter().enumerate()
+    .flat_map(|(prec, decl)| {
       let assoc = decl.assoc.1;
-      decl.names.into_iter().map(move |name| (name.1, (assoc, !(name.0 .0 as u32))))
+      decl.names.into_iter().map(move |name| (name.1, (assoc, prec as u32)))
     })
     .collect::<Map<_, _>>();
 
@@ -195,8 +197,16 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     })
     .collect::<Result<Set<_>, GrammarError>>()?;
 
+  let token_precs = tokens.iter().filter_map(|(&tok, name)| {
+    if let Some(&(assoc, prec)) = assocs.get(name) {
+      Some((tok, (assoc, prec)))
+    } else {
+      None
+    }
+  }).collect();
+
   let mut rules = vec![];
-  let mut nt_metas = Map::new();
+  let mut nt_metas = Map::default();
 
   for rule_decl in &rule_decls {
     let nt = *nts.get_by_right(&rule_decl.name.1).unwrap();
@@ -221,7 +231,32 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
             span: name.0,
           })?)
         }
-        None => None,
+        None => {
+          fn find_right_most_token_prec(
+            items: &[Item],
+            assocs: &Map<String, (Assoc, u32)>,
+            tokens: &BiMap<TokenId, String>,
+          ) -> Option<(Assoc, u32)> {
+            for item in items.iter().rev() {
+              match item {
+                Item::Nonterminal(_) => {}
+                Item::Token(tok) => {
+                  if let Some(x) = assocs.get(tokens.get_by_left(tok).unwrap()) {
+                    return Some(*x);
+                  }
+                }
+                Item::Many(items) | Item::Many1(items) | Item::Optional(items) => {
+                  if let x@Some(_) = find_right_most_token_prec(items, assocs, tokens) {
+                    return x;
+                  }
+                }
+              }
+            }
+            None
+          }
+
+          find_right_most_token_prec(&items, &assocs, &tokens)
+        }
       };
 
       let action = match &alt.1.action {
@@ -278,14 +313,6 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
       ty,
     });
   }
-
-  let token_precs = tokens.iter().filter_map(|(&tok, name)| {
-    if let Some(&(assoc, prec)) = assocs.get(name) {
-      Some((tok, (assoc, prec)))
-    } else {
-      None
-    }
-  }).collect();
 
   let nts = nts.into_iter().collect();
   let tokens = tokens.into_iter().collect();
@@ -566,6 +593,10 @@ mod tests {
 
 %skip /[ \n]/
 
+%left-assoc PLUS MINUS
+%left-assoc MUL DIV
+%non-assoc NEG
+
 expr = expr PLUS expr
   | expr MINUS expr
   | expr MUL expr
@@ -575,7 +606,7 @@ expr = expr PLUS expr
 factor: {Expr} =
     NUMBER   { $1.parse::<f64>().unwrap() }
   | LPAREN expr RPAREN { $2 }
-  | MINUS factor
+  | MINUS factor %prec NEG
   | IDENT
   | IDENT LPAREN param-list RPAREN
 

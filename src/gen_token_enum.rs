@@ -15,7 +15,7 @@ pub fn gen(
     .derive("PartialEq")
     .derive("Eq");
 
-  let mut token_names = Map::new();
+  let mut token_names = Map::default();
   for (id, name) in tokens {
     let name = name.replace(&['\'', '-'][..], "__").to_camel_case();
     en.new_variant(&name).discriminant(id.id().to_string());

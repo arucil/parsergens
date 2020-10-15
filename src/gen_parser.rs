@@ -367,12 +367,12 @@ fn gen_start_fn(
   user_state_names: &[String],
   imp: &mut Impl,
 ) {
-  for (name, (nt, state)) in &parser.start {
+  for (name, ep) in &parser.entry_points {
     let name = name.replace(&['\'', '-'][..], "__");
     let fn_name = format!("parse_{}", name.to_snake_case());
-    let ty = &nt_types[*nt as usize];
+    let ty = &nt_types[ep.real_start_nt as usize];
 
-    let nt_name = format!("{}", nt_names[*nt as usize]);
+    let nt_name = format!("{}", nt_names[ep.real_start_nt as usize]);
 
     let func = imp.new_fn(fn_name)
       .vis("pub")
@@ -391,8 +391,9 @@ fn gen_start_fn(
     };
 
     func.line(format!(
-      "Ok(self.parse({state} as usize, ({user_state_names}))?.assert_{nt_name}())",
-      state = state,
+      "Ok(self.parse({state}, {accept_prod}, ({user_state_names}))?.assert_{nt_name}())",
+      state = ep.start_state,
+      accept_prod = ep.accept_prod,
       nt_name = nt_name,
       user_state_names = user_state_names.join(", ")));
   }
@@ -430,6 +431,7 @@ fn gen_parse_fn(
   imp.new_fn("parse")
     .arg_mut_self()
     .arg_mut("state", "usize")
+    .arg_mut("accept_prod", "usize")
     .arg_mut("user_state", user_state_tuple)
     .ret("::std::result::Result<NtType<'input>, ParseError<'input>>")
     .line("let mut stack = ::std::vec::Vec::<(usize, NtType)>::new();")
@@ -442,10 +444,12 @@ loop {
     stack.push((state, NtType::_Token(self.token.take().unwrap())));
     state = (action - 1) as usize;
     self.get_token()?;
-  } else if action == ::std::i32::MIN {
-    return Ok(stack.pop().unwrap().1);
   } else if action < 0 {
     let prod = (!action) as usize;
+    if prod == accept_prod {
+      return Ok(stack.pop().unwrap().1);
+    }
+
     let (rhs_len, nt) = PRODUCTIONS[prod];
     let state0 = if rhs_len == 0 {
       state

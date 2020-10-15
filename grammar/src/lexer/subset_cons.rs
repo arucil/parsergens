@@ -36,7 +36,7 @@ pub fn powerset<A, P, V>(
 
     for dfa_state in last_dfa_states {
       let nfa_states = dfa_nfa_state_map.get_by_left(&dfa_state).unwrap();
-      let mut transitions: Map<A, Vec<usize>> = Map::new();
+      let mut transitions: Map<A, Vec<usize>> = Map::default();
 
       for nfa_state in nfa_states {
         let nfa_state = NfaState(nfa_state as u32);

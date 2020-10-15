@@ -19,20 +19,20 @@ fn precedence() {
 
 %skip /[ \t\n]+/
 
+%non-assoc equal
+%left-assoc plus minus
+%left-assoc mult div
+%right-assoc pow
 %right-assoc NEG
-%right-assoc POW
-%left-assoc MUL
-%left-assoc ADD
-%non-assoc REL
 
 %start E
 
-E = E plus E    %prec ADD
-  | E minus E   %prec ADD
-  | E mult E    %prec MUL
-  | E div E     %prec MUL
-  | E pow E     %prec POW
-  | E equal E   %prec REL
+E = E plus E
+  | E minus E
+  | E mult E
+  | E div E
+  | E pow E
+  | E equal E
   | minus E     %prec NEG
   | lparen E rparen
   | id lparen ARGS rparen

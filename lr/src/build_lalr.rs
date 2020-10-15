@@ -1,12 +1,12 @@
-use std::collections::{HashMap, VecDeque};
-use grammar::{LoweredGrammar, Symbol, Map, NonterminalId};
+use std::collections::VecDeque;
+use grammar::{LoweredGrammar, Symbol, Map, NonterminalId, Assoc, HashMap};
 use bit_set::BitSet;
 use std::fmt::{self, Write};
 use crate::first::FirstAndNullable;
-use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError};
+use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError, EntryPoint};
 
 /// Lookahead set of an item.
-type LookaheadSet = Map<u32, BitSet>;
+type LookaheadSet = HashMap<u32, BitSet>;
 
 pub struct Builder<'a> {
   grammar: &'a LoweredGrammar,
@@ -22,7 +22,7 @@ struct StateStore {
   // item set -> state
   state_indices: HashMap<BitSet, u32>,
   /// state -> symbol -> next state
-  goto: Vec<Map<Symbol, u32>>,
+  goto: Vec<HashMap<Symbol, u32>>,
 }
 
 #[derive(Default)]
@@ -55,9 +55,9 @@ impl<'a> Builder<'a> {
 pub fn build_states(
   builder: &mut Builder,
   grammar: &LoweredGrammar,
-) -> HashMap<String, (u32, u32)> {
+) -> HashMap<String, EntryPoint> {
   let fan = crate::first::compute(grammar);
-  let mut start_nts = HashMap::new();
+  let mut entry_points = HashMap::default();
 
   for &start_nt in &grammar.start_nts {
     let start_state = start(builder, grammar, &fan, start_nt);
@@ -68,10 +68,14 @@ pub fn build_states(
         _ => unreachable!(),
       };
     let nt_name = grammar.nts.get(&real_start_nt).unwrap().clone();
-    start_nts.insert(nt_name, (real_start_nt.id(), start_state));
+    entry_points.insert(nt_name, EntryPoint {
+      real_start_nt: real_start_nt.id(),
+      start_state,
+      accept_prod: start_prod_ix,
+    });
   }
 
-  start_nts
+  entry_points
 }
 
 /// returns ACTION table and GOTO table.
@@ -104,7 +108,19 @@ pub fn build_tables(
           Symbol::Token(tok) => {
             let old = &mut action[from_state][tok.id() as usize];
             if *old < 0 {
-              // TODO
+              match resolve_sr_conflict(&builder.grammar, !*old as usize, tok.id()) {
+                SrConflictResolution::Shift => *old = tok.id() as i32 + 1,
+                SrConflictResolution::Reduce => {
+                  // do nothing
+                }
+                SrConflictResolution::Error => *old = 0,
+                SrConflictResolution::Conflict => return Err(make_sr_conflict_error(
+                  builder,
+                  item_set,
+                  lookaheads,
+                  tok.id(),
+                  !*old as usize))
+              }
             } else {
               assert!(*old == 0);
               *old = to_state as i32 + 1;
@@ -119,28 +135,31 @@ pub fn build_tables(
         for lookahead in lookaheads[&(item_ix as u32)].iter() {
           let old = &mut action[from_state][lookahead];
           if *old > 0 {
-            // TODO
+            match resolve_sr_conflict(&builder.grammar, item.prod_ix, lookahead as u32) {
+              SrConflictResolution::Shift => {
+                // do nothing
+              }
+              SrConflictResolution::Reduce => {
+                *old = !(item.prod_ix as i32);
+              }
+              SrConflictResolution::Error => {
+                *old = 0;
+              }
+              SrConflictResolution::Conflict => return Err(make_sr_conflict_error(
+                builder,
+                item_set,
+                lookaheads,
+                lookahead as u32,
+                item.prod_ix))
+            }
           } else if *old < 0 {
-            let lookahead = builder.grammar.tokens[lookahead].clone();
-            let reduce1 = builder.grammar.prods[!*old as usize].to_string(
-              &builder.grammar);
-            let reduce2 = builder.grammar.prods[item.prod_ix].to_string(
-              &builder.grammar);
-
-            let state_items = item_set.iter()
-              .map(|item_ix| {
-                let mut buf = String::new();
-                builder.fmt_item(&lookaheads[item_ix], item_ix, &mut buf).unwrap();
-                buf
-              })
-              .collect();
-
-            return Err(Error::ReduceReduceConflict(ReduceReduceConflictError {
-              lookahead,
-              state_items,
-              reduce1,
-              reduce2,
-            }));
+            return Err(make_rr_conflict_error(
+              builder,
+              item_set,
+              lookaheads,
+              lookahead as u32,
+              !*old as usize,
+              item.prod_ix));
           } else {
             *old = !(item.prod_ix as i32);
           }
@@ -150,6 +169,92 @@ pub fn build_tables(
   }
 
   Ok((action, goto))
+}
+
+enum SrConflictResolution {
+  Shift,
+  Reduce,
+  Error,
+  Conflict,
+}
+
+fn resolve_sr_conflict(
+  grammar: &LoweredGrammar,
+  prod_ix: usize,
+  tok: u32,
+) -> SrConflictResolution {
+  match (&grammar.prods[prod_ix].prec, grammar.token_precs.get(&tok)) {
+    (Some((_, prec1)), Some((assoc2, prec2))) => {
+      if prec1 == prec2 {
+        match assoc2 {
+          Assoc::LeftAssoc => SrConflictResolution::Reduce,
+          Assoc::RightAssoc => SrConflictResolution::Shift,
+          Assoc::NonAssoc => SrConflictResolution::Error,
+        }
+      } else if prec1 < prec2 {
+        SrConflictResolution::Shift
+      } else {
+        SrConflictResolution::Reduce
+      }
+    }
+    _ => SrConflictResolution::Conflict,
+  }
+}
+
+fn make_rr_conflict_error(
+  builder: &Builder,
+  item_set: &BitSet,
+  lookaheads: &LookaheadSet,
+  lookahead: u32,
+  reduce1: usize,
+  reduce2: usize,
+) -> Error {
+  let lookahead = builder.grammar.tokens[&lookahead].clone();
+  let reduce1 = builder.grammar.prods[reduce1].to_string(
+    &builder.grammar);
+  let reduce2 = builder.grammar.prods[reduce2].to_string(
+    &builder.grammar);
+
+  let state_items = item_set.iter()
+    .map(|item_ix| {
+      let mut buf = String::new();
+      builder.fmt_item(&lookaheads[&(item_ix as u32)], item_ix, &mut buf).unwrap();
+      buf
+    })
+    .collect();
+
+  Error::ReduceReduceConflict(ReduceReduceConflictError {
+    lookahead,
+    state_items,
+    reduce1,
+    reduce2,
+  })
+}
+
+fn make_sr_conflict_error(
+  builder: &Builder,
+  item_set: &BitSet,
+  lookaheads: &LookaheadSet,
+  token: u32,
+  reduce_prod: usize,
+) -> Error {
+  let shift = builder.grammar.tokens[&token].clone();
+
+  let state_items = item_set.iter()
+    .map(|item_ix| {
+      let mut buf = String::new();
+      builder.fmt_item(&lookaheads[&(item_ix as u32)], item_ix, &mut buf).unwrap();
+      buf
+    })
+    .collect();
+
+  let reduce = builder.grammar.prods[reduce_prod].to_string(&builder.grammar);
+
+  Error::ShiftReduceConflict(ShiftReduceConflictError {
+    state_items,
+    shift,
+    reduce,
+  })
 }
 
 fn start(
@@ -170,7 +275,7 @@ fn start(
     set
   };
   let mut start_lookaheads = {
-    let mut m = Map::new();
+    let mut m = HashMap::default();
     let mut set = BitSet::new();
     set.insert(builder.eof);
     m.insert(start_item, set);
@@ -186,7 +291,7 @@ fn start(
 
   while let Some(from_state) = queue.pop_front() {
     let (item_set, lookaheads) = &builder.state_store.states[from_state as usize];
-    let mut to_states = Map::<Symbol, (BitSet, LookaheadSet)>::new();
+    let mut to_states = Map::<Symbol, (BitSet, LookaheadSet)>::default();
 
     for item_ix in item_set.iter() {
       let item = builder.item_store.items[item_ix];
@@ -211,9 +316,10 @@ fn start(
       let (to_state, changed) = store_state(&mut builder.state_store, &to_item_set,
         lookaheads);
 
+      builder.state_store.goto[from_state as usize].insert(sym, to_state);
+
       if changed {
         queue.push_back(to_state);
-        builder.state_store.goto[from_state as usize].insert(sym, to_state);
       }
     }
   }
@@ -298,7 +404,7 @@ fn store_state(
     let ix = state_store.states.len() as u32;
     state_store.states.push((item_set.clone(), lookaheads));
     state_store.state_indices.insert(item_set.clone(), ix);
-    state_store.goto.push(Map::new());
+    state_store.goto.push(HashMap::default());
     (ix, true)
   }
 }
@@ -321,22 +427,22 @@ fn store_item(
 impl<'a> Builder<'a> {
   fn states(
     &self,
-    start_nts: &HashMap<String, (u32, u32)>
+    entry_points: &HashMap<String, EntryPoint>
   ) -> String {
     let mut output = String::new();
-    self.fmt_states(start_nts, &mut output).unwrap();
+    self.fmt_states(entry_points, &mut output).unwrap();
     output
   }
 
   fn fmt_states(
     &self,
-    start_nts: &HashMap<String, (u32, u32)>,
+    entry_points: &HashMap<String, EntryPoint>,
     fmt: &mut impl Write,
   ) -> fmt::Result {
     for (state, (item_set, lookaheads)) in self.state_store.states.iter().enumerate() {
       let state = state as u32;
       write!(fmt, "State {}", state)?;
-      if start_nts.values().find(|x| x.1 == state).is_some() {
+      if entry_points.values().find(|x| x.start_state == state).is_some() {
         write!(fmt, " (start)")?;
       }
       writeln!(fmt)?;
@@ -410,7 +516,7 @@ impl<'a> Builder<'a> {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use insta::{assert_snapshot};
+  use insta::{assert_snapshot, assert_debug_snapshot};
   use grammar::LoweredGrammar;
   use crate::augment;
 
@@ -420,6 +526,14 @@ mod tests {
     let (grammar, _) = augment::augment(grammar);
 
     grammar
+  }
+
+  fn merge_action_goto((action, goto): (Vec<Vec<i32>>, Vec<Vec<u32>>)) -> Vec<Vec<i32>> {
+    action.into_iter().zip(goto).map(|(mut row1, row2)| {
+      row1.extend(row2.into_iter().map(|x| x as i32));
+      row1
+    })
+    .collect()
   }
 
   static SIMPLE: &str = r#"
@@ -440,6 +554,16 @@ C = c C
     let start_nts = build_states(&mut builder, &grammar);
 
     assert_snapshot!(builder.states(&start_nts));
+  }
+
+  #[test]
+  fn simple_action_goto() {
+    let grammar = prepare(SIMPLE);
+    let mut builder = Builder::new(&grammar);
+    let _start_nts = build_states(&mut builder, &grammar);
+    let tables = merge_action_goto(build_tables(&builder).unwrap());
+
+    assert_debug_snapshot!(tables);
   }
 
   static EPSILON: &str = r#"
@@ -470,6 +594,16 @@ F = num
     assert_snapshot!(builder.states(&start_nts));
   }
 
+  #[test]
+  fn epsilon_action_goto() {
+    let grammar = prepare(EPSILON);
+    let mut builder = Builder::new(&grammar);
+    let _start_nts = build_states(&mut builder, &grammar);
+    let tables = merge_action_goto(build_tables(&builder).unwrap());
+
+    assert_debug_snapshot!(tables);
+  }
+
   static PRECEDENCE: &str = r#"
 %token minus "-"
 %token mult "*"
@@ -478,16 +612,19 @@ F = num
 %token lparen "("
 %token rparen ")"
 %token num "1"
+
+%non-assoc equal
+%left-assoc minus
+%left-assoc mult
+%right-assoc pow
 %right-assoc NEG
-%right-assoc POW
-%left-assoc MUL
-%left-assoc ADD
-%non-assoc REL
+
 %start E
-E = E minus E    %prec ADD
-  | E mult E    %prec MUL
-  | E pow E     %prec POW
-  | E equal E     %prec REL
+
+E = E minus E
+  | E mult E
+  | E pow E
+  | E equal E
   | minus E       %prec NEG
   | lparen E rparen
   | num
@@ -500,6 +637,16 @@ E = E minus E    %prec ADD
     let start_nts = build_states(&mut builder, &grammar);
 
     assert_snapshot!(builder.states(&start_nts));
+  }
+
+  #[test]
+  fn precedence_action_goto() {
+    let grammar = prepare(PRECEDENCE);
+    let mut builder = Builder::new(&grammar);
+    let _start_nts = build_states(&mut builder, &grammar);
+    let tables = merge_action_goto(build_tables(&builder).unwrap());
+
+    assert_debug_snapshot!(tables);
   }
 
   static TIGER: &str = r##"
@@ -552,17 +699,17 @@ E = E minus E    %prec ADD
 
 %skip /[ \n]+/
 
-%non-assoc    ELSE
-%right-assoc  NEG
-%left-assoc   MULT
-%left-assoc   ADD
-%non-assoc    REL
-%non-assoc    EQ
-%right-assoc  AND
-%right-assoc  OR
-%non-assoc    ASSIGN
-%non-assoc    ARRAY
 %non-assoc    CONTROL
+%non-assoc    ARRAY
+%non-assoc    ASSIGN
+%right-assoc  OR
+%right-assoc  AND
+%non-assoc    EQ
+%non-assoc    REL
+%left-assoc   ADD
+%left-assoc   MULT
+%right-assoc  NEG
+%non-assoc    ELSE
 
 %start program
 

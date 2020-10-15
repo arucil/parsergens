@@ -18,10 +18,10 @@
 
 %skip /[ \n]/
 
-%right-assoc NEG
+%left-assoc PLUS MINUS
+%left-assoc MUL DIV
 %right-assoc POW
-%left-assoc MUL
-%left-assoc ADD
+%right-assoc NEG
 
 %start stmt
 
@@ -37,10 +37,10 @@ assignment: {Result<(), String>} = IDENT ASSIGN expr
   }
 
 expr: {Result<f64, String>} =
-    expr PLUS expr %prec ADD { $1.and_then(|x| $3.map(|y| x + y)) }
-  | expr MINUS expr %prec ADD { $1.and_then(|x| $3.map(|y| x - y)) }
-  | expr MUL expr %prec MUL { $1.and_then(|x| $3.map(|y| x * y)) }
-  | expr DIV expr %prec MUL
+    expr PLUS expr { $1.and_then(|x| $3.map(|y| x + y)) }
+  | expr MINUS expr { $1.and_then(|x| $3.map(|y| x - y)) }
+  | expr MUL expr { $1.and_then(|x| $3.map(|y| x * y)) }
+  | expr DIV expr
     {
       $1.and_then(|x|
         $3.and_then(|y|
@@ -50,7 +50,7 @@ expr: {Result<f64, String>} =
             Ok(x / y)
           }))
     }
-  | expr POW expr %prec POW { $1.and_then(|x| $3.map(|y| f64::powf(x, y))) }
+  | expr POW expr { $1.and_then(|x| $3.map(|y| f64::powf(x, y))) }
   | factor { $1 }
 
 factor: {Result<f64, String>} =

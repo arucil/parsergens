@@ -1,8 +1,7 @@
 #![feature(type_alias_impl_trait)]
 
-use grammar::{TokenId, Map, NonterminalIdGen};
+use grammar::{TokenId, Map, NonterminalIdGen, HashMap};
 use std::ops::Range;
-use std::collections::HashMap;
 use builder::{Builder, LrCalculation};
 
 pub use grammar::{UserState, NonterminalKind, ProductionKind, GrammarError};
@@ -16,23 +15,30 @@ mod build_lalr;
 
 #[derive(Debug)]
 pub struct Parser {
-  /// positive: shift (n - 1)  
-  /// zero: error
-  /// negative: reduce (-n - 1)
-  /// MIN: accept
+  /// - positive: shift (n - 1)  
+  /// - zero: error
+  /// - negative: reduce (-n - 1)
+  /// - MIN: accept
   pub action: Vec<Vec<i32>>,
-  /// positive: goto (n - 1)
-  /// zero: error
+  /// - positive: goto (n - 1)
+  /// - zero: error
   pub goto: Vec<Vec<u32>>,
   pub prods: Vec<Production>,
   pub nts: Vec<Nonterminal>,
   /// non-terminal name -> (non-terminal id, starting state)
-  pub start: HashMap<String, (u32, u32)>,
+  pub entry_points: HashMap<String, EntryPoint>,
   pub eof_index: usize,
   pub lexer: Option<grammar::Lexer>,
   pub tokens: Map<TokenId, String>,
   pub user_code: Vec<String>,
   pub user_state: Vec<UserState>,
+}
+
+#[derive(Debug)]
+pub struct EntryPoint {
+  pub real_start_nt: u32,
+  pub start_state: u32,
+  pub accept_prod: usize,
 }
 
 #[derive(Debug)]
@@ -165,7 +171,7 @@ fn build_parser<T>(
     goto,
     prods,
     nts,
-    start: builder.start,
+    entry_points: builder.entry_points,
     eof_index: eof_token.id() as usize,
     lexer: grammar.lexer,
     tokens: grammar.tokens,

@@ -269,6 +269,7 @@ LoweredGrammar {
             0,
         ): "A",
     },
+    token_precs: {},
     user_code: [],
     user_state: [],
 }
