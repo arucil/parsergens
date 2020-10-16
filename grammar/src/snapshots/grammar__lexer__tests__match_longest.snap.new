@@ -1,0 +1,47 @@
+---
+source: grammar/src/lexer.rs
+expression: tokens
+---
+[
+    Ok(
+        Token {
+            kind: TokenId(
+                1,
+            ),
+            text: "integeinteger",
+            start: 0,
+            end: 13,
+        },
+    ),
+    Ok(
+        Token {
+            kind: TokenId(
+                0,
+            ),
+            text: "in",
+            start: 13,
+            end: 15,
+        },
+    ),
+    Err(
+        Error {
+            char: 't',
+            start: 15,
+            end: 16,
+        },
+    ),
+    Err(
+        Error {
+            char: 'e',
+            start: 16,
+            end: 17,
+        },
+    ),
+    Err(
+        Error {
+            char: 'g',
+            start: 17,
+            end: 18,
+        },
+    ),
+]

@@ -1,0 +1,647 @@
+---
+source: grammar/src/lib.rs
+expression: build(input)
+---
+Ok(
+    Grammar {
+        rules: [
+            Rule {
+                nt: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            0,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                ],
+                prec: Some(
+                    (
+                        LeftAssoc,
+                        0,
+                    ),
+                ),
+                action: None,
+            },
+            Rule {
+                nt: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            1,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                ],
+                prec: Some(
+                    (
+                        LeftAssoc,
+                        0,
+                    ),
+                ),
+                action: None,
+            },
+            Rule {
+                nt: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            2,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                ],
+                prec: Some(
+                    (
+                        LeftAssoc,
+                        1,
+                    ),
+                ),
+                action: None,
+            },
+            Rule {
+                nt: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            3,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                ],
+                prec: Some(
+                    (
+                        LeftAssoc,
+                        1,
+                    ),
+                ),
+                action: None,
+            },
+            Rule {
+                nt: NonterminalId(
+                    0,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            1,
+                        ),
+                    ),
+                ],
+                prec: None,
+                action: None,
+            },
+            Rule {
+                nt: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            7,
+                        ),
+                    ),
+                ],
+                prec: None,
+                action: Some(
+                    "{ (__0) . parse ::< f64 > () . unwrap () }",
+                ),
+            },
+            Rule {
+                nt: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            4,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            5,
+                        ),
+                    ),
+                ],
+                prec: None,
+                action: Some(
+                    "{ (__1) }",
+                ),
+            },
+            Rule {
+                nt: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            1,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            1,
+                        ),
+                    ),
+                ],
+                prec: Some(
+                    (
+                        NonAssoc,
+                        2,
+                    ),
+                ),
+                action: None,
+            },
+            Rule {
+                nt: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            8,
+                        ),
+                    ),
+                ],
+                prec: None,
+                action: None,
+            },
+            Rule {
+                nt: NonterminalId(
+                    1,
+                ),
+                items: [
+                    Token(
+                        TokenId(
+                            8,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            4,
+                        ),
+                    ),
+                    Nonterminal(
+                        NonterminalId(
+                            2,
+                        ),
+                    ),
+                    Token(
+                        TokenId(
+                            5,
+                        ),
+                    ),
+                ],
+                prec: None,
+                action: None,
+            },
+            Rule {
+                nt: NonterminalId(
+                    2,
+                ),
+                items: [],
+                prec: None,
+                action: None,
+            },
+            Rule {
+                nt: NonterminalId(
+                    2,
+                ),
+                items: [
+                    Nonterminal(
+                        NonterminalId(
+                            0,
+                        ),
+                    ),
+                    Many(
+                        [
+                            Token(
+                                TokenId(
+                                    6,
+                                ),
+                            ),
+                            Nonterminal(
+                                NonterminalId(
+                                    0,
+                                ),
+                            ),
+                        ],
+                    ),
+                ],
+                prec: None,
+                action: None,
+            },
+        ],
+        start_nts: {
+            NonterminalId(
+                0,
+            ),
+        },
+        nts: {
+            NonterminalId(
+                0,
+            ): "expr",
+            NonterminalId(
+                1,
+            ): "factor",
+            NonterminalId(
+                2,
+            ): "param-list",
+        },
+        nt_metas: {
+            NonterminalId(
+                0,
+            ): NonterminalMetadata {
+                range: 0..5,
+                ty: None,
+            },
+            NonterminalId(
+                1,
+            ): NonterminalMetadata {
+                range: 5..10,
+                ty: Some(
+                    "Expr",
+                ),
+            },
+            NonterminalId(
+                2,
+            ): NonterminalMetadata {
+                range: 10..12,
+                ty: None,
+            },
+        },
+        lexer: Some(
+            Lexer {
+                dfa: TabularDfa {
+                    start: 10,
+                    state_disp: [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        15,
+                        26,
+                    ],
+                    transitions: [
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            0,
+                            0,
+                        ),
+                        (
+                            9,
+                            10,
+                        ),
+                        (
+                            7,
+                            8,
+                        ),
+                        (
+                            9,
+                            10,
+                        ),
+                        (
+                            7,
+                            8,
+                        ),
+                        (
+                            10,
+                            9,
+                        ),
+                        (
+                            7,
+                            8,
+                        ),
+                        (
+                            10,
+                            9,
+                        ),
+                        (
+                            7,
+                            8,
+                        ),
+                        (
+                            10,
+                            5,
+                        ),
+                        (
+                            10,
+                            6,
+                        ),
+                        (
+                            10,
+                            3,
+                        ),
+                        (
+                            10,
+                            1,
+                        ),
+                        (
+                            10,
+                            7,
+                        ),
+                        (
+                            10,
+                            2,
+                        ),
+                        (
+                            10,
+                            0,
+                        ),
+                        (
+                            10,
+                            4,
+                        ),
+                        (
+                            10,
+                            10,
+                        ),
+                        (
+                            10,
+                            0,
+                        ),
+                        (
+                            10,
+                            8,
+                        ),
+                        (
+                            10,
+                            0,
+                        ),
+                        (
+                            10,
+                            0,
+                        ),
+                        (
+                            10,
+                            0,
+                        ),
+                        (
+                            10,
+                            8,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                        (
+                            11,
+                            0,
+                        ),
+                    ],
+                    accept_states: {
+                        State(0): TokenId(
+                            0,
+                        ),
+                        State(1): TokenId(
+                            1,
+                        ),
+                        State(2): TokenId(
+                            2,
+                        ),
+                        State(3): TokenId(
+                            3,
+                        ),
+                        State(4): TokenId(
+                            4,
+                        ),
+                        State(5): TokenId(
+                            5,
+                        ),
+                        State(6): TokenId(
+                            6,
+                        ),
+                        State(7): TokenId(
+                            8,
+                        ),
+                        State(8): TokenId(
+                            9,
+                        ),
+                        State(9): TokenId(
+                            7,
+                        ),
+                    },
+                },
+                char_intervals: [
+                    0,
+                    10,
+                    11,
+                    32,
+                    33,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44,
+                    45,
+                    46,
+                    47,
+                    48,
+                    58,
+                    65,
+                    91,
+                    95,
+                    96,
+                    97,
+                    123,
+                ],
+                skip: {
+                    TokenId(
+                        9,
+                    ),
+                },
+            },
+        ),
+        tokens: {
+            TokenId(
+                0,
+            ): "PLUS",
+            TokenId(
+                1,
+            ): "MINUS",
+            TokenId(
+                2,
+            ): "MUL",
+            TokenId(
+                3,
+            ): "DIV",
+            TokenId(
+                4,
+            ): "LPAREN",
+            TokenId(
+                5,
+            ): "RPAREN",
+            TokenId(
+                6,
+            ): "COMMA",
+            TokenId(
+                7,
+            ): "NUMBER",
+            TokenId(
+                8,
+            ): "IDENT",
+        },
+        token_precs: {
+            TokenId(
+                0,
+            ): (
+                LeftAssoc,
+                0,
+            ),
+            TokenId(
+                1,
+            ): (
+                LeftAssoc,
+                0,
+            ),
+            TokenId(
+                2,
+            ): (
+                LeftAssoc,
+                1,
+            ),
+            TokenId(
+                3,
+            ): (
+                LeftAssoc,
+                1,
+            ),
+        },
+        user_code: [],
+        user_state: [],
+    },
+)
