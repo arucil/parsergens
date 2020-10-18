@@ -1,6 +1,6 @@
 //! compute FIRST, FOLLOW, and NULLABLE sets.
 
-use bit_set::BitSet;
+use bittyset::BitSet;
 use bitvec::prelude::*;
 use grammar::{LoweredGrammar, NonterminalId, Symbol};
 use crate::Map;

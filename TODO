@@ -28,3 +28,4 @@ grammar:
 - [ ] parse_expr().with_input()
 - [ ] test S -> xx S | epsilon
 - [ ] reduce code redundancy in LALR builder and CLR builder
+- [ ] compress item store: prod_base, item_prod_ix(map bitset bit to prod ix)

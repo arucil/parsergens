@@ -1,11 +1,14 @@
-use bit_set::BitSet;
+use bittyset::BitSet;
 use grammar::{ LoweredGrammar, Symbol, HashMap };
+use crate::intmap::MyIntMap;
 
-pub struct Builder<'a, StateInfo, LrItem> {
+pub struct Builder<'a, StateInfo> {
   pub grammar: &'a LoweredGrammar,
   pub state_store: StateStore<StateInfo>,
-  pub item_store: ItemStore<LrItem>,
+  pub item_store: ItemStore,
   pub eof: u32,
+  /// Max numbers of the RHS symbols of productions, plus one.
+  pub max_nsym_p1: usize,
 }
 
 #[derive(Default)]
@@ -19,24 +22,30 @@ pub struct StateStore<StateInfo> {
 }
 
 #[derive(Default)]
-pub struct ItemStore<LrItem> {
-  pub items: Vec<LrItem>,
-  pub item_indices: HashMap<LrItem, u32>,
+pub struct ItemStore {
+  pub items: MyIntMap<()>,
 }
 
-impl<'a, StateInfo, LrItem> Builder<'a, StateInfo, LrItem>
+impl<'a, StateInfo> Builder<'a, StateInfo>
   where
     StateInfo: Default,
-    LrItem: Default,
 {
-  pub fn new(grammar: &'a LoweredGrammar) -> Self {
+  pub fn new(
+    grammar: &'a LoweredGrammar,
+  ) -> Self {
     Self {
       grammar,
       state_store: Default::default(),
-      item_store: Default::default(),
+      item_store: ItemStore {
+        items: MyIntMap::new(),
+      },
       eof: grammar.tokens
         .keys()
         .map(|x| x.id())
+        .max()
+        .unwrap() + 1,
+      max_nsym_p1: grammar.prods.iter()
+        .map(|prod| prod.symbols.len())
         .max()
         .unwrap() + 1,
     }

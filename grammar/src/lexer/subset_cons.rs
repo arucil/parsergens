@@ -1,5 +1,5 @@
 use std::hash::Hash;
-use bit_set::BitSet;
+use bittyset::{BitSet, bitset};
 use bimap::BiHashMap;
 use super::nfa::{Nfa, State as NfaState};
 use super::dfa::Dfa;
@@ -16,7 +16,7 @@ pub fn powerset<A, P, V>(
   let mut builder = Dfa::builder();
   let mut dfa_nfa_state_map = BiHashMap::new();
 
-  let initial = epsilon_closure(vec![start.0 as usize].into_iter().collect(), nfa);
+  let initial = epsilon_closure(bitset![start.0 as usize], nfa);
   let start = builder.state();
 
   let accepted = check_accept(&initial, nfa);

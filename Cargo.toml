@@ -32,3 +32,6 @@ members = [
 
 [dev-dependencies]
 insta = "0.16.1"
+
+[profile.release]
+debug = true

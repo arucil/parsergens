@@ -1,12 +1,12 @@
 use std::collections::VecDeque;
 use grammar::{LoweredGrammar, Symbol, Map, NonterminalId, Assoc, HashMap};
-use bit_set::BitSet;
+use bittyset::{BitSet, bitset};
 use std::fmt::{self, Write};
 use crate::first::FirstAndNullable;
 use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError, EntryPoint};
-use crate::builder::{Builder, StateStore, ItemStore};
+use crate::builder::{Builder, StateStore};
 
-type ClrBuilder<'a> = Builder<'a, (), Lr1Item>;
+type ClrBuilder<'a> = Builder<'a, ()>;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Lr1Item {
@@ -61,7 +61,8 @@ pub fn build_tables(
   for (from_state, tx) in builder.state_store.goto.iter().enumerate() {
     let (item_set, _) = &builder.state_store.states[from_state];
     for item_ix in item_set.iter() {
-      let item = builder.item_store.items[item_ix];
+      //let item = builder.item_store.items[item_ix];
+      let item = decode_item(builder, item_ix);
       let symbols = &builder.grammar.prods[item.prod_ix].symbols;
       // shift
       if item.dot_ix < symbols.len() {
@@ -219,17 +220,13 @@ fn start(
   nt: NonterminalId
 ) -> u32 {
   let start_prod = grammar.nt_metas[&nt].range.start;
-  let start_item = store_item(&mut builder.item_store,
+  let start_item = store_item(builder,
     Lr1Item {
       prod_ix: start_prod,
       dot_ix: 0,
       lookahead: builder.eof,
     });
-  let mut start_item_set = {
-    let mut set = BitSet::new();
-    set.insert(start_item as usize);
-    set
-  };
+  let mut start_item_set = bitset![start_item as usize];
 
   closure(builder, grammar, fan, &mut start_item_set);
   let start_state = store_state(&mut builder.state_store, start_item_set);
@@ -242,13 +239,14 @@ fn start(
     let mut to_states = Map::<Symbol, BitSet>::default();
 
     for item_ix in item_set.iter() {
-      let item = builder.item_store.items[item_ix];
+      //let item = builder.item_store.items[item_ix];
+      let item = decode_item(builder, item_ix);
       let symbols = &grammar.prods[item.prod_ix].symbols;
       if item.dot_ix == symbols.len() {
         continue;
       }
 
-      let new_item = store_item(&mut builder.item_store, Lr1Item {
+      let new_item = store_item(builder, Lr1Item {
         prod_ix: item.prod_ix,
         dot_ix: item.dot_ix + 1,
         lookahead: item.lookahead,
@@ -259,13 +257,13 @@ fn start(
     }
 
     for (sym, mut to_item_set) in to_states {
+      closure(builder, grammar, fan, &mut to_item_set);
 
       if let Some(&to_state) = builder.state_store.state_indices.get(&to_item_set) {
         builder.state_store.goto[from_state as usize].insert(sym, to_state);
         continue;
       }
 
-      closure(builder, grammar, fan, &mut to_item_set);
       let to_state = store_state(&mut builder.state_store, to_item_set);
 
       queue.push_back(to_state);
@@ -285,7 +283,8 @@ fn closure(
   let mut new = item_set.iter().collect::<Vec<_>>();
 
   while let Some(i) = new.pop() {
-    let item = &builder.item_store.items[i];
+    //let item = &builder.item_store.items[i];
+    let item = decode_item(builder, i);
     let symbols = &grammar.prods[item.prod_ix].symbols;
     if item.dot_ix < symbols.len() {
       let nt = match &symbols[item.dot_ix] {
@@ -318,7 +317,7 @@ fn closure(
 
       for prod_ix in grammar.nt_metas[nt].range.clone() {
         for lookahead in first.iter() {
-          let item = store_item(&mut builder.item_store, Lr1Item {
+          let item = store_item(builder, Lr1Item {
             prod_ix,
             dot_ix: 0,
             lookahead: lookahead as u32,
@@ -350,16 +349,29 @@ fn store_state(
 }
 
 fn store_item(
-  item_store: &mut ItemStore<Lr1Item>,
+  builder: &ClrBuilder,
   item: Lr1Item,
 ) -> u32 {
-  if let Some(&ix) = item_store.item_indices.get(&item) {
-    ix
-  } else {
-    let ix = item_store.items.len() as u32;
-    item_store.items.push(item);
-    item_store.item_indices.insert(item, ix);
-    ix
+  let item_ix = (item.prod_ix * builder.max_nsym_p1 + item.dot_ix)
+    * (builder.eof as usize + 1)
+    + item.lookahead as usize;
+  //item_store.items.insert(item_ix);
+  item_ix as u32
+}
+
+fn decode_item(
+  builder: &ClrBuilder,
+  item_ix: usize,
+) -> Lr1Item {
+  let lookahead = (item_ix % (builder.eof as usize + 1)) as u32;
+  let prod_and_dot = item_ix / (builder.eof as usize + 1);
+  let dot_ix = prod_and_dot % builder.max_nsym_p1;
+  let prod_ix = prod_and_dot / builder.max_nsym_p1;
+
+  Lr1Item {
+    prod_ix,
+    dot_ix,
+    lookahead,
   }
 }
 
@@ -406,7 +418,8 @@ impl<'a> ClrBuilder<'a> {
     item_ix: usize,
     fmt: &mut impl Write,
   ) -> fmt::Result {
-    let item = self.item_store.items[item_ix];
+    //let item = self.item_store.items[item_ix];
+    let item = decode_item(self, item_ix);
     let nt = self.grammar.prods[item.prod_ix].nt;
     let symbols = &self.grammar.prods[item.prod_ix].symbols;
 

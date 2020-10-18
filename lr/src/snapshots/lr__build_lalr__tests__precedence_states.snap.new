@@ -1,0 +1,130 @@
+---
+source: lr/src/build_lalr.rs
+expression: builder.states(&start_nts)
+---
+State 0 (start)
+E -> . E minus E      minus / mult / pow / equal / $
+E -> . E mult E      minus / mult / pow / equal / $
+E -> . E pow E      minus / mult / pow / equal / $
+E -> . E equal E      minus / mult / pow / equal / $
+E -> . minus E      minus / mult / pow / equal / $
+E -> . lparen E rparen      minus / mult / pow / equal / $
+E -> . num      minus / mult / pow / equal / $
+_E -> . E      $
+
+State 1
+E -> E . minus E      minus / mult / pow / equal / $
+E -> E . mult E      minus / mult / pow / equal / $
+E -> E . pow E      minus / mult / pow / equal / $
+E -> E . equal E      minus / mult / pow / equal / $
+_E -> E .      $
+
+State 2
+E -> . E minus E      minus / mult / pow / equal / rparen / $
+E -> . E mult E      minus / mult / pow / equal / rparen / $
+E -> . E pow E      minus / mult / pow / equal / rparen / $
+E -> . E equal E      minus / mult / pow / equal / rparen / $
+E -> . minus E      minus / mult / pow / equal / rparen / $
+E -> minus . E      minus / mult / pow / equal / rparen / $
+E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
+E -> . num      minus / mult / pow / equal / rparen / $
+
+State 3
+E -> . E minus E      minus / mult / pow / equal / rparen
+E -> . E mult E      minus / mult / pow / equal / rparen
+E -> . E pow E      minus / mult / pow / equal / rparen
+E -> . E equal E      minus / mult / pow / equal / rparen
+E -> . minus E      minus / mult / pow / equal / rparen
+E -> . lparen E rparen      minus / mult / pow / equal / rparen
+E -> lparen . E rparen      minus / mult / pow / equal / rparen / $
+E -> . num      minus / mult / pow / equal / rparen
+
+State 4
+E -> num .      minus / mult / pow / equal / rparen / $
+
+State 5
+E -> . E minus E      minus / mult / pow / equal / rparen / $
+E -> E minus . E      minus / mult / pow / equal / rparen / $
+E -> . E mult E      minus / mult / pow / equal / rparen / $
+E -> . E pow E      minus / mult / pow / equal / rparen / $
+E -> . E equal E      minus / mult / pow / equal / rparen / $
+E -> . minus E      minus / mult / pow / equal / rparen / $
+E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
+E -> . num      minus / mult / pow / equal / rparen / $
+
+State 6
+E -> . E minus E      minus / mult / pow / equal / rparen / $
+E -> . E mult E      minus / mult / pow / equal / rparen / $
+E -> E mult . E      minus / mult / pow / equal / rparen / $
+E -> . E pow E      minus / mult / pow / equal / rparen / $
+E -> . E equal E      minus / mult / pow / equal / rparen / $
+E -> . minus E      minus / mult / pow / equal / rparen / $
+E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
+E -> . num      minus / mult / pow / equal / rparen / $
+
+State 7
+E -> . E minus E      minus / mult / pow / equal / rparen / $
+E -> . E mult E      minus / mult / pow / equal / rparen / $
+E -> . E pow E      minus / mult / pow / equal / rparen / $
+E -> E pow . E      minus / mult / pow / equal / rparen / $
+E -> . E equal E      minus / mult / pow / equal / rparen / $
+E -> . minus E      minus / mult / pow / equal / rparen / $
+E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
+E -> . num      minus / mult / pow / equal / rparen / $
+
+State 8
+E -> . E minus E      minus / mult / pow / equal / rparen / $
+E -> . E mult E      minus / mult / pow / equal / rparen / $
+E -> . E pow E      minus / mult / pow / equal / rparen / $
+E -> . E equal E      minus / mult / pow / equal / rparen / $
+E -> E equal . E      minus / mult / pow / equal / rparen / $
+E -> . minus E      minus / mult / pow / equal / rparen / $
+E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
+E -> . num      minus / mult / pow / equal / rparen / $
+
+State 9
+E -> E . minus E      minus / mult / pow / equal / rparen / $
+E -> E . mult E      minus / mult / pow / equal / rparen / $
+E -> E . pow E      minus / mult / pow / equal / rparen / $
+E -> E . equal E      minus / mult / pow / equal / rparen / $
+E -> minus E .      minus / mult / pow / equal / rparen / $
+
+State 10
+E -> E . minus E      minus / mult / pow / equal / rparen
+E -> E . mult E      minus / mult / pow / equal / rparen
+E -> E . pow E      minus / mult / pow / equal / rparen
+E -> E . equal E      minus / mult / pow / equal / rparen
+E -> lparen E . rparen      minus / mult / pow / equal / rparen / $
+
+State 11
+E -> E . minus E      minus / mult / pow / equal / rparen / $
+E -> E minus E .      minus / mult / pow / equal / rparen / $
+E -> E . mult E      minus / mult / pow / equal / rparen / $
+E -> E . pow E      minus / mult / pow / equal / rparen / $
+E -> E . equal E      minus / mult / pow / equal / rparen / $
+
+State 12
+E -> E . minus E      minus / mult / pow / equal / rparen / $
+E -> E . mult E      minus / mult / pow / equal / rparen / $
+E -> E mult E .      minus / mult / pow / equal / rparen / $
+E -> E . pow E      minus / mult / pow / equal / rparen / $
+E -> E . equal E      minus / mult / pow / equal / rparen / $
+
+State 13
+E -> E . minus E      minus / mult / pow / equal / rparen / $
+E -> E . mult E      minus / mult / pow / equal / rparen / $
+E -> E . pow E      minus / mult / pow / equal / rparen / $
+E -> E pow E .      minus / mult / pow / equal / rparen / $
+E -> E . equal E      minus / mult / pow / equal / rparen / $
+
+State 14
+E -> E . minus E      minus / mult / pow / equal / rparen / $
+E -> E . mult E      minus / mult / pow / equal / rparen / $
+E -> E . pow E      minus / mult / pow / equal / rparen / $
+E -> E . equal E      minus / mult / pow / equal / rparen / $
+E -> E equal E .      minus / mult / pow / equal / rparen / $
+
+State 15
+E -> lparen E rparen .      minus / mult / pow / equal / rparen / $
+
+

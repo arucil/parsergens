@@ -1,6 +1,6 @@
 use std::hash::Hash;
 use std::fmt::{self, Debug};
-use bit_set::BitSet;
+use bittyset::BitSet;
 use indexmap::IndexSet;
 use super::dfa_builder::DfaBuilder;
 use crate::{Map, Set};
@@ -80,7 +80,7 @@ impl<A, V> Dfa<A, V>
         let x = a.iter()
           .fold(BitSet::new(), |mut set, state| {
             to_states.get(&(c.clone(), state as u32)).iter().for_each(|states| {
-              set.union_with(states);
+              set.union_with(*states);
             });
             set
           });
@@ -90,8 +90,8 @@ impl<A, V> Dfa<A, V>
 
         p = p.into_iter()
           .flat_map(|y| {
-            let x_inter_y = BitSet::intersection(&x, &y).collect::<BitSet>();
-            let y_diff_x = BitSet::difference(&y, &x).collect::<BitSet>();
+            let x_inter_y = x.intersection(&y);
+            let y_diff_x = y.difference(&x);
 
             if x_inter_y.is_empty() || y_diff_x.is_empty() {
               return vec![y];

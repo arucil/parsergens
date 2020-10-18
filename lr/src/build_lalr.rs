@@ -1,15 +1,16 @@
 use std::collections::VecDeque;
 use grammar::{LoweredGrammar, Symbol, Map, NonterminalId, Assoc, HashMap};
-use bit_set::BitSet;
+use bittyset::{BitSet, bitset};
 use std::fmt::{self, Write};
 use crate::first::FirstAndNullable;
 use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError, EntryPoint};
-use crate::builder::{Builder, StateStore, ItemStore};
+use crate::builder::{Builder, StateStore};
+use crate::intmap::MyIntMap;
 
 /// Lookahead set of an item.
-type LookaheadSet = HashMap<u32, BitSet>;
+type LookaheadSet = MyIntMap<BitSet>;
 
-type LalrBuilder<'a> = Builder<'a, LookaheadSet, Lr0Item>;
+type LalrBuilder<'a> = Builder<'a, LookaheadSet>;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Lr0Item {
@@ -32,7 +33,7 @@ pub fn build_states(
         Symbol::Nonterminal(nt) => nt,
         _ => unreachable!(),
       };
-    let nt_name = grammar.nts.get(&real_start_nt).unwrap().clone();
+    let nt_name = grammar.nts[&real_start_nt].clone();
     entry_points.insert(nt_name, EntryPoint {
       real_start_nt: real_start_nt.id(),
       start_state,
@@ -63,7 +64,8 @@ pub fn build_tables(
   for (from_state, tx) in builder.state_store.goto.iter().enumerate() {
     let (item_set, lookaheads) = &builder.state_store.states[from_state];
     for item_ix in item_set.iter() {
-      let item = builder.item_store.items[item_ix];
+      //let item = builder.item_store.items[item_ix];
+      let item = decode_item(builder, item_ix);
       let symbols = &builder.grammar.prods[item.prod_ix].symbols;
       // shift
       if item.dot_ix < symbols.len() {
@@ -97,7 +99,7 @@ pub fn build_tables(
         }
       } else {
         // reduce
-        for lookahead in lookaheads[&(item_ix as u32)].iter() {
+        for lookahead in lookaheads[item_ix as u64].iter() {
           let old = &mut action[from_state][lookahead];
           if *old > 0 {
             match resolve_sr_conflict(&builder.grammar, item.prod_ix, lookahead as u32) {
@@ -183,7 +185,7 @@ fn make_rr_conflict_error(
   let state_items = item_set.iter()
     .map(|item_ix| {
       let mut buf = String::new();
-      builder.fmt_item(&lookaheads[&(item_ix as u32)], item_ix, &mut buf).unwrap();
+      builder.fmt_item(&lookaheads[item_ix as u64], item_ix, &mut buf).unwrap();
       buf
     })
     .collect();
@@ -208,7 +210,7 @@ fn make_sr_conflict_error(
   let state_items = item_set.iter()
     .map(|item_ix| {
       let mut buf = String::new();
-      builder.fmt_item(&lookaheads[&(item_ix as u32)], item_ix, &mut buf).unwrap();
+      builder.fmt_item(&lookaheads[item_ix as u64], item_ix, &mut buf).unwrap();
       buf
     })
     .collect();
@@ -229,21 +231,15 @@ fn start(
   nt: NonterminalId
 ) -> u32 {
   let start_prod = grammar.nt_metas[&nt].range.start;
-  let start_item = store_item(&mut builder.item_store,
+  let start_item = store_item(builder,
     Lr0Item {
       prod_ix: start_prod,
       dot_ix: 0,
     });
-  let mut start_item_set = {
-    let mut set = BitSet::new();
-    set.insert(start_item as usize);
-    set
-  };
+  let mut start_item_set = bitset![start_item as usize];
   let mut start_lookaheads = {
-    let mut m = HashMap::default();
-    let mut set = BitSet::new();
-    set.insert(builder.eof as usize);
-    m.insert(start_item, set);
+    let mut m = MyIntMap::new();
+    m.insert(start_item as u64, bitset![builder.eof as usize]);
     m
   };
 
@@ -259,21 +255,29 @@ fn start(
     let mut to_states = Map::<Symbol, (BitSet, LookaheadSet)>::default();
 
     for item_ix in item_set.iter() {
-      let item = builder.item_store.items[item_ix];
+      //let item = builder.item_store.items[item_ix];
+      let item = decode_item(builder, item_ix);
       let symbols = &grammar.prods[item.prod_ix].symbols;
       if item.dot_ix == symbols.len() {
         continue;
       }
 
-      let new_item = store_item(&mut builder.item_store, Lr0Item {
+      let new_item = store_item(builder, Lr0Item {
         prod_ix: item.prod_ix,
         dot_ix: item.dot_ix + 1,
       });
       let (to_item_set, to_lookaheads) = to_states.entry(symbols[item.dot_ix].clone())
-        .or_default();
+        .or_insert_with(|| (BitSet::new(), MyIntMap::new()));
       to_item_set.insert(new_item as usize);
-      to_lookaheads.entry(new_item).or_default().union_with(
-        &lookaheads[&(item_ix as u32)]);
+
+      if let Some(to_lookaheads) = to_lookaheads.get_mut(new_item as u64) {
+        to_lookaheads.union_with(&lookaheads[item_ix as u64]);
+      } else {
+        to_lookaheads.insert(
+          new_item as u64,
+          lookaheads[item_ix as u64].clone(),
+        );
+      }
     }
 
     for (sym, (mut to_item_set, mut lookaheads)) in to_states {
@@ -302,7 +306,8 @@ fn closure(
   let mut new = item_set.iter().collect::<Vec<_>>();
 
   while let Some(i) = new.pop() {
-    let item = &builder.item_store.items[i];
+    //let item = &builder.item_store.items[i];
+    let item = decode_item(builder, i);
     let symbols = &grammar.prods[item.prod_ix].symbols;
     if item.dot_ix < symbols.len() {
       let nt = match &symbols[item.dot_ix] {
@@ -330,11 +335,11 @@ fn closure(
       }
 
       if rest_nullable {
-        first.union_with(&lookaheads[&(i as u32)]);
+        first.union_with(&lookaheads[i as u64]);
       }
 
       for prod_ix in grammar.nt_metas[nt].range.clone() {
-        let item = store_item(&mut builder.item_store, Lr0Item {
+        let item = store_item(builder, Lr0Item {
           prod_ix,
           dot_ix: 0,
         });
@@ -343,7 +348,11 @@ fn closure(
           new.push(item as usize);
         }
 
-        lookaheads.entry(item).or_default().union_with(&first);
+        if let Some(lookaheads) = lookaheads.get_mut(item as u64) {
+          lookaheads.union_with(&first);
+        } else {
+          lookaheads.insert(item as u64, first.clone());
+        }
       }
     }
   }
@@ -357,7 +366,7 @@ fn store_state(
 ) -> (u32, bool) {
   if let Some(&ix) = state_store.state_indices.get(&item_set) {
     let mut changed = false;
-    for (item, old_lookaheads) in &mut state_store.states[ix as usize].1 {
+    for (&item, old_lookaheads) in state_store.states[ix as usize].1.iter_mut() {
       for lookahead in lookaheads[item].iter() {
         if old_lookaheads.insert(lookahead) {
           changed = true;
@@ -375,16 +384,21 @@ fn store_state(
 }
 
 fn store_item(
-  item_store: &mut ItemStore<Lr0Item>,
+  builder: &LalrBuilder,
   item: Lr0Item,
 ) -> u32 {
-  if let Some(&ix) = item_store.item_indices.get(&item) {
-    ix
-  } else {
-    let ix = item_store.items.len() as u32;
-    item_store.items.push(item);
-    item_store.item_indices.insert(item, ix);
-    ix
+  (item.prod_ix * builder.max_nsym_p1 + item.dot_ix) as u32
+}
+
+fn decode_item(
+  builder: &LalrBuilder,
+  item_ix: usize,
+) -> Lr0Item {
+  let dot_ix = item_ix % builder.max_nsym_p1;
+  let prod_ix = item_ix / builder.max_nsym_p1;
+  Lr0Item {
+    prod_ix,
+    dot_ix,
   }
 }
 
@@ -426,7 +440,7 @@ impl<'a> LalrBuilder<'a> {
     writeln!(fmt)?;
 
     for item_ix in item_set.iter() {
-      let lookaheads = &lookaheads[&(item_ix as u32)];
+      let lookaheads = &lookaheads[item_ix as u64];
       self.fmt_item(lookaheads, item_ix, fmt)?;
 
       writeln!(fmt)?;
@@ -443,7 +457,8 @@ impl<'a> LalrBuilder<'a> {
     item_ix: usize,
     fmt: &mut impl Write,
   ) -> fmt::Result {
-    let item = self.item_store.items[item_ix];
+    //let item = self.item_store.items[item_ix];
+    let item = decode_item(self, item_ix);
     let nt = self.grammar.prods[item.prod_ix].nt;
     let symbols = &self.grammar.prods[item.prod_ix].symbols;
 
