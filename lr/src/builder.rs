@@ -17,7 +17,7 @@ pub struct Builder<'a, StateInfo> {
 pub struct StateStore<StateInfo> {
   /// state -> (item set, lookahead set)
   pub states: Vec<(ItemSet, StateInfo)>,
-  // item set -> state
+  // kernel item set -> state
   pub state_indices: HashMap<ItemSet, u32>,
   /// state -> symbol -> next state
   pub goto: Vec<HashMap<Symbol, u32>>,
