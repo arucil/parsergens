@@ -4,7 +4,7 @@ use bittyset::{BitSet, bitset};
 use std::fmt::{self, Write};
 use crate::first::FirstAndNullable;
 use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError, EntryPoint};
-use crate::builder::{Builder, StateStore};
+use crate::builder::{Builder, StateStore, ItemSet};
 use crate::intmap::MyIntMap;
 
 /// Lookahead set of an item.
@@ -14,8 +14,8 @@ type LalrBuilder<'a> = Builder<'a, LookaheadSet>;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Lr0Item {
-  prod_ix: usize,
-  dot_ix: usize,
+  prod_ix: u32,
+  dot_ix: u32,
 }
 
 pub fn build_states(
@@ -63,19 +63,19 @@ pub fn build_tables(
 
   for (from_state, tx) in builder.state_store.goto.iter().enumerate() {
     let (item_set, lookaheads) = &builder.state_store.states[from_state];
-    for item_ix in item_set.iter() {
+    for &item_ix in item_set {
       //let item = builder.item_store.items[item_ix];
       let item = decode_item(builder, item_ix);
-      let symbols = &builder.grammar.prods[item.prod_ix].symbols;
+      let symbols = &builder.grammar.prods[item.prod_ix as usize].symbols;
       // shift
-      if item.dot_ix < symbols.len() {
-        let sym = &symbols[item.dot_ix];
+      if (item.dot_ix as usize) < symbols.len() {
+        let sym = &symbols[item.dot_ix as usize];
         let to_state = tx[sym];
         match sym {
           Symbol::Token(tok) => {
             let old = &mut action[from_state][tok.id() as usize];
             if *old < 0 {
-              match resolve_sr_conflict(&builder.grammar, !*old as usize, tok.id()) {
+              match resolve_sr_conflict(&builder.grammar, !*old as u32, tok.id()) {
                 SrConflictResolution::Shift => *old = to_state as i32 + 1,
                 SrConflictResolution::Reduce => {
                   // do nothing
@@ -86,7 +86,7 @@ pub fn build_tables(
                   item_set,
                   lookaheads,
                   tok.id(),
-                  !*old as usize))
+                  !*old as u32))
               }
             } else {
               assert!(*old == 0 || *old == to_state as i32 + 1);
@@ -125,7 +125,7 @@ pub fn build_tables(
               item_set,
               lookaheads,
               lookahead as u32,
-              !*old as usize,
+              !*old as u32,
               item.prod_ix));
           } else {
             *old = !(item.prod_ix as i32);
@@ -147,10 +147,10 @@ enum SrConflictResolution {
 
 fn resolve_sr_conflict(
   grammar: &LoweredGrammar,
-  prod_ix: usize,
+  prod_ix: u32,
   tok: u32,
 ) -> SrConflictResolution {
-  match (&grammar.prods[prod_ix].prec, grammar.token_precs.get(&tok)) {
+  match (&grammar.prods[prod_ix as usize].prec, grammar.token_precs.get(&tok)) {
     (Some((_, prec1)), Some((assoc2, prec2))) => {
       if prec1 == prec2 {
         match assoc2 {
@@ -170,20 +170,20 @@ fn resolve_sr_conflict(
 
 fn make_rr_conflict_error(
   builder: &LalrBuilder,
-  item_set: &BitSet,
+  item_set: &ItemSet,
   lookaheads: &LookaheadSet,
   lookahead: u32,
-  reduce1: usize,
-  reduce2: usize,
+  reduce1: u32,
+  reduce2: u32,
 ) -> Error {
   let lookahead = builder.grammar.tokens[&lookahead].clone();
-  let reduce1 = builder.grammar.prods[reduce1].to_string(
+  let reduce1 = builder.grammar.prods[reduce1 as usize].to_string(
     &builder.grammar);
-  let reduce2 = builder.grammar.prods[reduce2].to_string(
+  let reduce2 = builder.grammar.prods[reduce2 as usize].to_string(
     &builder.grammar);
 
   let state_items = item_set.iter()
-    .map(|item_ix| {
+    .map(|&item_ix| {
       let mut buf = String::new();
       builder.fmt_item(&lookaheads[item_ix as u64], item_ix, &mut buf).unwrap();
       buf
@@ -200,22 +200,22 @@ fn make_rr_conflict_error(
 
 fn make_sr_conflict_error(
   builder: &LalrBuilder,
-  item_set: &BitSet,
+  item_set: &ItemSet,
   lookaheads: &LookaheadSet,
   token: u32,
-  reduce_prod: usize,
+  reduce_prod: u32,
 ) -> Error {
   let shift = builder.grammar.tokens[&token].clone();
 
   let state_items = item_set.iter()
-    .map(|item_ix| {
+    .map(|&item_ix| {
       let mut buf = String::new();
       builder.fmt_item(&lookaheads[item_ix as u64], item_ix, &mut buf).unwrap();
       buf
     })
     .collect();
 
-  let reduce = builder.grammar.prods[reduce_prod].to_string(&builder.grammar);
+  let reduce = builder.grammar.prods[reduce_prod as usize].to_string(&builder.grammar);
 
   Error::ShiftReduceConflict(ShiftReduceConflictError {
     state_items,
@@ -230,13 +230,13 @@ fn start(
   fan: &FirstAndNullable,
   nt: NonterminalId
 ) -> u32 {
-  let start_prod = grammar.nt_metas[&nt].range.start;
+  let start_prod = grammar.nt_metas[&nt].range.start as u32;
   let start_item = store_item(builder,
     Lr0Item {
       prod_ix: start_prod,
       dot_ix: 0,
     });
-  let mut start_item_set = bitset![start_item as usize];
+  let mut start_item_set = vec![start_item];
   let mut start_lookaheads = {
     let mut m = MyIntMap::new();
     m.insert(start_item as u64, bitset![builder.eof as usize]);
@@ -252,13 +252,13 @@ fn start(
 
   while let Some(from_state) = queue.pop_front() {
     let (item_set, lookaheads) = &builder.state_store.states[from_state as usize];
-    let mut to_states = Map::<Symbol, (BitSet, LookaheadSet)>::default();
+    let mut to_states = Map::<Symbol, (ItemSet, LookaheadSet)>::default();
 
-    for item_ix in item_set.iter() {
+    for &item_ix in item_set {
       //let item = builder.item_store.items[item_ix];
       let item = decode_item(builder, item_ix);
-      let symbols = &grammar.prods[item.prod_ix].symbols;
-      if item.dot_ix == symbols.len() {
+      let symbols = &grammar.prods[item.prod_ix as usize].symbols;
+      if item.dot_ix as usize == symbols.len() {
         continue;
       }
 
@@ -266,9 +266,14 @@ fn start(
         prod_ix: item.prod_ix,
         dot_ix: item.dot_ix + 1,
       });
-      let (to_item_set, to_lookaheads) = to_states.entry(symbols[item.dot_ix].clone())
-        .or_insert_with(|| (BitSet::new(), MyIntMap::new()));
-      to_item_set.insert(new_item as usize);
+      let (to_item_set, to_lookaheads) =
+        to_states.entry(symbols[item.dot_ix as usize].clone())
+          .or_default();
+      match to_item_set.binary_search(&new_item) {
+        Err(i) => to_item_set.insert(i, new_item),
+        _ => {}
+      }
+      //to_item_set.insert(new_item as usize);
 
       if let Some(to_lookaheads) = to_lookaheads.get_mut(new_item as u64) {
         to_lookaheads.union_with(&lookaheads[item_ix as u64]);
@@ -300,24 +305,24 @@ fn closure(
   builder: &mut LalrBuilder,
   grammar: &LoweredGrammar,
   fan: &FirstAndNullable,
-  item_set: &mut BitSet,
+  item_set: &mut ItemSet,
   lookaheads: &mut LookaheadSet,
 ) {
-  let mut new = item_set.iter().collect::<Vec<_>>();
+  let mut new = item_set.clone();
 
   while let Some(i) = new.pop() {
     //let item = &builder.item_store.items[i];
     let item = decode_item(builder, i);
-    let symbols = &grammar.prods[item.prod_ix].symbols;
-    if item.dot_ix < symbols.len() {
-      let nt = match &symbols[item.dot_ix] {
+    let symbols = &grammar.prods[item.prod_ix as usize].symbols;
+    if (item.dot_ix as usize) < symbols.len() {
+      let nt = match &symbols[item.dot_ix as usize] {
         Symbol::Token(_) => continue,
         Symbol::Nonterminal(nt) => nt,
       };
 
       let mut first = BitSet::new();
       let mut rest_nullable = true;
-      for sym in &symbols[item.dot_ix + 1..] {
+      for sym in &symbols[item.dot_ix as usize + 1..] {
         match sym {
           Symbol::Token(tok) => {
             first.insert(tok.id() as usize);
@@ -340,13 +345,20 @@ fn closure(
 
       for prod_ix in grammar.nt_metas[nt].range.clone() {
         let item = store_item(builder, Lr0Item {
-          prod_ix,
+          prod_ix: prod_ix as u32,
           dot_ix: 0,
         });
 
-        if item_set.insert(item as usize) {
-          new.push(item as usize);
+        match item_set.binary_search(&item) {
+          Err(i) => {
+            item_set.insert(i, item);
+            new.push(item);
+          }
+          _ => {}
         }
+        // if item_set.insert(item as usize) {
+        //   new.push(item as usize);
+        // }
 
         if let Some(lookaheads) = lookaheads.get_mut(item as u64) {
           lookaheads.union_with(&first);
@@ -361,7 +373,7 @@ fn closure(
 /// return state index and if lookahead set of the state has changed.
 fn store_state(
   state_store: &mut StateStore<LookaheadSet>,
-  item_set: BitSet,
+  item_set: ItemSet,
   lookaheads: LookaheadSet,
 ) -> (u32, bool) {
   if let Some(&ix) = state_store.state_indices.get(&item_set) {
@@ -387,12 +399,12 @@ fn store_item(
   builder: &LalrBuilder,
   item: Lr0Item,
 ) -> u32 {
-  (item.prod_ix * builder.max_nsym_p1 + item.dot_ix) as u32
+  item.prod_ix * builder.max_nsym_p1 + item.dot_ix
 }
 
 fn decode_item(
   builder: &LalrBuilder,
-  item_ix: usize,
+  item_ix: u32,
 ) -> Lr0Item {
   let dot_ix = item_ix % builder.max_nsym_p1;
   let prod_ix = item_ix / builder.max_nsym_p1;
@@ -439,7 +451,7 @@ impl<'a> LalrBuilder<'a> {
     }
     writeln!(fmt)?;
 
-    for item_ix in item_set.iter() {
+    for &item_ix in item_set {
       let lookaheads = &lookaheads[item_ix as u64];
       self.fmt_item(lookaheads, item_ix, fmt)?;
 
@@ -454,18 +466,18 @@ impl<'a> LalrBuilder<'a> {
   fn fmt_item(
     &self,
     lookaheads: &BitSet,
-    item_ix: usize,
+    item_ix: u32,
     fmt: &mut impl Write,
   ) -> fmt::Result {
     //let item = self.item_store.items[item_ix];
     let item = decode_item(self, item_ix);
-    let nt = self.grammar.prods[item.prod_ix].nt;
-    let symbols = &self.grammar.prods[item.prod_ix].symbols;
+    let nt = self.grammar.prods[item.prod_ix as usize].nt;
+    let symbols = &self.grammar.prods[item.prod_ix as usize].symbols;
 
     write!(fmt, "{} ->", self.grammar.nts[&nt])?;
 
     for (i, sym) in symbols.iter().enumerate() {
-      if i == item.dot_ix {
+      if i == item.dot_ix as usize {
         write!(fmt, " .")?;
       }
 
@@ -481,7 +493,7 @@ impl<'a> LalrBuilder<'a> {
       }
     }
 
-    if item.dot_ix == symbols.len() {
+    if item.dot_ix as usize == symbols.len() {
       write!(fmt, " .")?;
     }
 
