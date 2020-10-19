@@ -18,7 +18,7 @@ syn = { version = "1.0.41", features = ["full", "extra-traits", "parsing"] }
 quote = "1.0.7"
 proc-macro2 = "1.0.21"
 fnv = "1.0.7"
-bittyset = { git = "https://github.com/arucil/bittyset" }
+bittyset = "0.1.0"
 
 [build-dependencies]
 lalrpop = "0.19.0"
