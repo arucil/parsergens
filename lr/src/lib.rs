@@ -13,7 +13,7 @@ pub use grammar::{
 };
 
 //mod clr;
-//mod lalr;
+mod lalr;
 mod first;
 mod augment;
 mod builder;

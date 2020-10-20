@@ -52,6 +52,7 @@ pub struct UserState {
   pub state: String,
 }
 
+/// zero-based
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub struct NonterminalId(u32);
 

@@ -24,6 +24,7 @@ pub struct Lexer {
   pub skip: Set<TokenId>,
 }
 
+/// zero-based
 #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Debug)]
 pub struct TokenId(u32);
 
