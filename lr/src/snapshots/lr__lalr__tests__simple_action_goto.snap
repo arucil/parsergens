@@ -1,22 +1,14 @@
 ---
 source: lr/src/lalr.rs
-expression: builder.action_goto()
+expression: tables
 ---
 [
     [
-        2,
-        5,
-        0,
-        3,
         4,
-        0,
-    ],
-    [
-        2,
         5,
         0,
-        0,
-        7,
+        2,
+        3,
         0,
     ],
     [
@@ -28,11 +20,19 @@ expression: builder.action_goto()
         0,
     ],
     [
-        2,
+        4,
         5,
         0,
         0,
         6,
+        0,
+    ],
+    [
+        4,
+        5,
+        0,
+        0,
+        7,
         0,
     ],
     [

@@ -1,8 +1,9 @@
 ---
-source: lr/src/build_lalr.rs
+source: lr/src/lalr.rs
 expression: builder.states(&start_nts)
 ---
 State 0 (start)
+_E -> . E      $
 E -> . E minus E      minus / mult / pow / equal / $
 E -> . E mult E      minus / mult / pow / equal / $
 E -> . E pow E      minus / mult / pow / equal / $
@@ -10,7 +11,6 @@ E -> . E equal E      minus / mult / pow / equal / $
 E -> . minus E      minus / mult / pow / equal / $
 E -> . lparen E rparen      minus / mult / pow / equal / $
 E -> . num      minus / mult / pow / equal / $
-_E -> . E      $
 
 State 1
 E -> E . minus E      minus / mult / pow / equal / $
@@ -20,31 +20,31 @@ E -> E . equal E      minus / mult / pow / equal / $
 _E -> E .      $
 
 State 2
+E -> minus . E      minus / mult / pow / equal / rparen / $
 E -> . E minus E      minus / mult / pow / equal / rparen / $
 E -> . E mult E      minus / mult / pow / equal / rparen / $
 E -> . E pow E      minus / mult / pow / equal / rparen / $
 E -> . E equal E      minus / mult / pow / equal / rparen / $
 E -> . minus E      minus / mult / pow / equal / rparen / $
-E -> minus . E      minus / mult / pow / equal / rparen / $
 E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
 E -> . num      minus / mult / pow / equal / rparen / $
 
 State 3
+E -> lparen . E rparen      minus / mult / pow / equal / rparen / $
 E -> . E minus E      minus / mult / pow / equal / rparen
 E -> . E mult E      minus / mult / pow / equal / rparen
 E -> . E pow E      minus / mult / pow / equal / rparen
 E -> . E equal E      minus / mult / pow / equal / rparen
 E -> . minus E      minus / mult / pow / equal / rparen
 E -> . lparen E rparen      minus / mult / pow / equal / rparen
-E -> lparen . E rparen      minus / mult / pow / equal / rparen / $
 E -> . num      minus / mult / pow / equal / rparen
 
 State 4
 E -> num .      minus / mult / pow / equal / rparen / $
 
 State 5
-E -> . E minus E      minus / mult / pow / equal / rparen / $
 E -> E minus . E      minus / mult / pow / equal / rparen / $
+E -> . E minus E      minus / mult / pow / equal / rparen / $
 E -> . E mult E      minus / mult / pow / equal / rparen / $
 E -> . E pow E      minus / mult / pow / equal / rparen / $
 E -> . E equal E      minus / mult / pow / equal / rparen / $
@@ -53,9 +53,9 @@ E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
 E -> . num      minus / mult / pow / equal / rparen / $
 
 State 6
+E -> E mult . E      minus / mult / pow / equal / rparen / $
 E -> . E minus E      minus / mult / pow / equal / rparen / $
 E -> . E mult E      minus / mult / pow / equal / rparen / $
-E -> E mult . E      minus / mult / pow / equal / rparen / $
 E -> . E pow E      minus / mult / pow / equal / rparen / $
 E -> . E equal E      minus / mult / pow / equal / rparen / $
 E -> . minus E      minus / mult / pow / equal / rparen / $
@@ -63,21 +63,21 @@ E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
 E -> . num      minus / mult / pow / equal / rparen / $
 
 State 7
+E -> E pow . E      minus / mult / pow / equal / rparen / $
 E -> . E minus E      minus / mult / pow / equal / rparen / $
 E -> . E mult E      minus / mult / pow / equal / rparen / $
 E -> . E pow E      minus / mult / pow / equal / rparen / $
-E -> E pow . E      minus / mult / pow / equal / rparen / $
 E -> . E equal E      minus / mult / pow / equal / rparen / $
 E -> . minus E      minus / mult / pow / equal / rparen / $
 E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
 E -> . num      minus / mult / pow / equal / rparen / $
 
 State 8
+E -> E equal . E      minus / mult / pow / equal / rparen / $
 E -> . E minus E      minus / mult / pow / equal / rparen / $
 E -> . E mult E      minus / mult / pow / equal / rparen / $
 E -> . E pow E      minus / mult / pow / equal / rparen / $
 E -> . E equal E      minus / mult / pow / equal / rparen / $
-E -> E equal . E      minus / mult / pow / equal / rparen / $
 E -> . minus E      minus / mult / pow / equal / rparen / $
 E -> . lparen E rparen      minus / mult / pow / equal / rparen / $
 E -> . num      minus / mult / pow / equal / rparen / $

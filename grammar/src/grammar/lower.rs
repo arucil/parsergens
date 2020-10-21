@@ -2,7 +2,7 @@ use std::ops::Range;
 use std::fmt;
 use crate::{
   Grammar, NonterminalIdGen, Item, Lexer, TokenId, NonterminalId, Assoc,
-  Set, Map, UserState,
+  Set, Map, UserState, HashMap,
 };
 
 #[derive(Debug)]
@@ -74,12 +74,16 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
     user_state: grammar.user_state,
   };
 
+  let nt_names = grammar.nts.iter()
+    .map(|(&id, nt)| (id, nt.name.clone()))
+    .collect();
+
   for (nt_id, nt) in grammar.nts {
     let mut rules = vec![];
 
     for rule in &grammar.rules[nt.range] {
       rules.push((
-        lower_items(&rule.items, &mut lowered, &mut nt_id_gen),
+        lower_items(&rule.items, &nt_names, &mut lowered, &mut nt_id_gen),
         rule.prec,
         rule.action.clone()
       ));
@@ -114,6 +118,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
 
 fn lower_items(
   items: &[Item],
+  nt_names: &HashMap<NonterminalId, String>,
   lowered: &mut LoweredGrammar,
   nt_id_gen: &mut NonterminalIdGen,
 ) -> Vec<Symbol> {
@@ -122,10 +127,10 @@ fn lower_items(
       Item::Nonterminal(nt) => Symbol::Nonterminal(*nt),
       Item::Token(token) => Symbol::Token(*token),
       Item::Optional(items) => {
-        let symbols = lower_items(items, lowered, nt_id_gen);
+        let symbols = lower_items(items, nt_names, lowered, nt_id_gen);
         let start = lowered.prods.len();
         let nt = nt_id_gen.gen();
-        let name = make_production_name(&symbols, lowered, '?');
+        let name = make_production_name(&symbols, nt_names, &lowered.tokens, '?');
 
         lowered.prods.push(Production {
           nt,
@@ -154,10 +159,10 @@ fn lower_items(
         Symbol::Nonterminal(nt)
       }
       Item::Many(items) => {
-        let mut symbols = lower_items(items, lowered, nt_id_gen);
+        let mut symbols = lower_items(items, nt_names, lowered, nt_id_gen);
         let start = lowered.prods.len();
         let nt = nt_id_gen.gen();
-        let name = make_production_name(&symbols, lowered, '*');
+        let name = make_production_name(&symbols, nt_names, &lowered.tokens, '*');
 
         lowered.prods.push(Production {
           nt,
@@ -188,10 +193,10 @@ fn lower_items(
         Symbol::Nonterminal(nt)
       }
       Item::Many1(items) => {
-        let mut symbols = lower_items(items, lowered, nt_id_gen);
+        let mut symbols = lower_items(items, nt_names, lowered, nt_id_gen);
         let start = lowered.prods.len();
         let nt = nt_id_gen.gen();
-        let name = make_production_name(&symbols, lowered, '+');
+        let name = make_production_name(&symbols, nt_names, &lowered.tokens, '+');
 
         lowered.prods.push(Production {
           nt,
@@ -227,7 +232,8 @@ fn lower_items(
 
 fn make_production_name(
   symbols: &[Symbol],
-  lowered: &LoweredGrammar,
+  nt_names: &HashMap<NonterminalId, String>,
+  tokens: &Map<TokenId, String>,
   suffix: char
 ) -> String {
   let mut buf = "(".to_owned();
@@ -240,10 +246,10 @@ fn make_production_name(
 
     match symbol {
       Symbol::Nonterminal(nt) => {
-        buf.push_str(&lowered.nts[nt].name);
+        buf.push_str(&nt_names[nt]);
       }
       Symbol::Token(token) => {
-        buf.push_str(&lowered.tokens[token]);
+        buf.push_str(&tokens[token]);
       }
     }
 

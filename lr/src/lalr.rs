@@ -1,10 +1,12 @@
 use std::collections::VecDeque;
-use grammar::{LoweredGrammar, Symbol, Map, NonterminalId, HashMap};
+use grammar::{LoweredGrammar, Symbol, Map, NonterminalId, HashMap, Assoc};
 use indexmap::IndexMap;
 use fnv::FnvBuildHasher;
 use std::fmt::{self, Write};
 use crate::first::NonterminalFirst;
-use crate::EntryPoint;
+use crate::{
+  EntryPoint, Error, ShiftReduceConflictError, ReduceReduceConflictError
+};
 use crate::token_set::TokenSet;
 
 pub struct Builder<'a> {
@@ -27,8 +29,9 @@ type LookaheadSet = TokenSet;
 
 #[derive(Debug)]
 pub struct State {
+  /// Starts with sorted `kernel_len` kernel items, followed by other non-kernel items.
   items: Vec<Item>,
-  // size of kernel item set
+  /// size of kernel item set
   kernel_len: usize,
   /// symbol -> index of destination state
   transitions: Map<Symbol, u32>,
@@ -39,13 +42,6 @@ pub struct Item {
   /// production and dot
   key: u32,
   lookaheads: LookaheadSet,
-}
-
-pub struct ItemEncoding {
-  /// prod -> item key start
-  prod_base: Vec<u32>,
-  /// item key -> prod ix
-  item_prod: Vec<u32>,
 }
 
 pub fn gen_states(
@@ -116,7 +112,6 @@ fn compute_closure(
   max_nsym_p1: usize,
   state: &mut State,
 ) {
-  let mut i = 0;
   let items = &mut state.items;
   // nt -> start index of items
   let mut nt_starts = vec![0; grammar.nts.len()];
@@ -131,6 +126,7 @@ fn compute_closure(
     }
   }
 
+  let mut i = 0;
   while i < items.len() {
     let (prod, dot) = decode_item(max_nsym_p1, items[i].key);
     let prod = &grammar.prods[prod];
@@ -155,7 +151,9 @@ fn compute_closure(
         }
 
         if changed {
-          i = nt_start;
+          if i > nt_start {
+            i = nt_start;
+          }
         } else {
           i += 1;
         }
@@ -245,6 +243,185 @@ fn decode_item(
   let prod = key as usize / max_nsym_p1;
   let dot = key as usize % max_nsym_p1;
   (prod, dot)
+}
+
+/// Generates ACTION table and GOTO table.
+/// 
+/// entry in ACTION table:
+/// - positive: shift
+/// - negative: reduce
+/// - zero: error
+///
+/// entry in GOTO table:
+/// - positive: goto
+/// - zero: error
+pub fn gen_tables(
+  builder: &Builder,
+) -> ((Vec<Vec<i32>>, Vec<Vec<u32>>), Vec<Error>) {
+  let num_states = builder.states.len();
+  let mut action = vec![vec![0i32; builder.eof as usize + 1]; num_states];
+  let mut goto = vec![vec![0u32; builder.grammar.nts.len()]; num_states];
+  let mut errors = vec![];
+
+  for (from_state, (_, state)) in builder.states.iter().enumerate() {
+    for item in &state.items {
+      //let item = builder.item_store.items[item_ix];
+      let (prod, dot) = decode_item(builder.max_nsym_p1, item.key);
+      let symbols = &builder.grammar.prods[prod].symbols;
+      // shift
+      if dot < symbols.len() {
+        let sym = &symbols[dot];
+        let to_state = state.transitions[sym];
+        match sym {
+          Symbol::Token(tok) => {
+            let old = &mut action[from_state][tok.index()];
+            if *old < 0 {
+              match resolve_sr_conflict(&builder.grammar, !*old as u32, tok.id()) {
+                SrConflictResolution::Shift => *old = to_state as i32 + 1,
+                SrConflictResolution::Reduce => {
+                  // do nothing
+                }
+                SrConflictResolution::Error => *old = 0,
+                SrConflictResolution::Conflict => {
+                  errors.push(make_sr_conflict_error(
+                    builder,
+                    &state.items,
+                    tok.id(),
+                    !*old as u32));
+                }
+              }
+            } else {
+              assert!(*old == 0 || *old == to_state as i32 + 1);
+              *old = to_state as i32 + 1;
+            }
+          }
+          Symbol::Nonterminal(nt) => {
+            goto[from_state][nt.index()] = to_state + 1;
+          }
+        }
+      } else {
+        // reduce
+        for lookahead in item.lookaheads.iter() {
+          let old = &mut action[from_state][lookahead as usize];
+          if *old > 0 {
+            match resolve_sr_conflict(&builder.grammar, prod as u32, lookahead) {
+              SrConflictResolution::Shift => {
+                // do nothing
+              }
+              SrConflictResolution::Reduce => {
+                *old = !(prod as i32);
+              }
+              SrConflictResolution::Error => {
+                *old = 0;
+              }
+              SrConflictResolution::Conflict => {
+                errors.push(make_sr_conflict_error(
+                  builder,
+                  &state.items,
+                  lookahead as u32,
+                  prod as u32));
+              }
+            }
+          } else if *old < 0 {
+            errors.push(make_rr_conflict_error(
+              builder,
+              &state.items,
+              lookahead as u32,
+              !*old as u32,
+              prod as u32));
+          } else {
+            *old = !(prod as i32);
+          }
+        }
+      }
+    }
+  }
+
+  ((action, goto), errors)
+}
+
+enum SrConflictResolution {
+  Shift,
+  Reduce,
+  Error,
+  Conflict,
+}
+
+fn resolve_sr_conflict(
+  grammar: &LoweredGrammar,
+  prod_ix: u32,
+  tok: u32,
+) -> SrConflictResolution {
+  match (&grammar.prods[prod_ix as usize].prec, grammar.token_precs.get(&tok)) {
+    (Some((_, prec1)), Some((assoc2, prec2))) => {
+      if prec1 == prec2 {
+        match assoc2 {
+          Assoc::LeftAssoc => SrConflictResolution::Reduce,
+          Assoc::RightAssoc => SrConflictResolution::Shift,
+          Assoc::NonAssoc => SrConflictResolution::Error,
+        }
+      } else if prec1 < prec2 {
+        SrConflictResolution::Shift
+      } else {
+        SrConflictResolution::Reduce
+      }
+    }
+    _ => SrConflictResolution::Conflict,
+  }
+}
+
+fn make_rr_conflict_error(
+  builder: &Builder,
+  item_set: &[Item],
+  lookahead: u32,
+  reduce1: u32,
+  reduce2: u32,
+) -> Error {
+  let lookahead = builder.grammar.tokens[&lookahead].clone();
+  let reduce1 = builder.grammar.prods[reduce1 as usize].to_string(
+    &builder.grammar);
+  let reduce2 = builder.grammar.prods[reduce2 as usize].to_string(
+    &builder.grammar);
+
+  let state_items = item_set.iter()
+    .map(|item| {
+      let mut buf = String::new();
+      builder.fmt_item(item, &mut buf).unwrap();
+      buf
+    })
+    .collect();
+
+  Error::ReduceReduceConflict(ReduceReduceConflictError {
+    lookahead,
+    state_items,
+    reduce1,
+    reduce2,
+  })
+}
+
+fn make_sr_conflict_error(
+  builder: &Builder,
+  item_set: &[Item],
+  token: u32,
+  reduce_prod: u32,
+) -> Error {
+  let shift = builder.grammar.tokens[&token].clone();
+
+  let state_items = item_set.iter()
+    .map(|item| {
+      let mut buf = String::new();
+      builder.fmt_item(item, &mut buf).unwrap();
+      buf
+    })
+    .collect();
+
+  let reduce = builder.grammar.prods[reduce_prod as usize].to_string(&builder.grammar);
+
+  Error::ShiftReduceConflict(ShiftReduceConflictError {
+    state_items,
+    shift,
+    reduce,
+  })
 }
 
 impl State {
@@ -377,6 +554,7 @@ mod tests {
   use super::*;
   use insta::{assert_snapshot, assert_debug_snapshot};
   use grammar::LoweredGrammar;
+  use pretty_assertions::assert_eq;
   use crate::augment;
 
   fn prepare(input: &str) -> LoweredGrammar {
@@ -415,6 +593,18 @@ C = c C
     assert_snapshot!(builder.states(&start_nts));
   }
 
+  #[test]
+  fn simple_action_goto() {
+    let grammar = prepare(SIMPLE);
+    let mut builder = Builder::new(&grammar);
+    let _start_nts = gen_states(&mut builder);
+    let (tables, errors) = gen_tables(&builder);
+    assert!(errors.is_empty());
+    let tables = merge_action_goto(tables);
+
+    assert_debug_snapshot!(tables);
+  }
+
   static EPSILON: &str = r#"
 %token plus "+"
 %token mult "*"
@@ -441,6 +631,18 @@ F = num
     let start_nts = gen_states(&mut builder);
 
     assert_snapshot!(builder.states(&start_nts));
+  }
+
+  #[test]
+  fn epsilon_action_goto() {
+    let grammar = prepare(EPSILON);
+    let mut builder = Builder::new(&grammar);
+    let _start_nts = gen_states(&mut builder);
+    let (tables, errors) = gen_tables(&builder);
+    assert!(errors.is_empty());
+    let tables = merge_action_goto(tables);
+
+    assert_debug_snapshot!(tables);
   }
 
   static PRECEDENCE: &str = r#"
@@ -476,6 +678,18 @@ E = E minus E
     let start_nts = gen_states(&mut builder);
 
     assert_snapshot!(builder.states(&start_nts));
+  }
+
+  #[test]
+  fn precedence_action_goto() {
+    let grammar = prepare(PRECEDENCE);
+    let mut builder = Builder::new(&grammar);
+    let _start_nts = gen_states(&mut builder);
+    let (tables, errors) = gen_tables(&builder);
+    assert!(errors.is_empty());
+    let tables = merge_action_goto(tables);
+
+    assert_debug_snapshot!(tables);
   }
 
   static TIGER: &str = r##"
@@ -529,14 +743,14 @@ E = E minus E
 %skip /[ \n]+/
 
 %non-assoc    CONTROL
-%non-assoc    ARRAY
+%non-assoc    NEW_ARRAY
 %non-assoc    ASSIGN
 %right-assoc  OR
 %right-assoc  AND
-%non-assoc    EQ
-%non-assoc    REL
-%left-assoc   ADD
-%left-assoc   MULT
+%non-assoc    EQ NEQ
+%non-assoc    LT GT LE GE
+%left-assoc   MINUS PLUS
+%left-assoc   TIMES DIV MOD
 %right-assoc  NEG
 %non-assoc    ELSE
 
@@ -575,30 +789,30 @@ lvalue-suffix =
 
 expr =
     lvalue
-  | lvalue ASSIGN expr %prec ASSIGN
+  | lvalue ASSIGN expr
   | NIL
   | LPAREN seq-exprs RPAREN
   | LIT_INT
   | LIT_STR
   | MINUS expr %prec NEG
   | IDENT LPAREN arg-exprs RPAREN
-  | expr MOD expr %prec MULT
-  | expr DIV expr %prec MULT
-  | expr TIMES expr %prec MULT
-  | expr PLUS expr %prec ADD
-  | expr MINUS expr %prec ADD
-  | expr GT expr %prec REL
-  | expr LT expr %prec REL
-  | expr GE expr %prec REL
-  | expr LE expr %prec REL
-  | expr EQ expr %prec EQ
-  | expr NEQ expr %prec EQ
-  | expr AND expr %prec AND
-  | expr OR expr %prec OR
+  | expr MOD expr
+  | expr DIV expr
+  | expr TIMES expr
+  | expr PLUS expr
+  | expr MINUS expr
+  | expr GT expr
+  | expr LT expr
+  | expr GE expr
+  | expr LE expr
+  | expr EQ expr
+  | expr NEQ expr
+  | expr AND expr
+  | expr OR expr
   | type-id LBRACE field-init-exprs RBRACE
-  | IDENT LBRACK expr RBRACK OF expr %prec ARRAY
-  | predef-type LBRACK expr RBRACK OF expr %prec ARRAY
-  | IF expr THEN expr ELSE expr %prec ELSE
+  | IDENT LBRACK expr RBRACK OF expr %prec NEW_ARRAY
+  | predef-type LBRACK expr RBRACK OF expr %prec NEW_ARRAY
+  | IF expr THEN expr ELSE expr
   | IF expr THEN expr %prec CONTROL
   | WHILE expr DO expr %prec CONTROL
   | FOR IDENT ASSIGN expr TO expr DO expr %prec CONTROL
@@ -625,5 +839,17 @@ field-init-exprs =
     let start_nts = gen_states(&mut builder);
 
     assert_snapshot!(builder.states(&start_nts));
+  }
+
+  #[test]
+  fn tiger_action_goto() {
+    let grammar = prepare(TIGER);
+    let mut builder = Builder::new(&grammar);
+    let _start_nts = gen_states(&mut builder);
+    let (tables, errors) = gen_tables(&builder);
+    assert_eq!(errors, vec![]);
+    let tables = merge_action_goto(tables);
+
+    assert_debug_snapshot!(tables);
   }
 }
