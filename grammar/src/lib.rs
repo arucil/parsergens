@@ -168,7 +168,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     .collect::<Result<Vec<_>, _>>()?;
 
   let mut nt_id_gen = NonterminalIdGen::default();
-  let nts = rule_decls.iter()
+  let nt_names = rule_decls.iter()
     .map(|decl| {
       if tokens.get_by_right(&decl.name.1).is_some() {
         return Err(GrammarError {
@@ -186,7 +186,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
 
   let start_nts = start_decls.iter()
     .map(|decl| {
-      if let Some(&id) = nts.get_by_right(&decl.name.1) {
+      if let Some(&id) = nt_names.get_by_right(&decl.name.1) {
         Ok(id)
       } else {
         Err(GrammarError {
@@ -207,17 +207,17 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
   }).collect();
 
   let mut rules = vec![];
-  let mut nt_metas = Map::default();
+  let mut nts = Map::default();
 
   for rule_decl in &rule_decls {
-    let nt = *nts.get_by_right(&rule_decl.name.1).unwrap();
+    let nt = *nt_names.get_by_right(&rule_decl.name.1).unwrap();
     let start = rules.len();
 
     for alt in &rule_decl.alts {
       let items = match &alt.1.terms {
         ast::RuleAltTerms::Epsilon => vec![],
         ast::RuleAltTerms::Terms(terms) => {
-          convert_terms(terms, &nts, &tokens)?
+          convert_terms(terms, &nt_names, &tokens)?
         }
       };
 
@@ -309,7 +309,8 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
       None => None,
     };
 
-    nt_metas.insert(nt, NonterminalMetadata {
+    nts.insert(nt, Nonterminal {
+      name: nt_names.get_by_left(&nt).unwrap().clone(),
       range: start..rules.len(),
       ty,
     });
@@ -322,7 +323,6 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     rules,
     start_nts,
     nts,
-    nt_metas,
     lexer,
     tokens,
     token_precs,

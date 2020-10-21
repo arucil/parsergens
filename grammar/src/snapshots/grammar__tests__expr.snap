@@ -289,24 +289,15 @@ Ok(
         nts: {
             NonterminalId(
                 0,
-            ): "expr",
-            NonterminalId(
-                1,
-            ): "factor",
-            NonterminalId(
-                2,
-            ): "param-list",
-        },
-        nt_metas: {
-            NonterminalId(
-                0,
-            ): NonterminalMetadata {
+            ): Nonterminal {
+                name: "expr",
                 range: 0..5,
                 ty: None,
             },
             NonterminalId(
                 1,
-            ): NonterminalMetadata {
+            ): Nonterminal {
+                name: "factor",
                 range: 5..10,
                 ty: Some(
                     "Expr",
@@ -314,7 +305,8 @@ Ok(
             },
             NonterminalId(
                 2,
-            ): NonterminalMetadata {
+            ): Nonterminal {
+                name: "param-list",
                 range: 10..12,
                 ty: None,
             },

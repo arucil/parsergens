@@ -20,6 +20,7 @@ mod builder;
 mod build_lalr;
 mod build_clr;
 mod intmap;
+mod token_set;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -164,14 +165,14 @@ fn build_parser<S: Default>(
   let nts = (0..grammar.nts.len()).scan(
     NonterminalIdGen::default(),
     |gen, _| Some(gen.gen()))
-    .map(|nt| {
-      let name = grammar.nts[&nt].clone();
-      let meta = &grammar.nt_metas[&nt];
+    .map(|nt_id| {
+      let name = grammar.nts[&nt_id].name.clone();
+      let nt = &grammar.nts[&nt_id];
       Nonterminal {
         name,
-        ty: meta.ty.clone(),
-        kind: meta.kind,
-        range: meta.range.clone(),
+        ty: nt.ty.clone(),
+        kind: nt.kind,
+        range: nt.range.clone(),
       }
     })
     .collect();

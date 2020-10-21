@@ -14,7 +14,7 @@ pub  fn parse<'a>(
 
   loop {
     let token_kind = token.as_ref()
-      .map(|t| t.kind.id() as usize)
+      .map(|t| t.kind.index())
       .unwrap_or(parser.eof_index);
     let token_text = token.as_ref().map(|t| t.text).unwrap_or("EOF");
     let token_start = token.as_ref().map(|t| t.start).unwrap_or(input.len());

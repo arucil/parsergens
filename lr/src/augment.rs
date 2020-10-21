@@ -1,7 +1,7 @@
 use grammar::NonterminalIdGen;
 use grammar::{
   LoweredGrammar, Production, ProductionKind, Symbol,
-  LoweredNonterminalMetadata, NonterminalKind,
+  LoweredNonterminal, NonterminalKind,
 };
 
 /// Add `S' -> S $` to grammar, where `$` is a new token representing EOF.
@@ -14,7 +14,6 @@ pub fn augment(grammar: LoweredGrammar) -> LoweredGrammar {
   let mut nt_id_gen = NonterminalIdGen::from(max_nt_id);
 
   let mut prods = grammar.prods;
-  let mut nt_metas = grammar.nt_metas;
   let mut nts = grammar.nts;
 
   let start_nts = grammar.start_nts.into_iter().map(|nt| {
@@ -32,14 +31,14 @@ pub fn augment(grammar: LoweredGrammar) -> LoweredGrammar {
       action: None,
     });
 
-    nt_metas.insert(new_start_nt, LoweredNonterminalMetadata {
+    let new_nt_name = format!("_{}", nts[&nt].name);
+
+    nts.insert(new_start_nt, LoweredNonterminal {
+      name: new_nt_name,
       range: start..prods.len(),
       ty: None,
       kind: NonterminalKind::User,
     });
-
-    let new_nt_name = format!("_{}", nts[&nt]);
-    nts.insert(new_start_nt, new_nt_name);
 
     new_start_nt
   }).collect();
@@ -47,7 +46,6 @@ pub fn augment(grammar: LoweredGrammar) -> LoweredGrammar {
   let grammar = LoweredGrammar {
     prods,
     start_nts,
-    nt_metas,
     nts,
     ..grammar
   };

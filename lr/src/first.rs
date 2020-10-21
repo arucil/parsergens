@@ -1,49 +1,72 @@
 //! compute FIRST, FOLLOW, and NULLABLE sets.
 
-use bittyset::{BitSet, bitset};
-use bitvec::prelude::*;
-use grammar::{LoweredGrammar, NonterminalId, Symbol};
-use crate::Map;
+use grammar::{LoweredGrammar, Symbol};
+use crate::token_set::TokenSet;
 
 #[derive(Debug, Clone)]
-pub struct FirstAndNullable {
-  /// indexed by NT
-  pub first: Vec<BitSet>,
-  /// indexed by NT
-  pub nullable: BitSet,
+pub struct NonterminalFirst {
+  pub first: TokenSet,
+  pub nullable: bool,
 }
 
-pub fn compute(grammar: &LoweredGrammar) -> FirstAndNullable {
-  let nullable = bitset![];
-  let first = vec![bitset![]; grammar.nts.len()];
+pub(crate) fn compute(grammar: &LoweredGrammar) -> Vec<NonterminalFirst> {
+  let mut first = TokenSet::new(grammar.tokens.len() + 1);
+  let mut nt_firsts = vec![
+    NonterminalFirst {
+      first: first.clone(),
+      nullable: false,
+    };
+    grammar.nts.len()
+  ];
 
   let mut changed = true;
   while changed {
     changed = false;
     for prod in &grammar.prods {
-      for sym in &prod.symbols {
+      let nt = prod.nt.index();
+      if prod.symbols.iter().all(|sym| {
+        match sym {
+          Symbol::Token(_) => false,
+          Symbol::Nonterminal(nt) => nt_firsts[nt.index()].nullable,
+        }
+      }) {
+        changed |= !nt_firsts[nt].nullable;
+        nt_firsts[nt].nullable = true;
+      }
+
+      first.clear();
+      compute_symbols_first(&mut first, &nt_firsts, &prod.symbols, None);
+      changed |= nt_firsts[nt].first.union_with(&first);
+    }
+  }
+
+  nt_firsts
+}
+
+pub(crate) fn compute_symbols_first(
+  result: &mut TokenSet,
+  nt_firsts: &[NonterminalFirst],
+  symbols: &[Symbol],
+  last: Option<&TokenSet>,
+) {
+  for sym in symbols {
+    match sym {
+      Symbol::Token(tok) => {
+        result.insert(tok.id());
+        return;
+      }
+      Symbol::Nonterminal(nt) => {
+        result.union_with(&nt_firsts[nt.index()].first);
+        if !nt_firsts[nt.index()].nullable {
+          return;
+        }
       }
     }
   }
 
-  FirstAndNullable {
-    first,
-    nullable,
+  if let Some(last) = last {
+    result.union_with(last);
   }
-}
-
-fn compute_first(
-  grammar: &LoweredGrammar,
-  symbols: &[Symbol],
-  last: Option<&BitSet>,
-) -> BitSet {
-  let mut first = Map::<NonterminalId, BitSet>::default();
-
-  for &nt in grammar.nts.keys() {
-    compute_nonterminal_first(grammar, nullable, &mut first, &mut BitSet::new(), nt);
-  }
-
-  first
 }
 
 #[cfg(test)]

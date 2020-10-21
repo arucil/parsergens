@@ -15,8 +15,7 @@ pub struct Grammar {
   /// starting non-terminals
   pub start_nts: Set<NonterminalId>,
   /// non-terminals
-  pub nts: Map<NonterminalId, String>,
-  pub nt_metas: Map<NonterminalId, NonterminalMetadata>,
+  pub nts: Map<NonterminalId, Nonterminal>,
   pub lexer: Option<Lexer>,
   pub tokens: Map<TokenId, String>,
   pub token_precs: Map<TokenId, (Assoc, u32)>,
@@ -42,7 +41,8 @@ pub enum Item {
 }
 
 #[derive(Debug)]
-pub struct NonterminalMetadata {
+pub struct Nonterminal {
+  pub name: String,
   pub range: Range<usize>,
   pub ty: Option<String>,
 }
@@ -59,6 +59,10 @@ pub struct NonterminalId(u32);
 impl NonterminalId {
   pub fn id(&self) -> u32 {
     self.0
+  }
+
+  pub fn index(&self) -> usize {
+    self.0 as usize
   }
 }
 

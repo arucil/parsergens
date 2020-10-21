@@ -18,6 +18,7 @@ intmap = "0.7.0"
 [dev-dependencies]
 insta = "0.16.1"
 criterion = "0.3.3"
+pretty_assertions = "0.6.1"
 
 [[bench]]
 name = "lalr"

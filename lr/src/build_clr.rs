@@ -2,9 +2,10 @@ use std::collections::VecDeque;
 use grammar::{LoweredGrammar, Symbol, Map, NonterminalId, Assoc, HashMap};
 use bittyset::{BitSet, bitset};
 use std::fmt::{self, Write};
-use crate::first::FirstAndNullable;
+use crate::first::NonterminalFirst;
 use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError, EntryPoint};
 use crate::builder::{Builder, StateStore, ItemSet};
+use crate::token_set::TokenSet;
 
 type ClrBuilder<'a> = Builder<'a, ()>;
 
@@ -24,13 +25,13 @@ pub fn build_states(
 
   for &start_nt in &grammar.start_nts {
     let start_state = start(builder, grammar, &fan, start_nt);
-    let start_prod_ix = grammar.nt_metas[&start_nt].range.start;
+    let start_prod_ix = grammar.nts[&start_nt].range.start;
     let real_start_nt =
       match grammar.prods[start_prod_ix].symbols[0] {
         Symbol::Nonterminal(nt) => nt,
         _ => unreachable!(),
       };
-    let nt_name = grammar.nts.get(&real_start_nt).unwrap().clone();
+    let nt_name = grammar.nts[&real_start_nt].name.clone();
     entry_points.insert(nt_name, EntryPoint {
       real_start_nt: real_start_nt.id(),
       start_state,
@@ -70,7 +71,7 @@ pub fn build_tables(
         let to_state = tx[sym];
         match sym {
           Symbol::Token(tok) => {
-            let old = &mut action[from_state][tok.id() as usize];
+            let old = &mut action[from_state][tok.index()];
             if *old < 0 {
               match resolve_sr_conflict(&builder.grammar, !*old as u32, tok.id()) {
                 SrConflictResolution::Shift => *old = tok.id() as i32 + 1,
@@ -89,7 +90,7 @@ pub fn build_tables(
             }
           }
           Symbol::Nonterminal(nt) => {
-            goto[from_state][nt.id() as usize] = to_state + 1;
+            goto[from_state][nt.index()] = to_state + 1;
           }
         }
       } else {
@@ -216,10 +217,10 @@ fn make_sr_conflict_error(
 fn start(
   builder: &mut ClrBuilder,
   grammar: &LoweredGrammar,
-  fan: &FirstAndNullable,
+  nt_firsts: &[NonterminalFirst],
   nt: NonterminalId
 ) -> u32 {
-  let start_prod = grammar.nt_metas[&nt].range.start as u32;
+  let start_prod = grammar.nts[&nt].range.start as u32;
   let start_item = store_item(builder,
     Lr1Item {
       prod_ix: start_prod,
@@ -228,7 +229,7 @@ fn start(
     });
   let mut start_item_set = vec![start_item];
 
-  closure(builder, grammar, fan, &mut start_item_set);
+  closure(builder, grammar, nt_firsts, &mut start_item_set);
   let start_state = store_state(&mut builder.state_store, start_item_set);
 
   let mut queue = VecDeque::new();
@@ -261,7 +262,7 @@ fn start(
     }
 
     for (sym, mut to_item_set) in to_states {
-      closure(builder, grammar, fan, &mut to_item_set);
+      closure(builder, grammar, nt_firsts, &mut to_item_set);
 
       if let Some(&to_state) = builder.state_store.state_indices.get(&to_item_set) {
         builder.state_store.goto[from_state as usize].insert(sym, to_state);
@@ -281,7 +282,7 @@ fn start(
 fn closure(
   builder: &mut ClrBuilder,
   grammar: &LoweredGrammar,
-  fan: &FirstAndNullable,
+  nt_firsts: &[NonterminalFirst],
   item_set: &mut ItemSet,
 ) {
   let mut new = item_set.clone();
@@ -296,18 +297,18 @@ fn closure(
         Symbol::Nonterminal(nt) => nt,
       };
 
-      let mut first = BitSet::new();
+      let mut first = TokenSet::new(builder.grammar.tokens.len() + 1);
       let mut rest_nullable = true;
       for sym in &symbols[item.dot_ix as usize + 1..] {
         match sym {
           Symbol::Token(tok) => {
-            first.insert(tok.id() as usize);
+            first.insert(tok.id());
             rest_nullable = false;
             break;
           }
           Symbol::Nonterminal(nt) => {
-            first.union_with(&fan.first[nt]);
-            if !fan.nullable.contains(nt.id() as usize) {
+            first.union_with(&nt_firsts[nt.index()].first);
+            if !nt_firsts[nt.index()].nullable {
               rest_nullable = false;
               break;
             }
@@ -316,10 +317,10 @@ fn closure(
       }
 
       if rest_nullable {
-        first.insert(item.lookahead as usize);
+        first.insert(item.lookahead);
       }
 
-      for prod_ix in grammar.nt_metas[nt].range.clone() {
+      for prod_ix in grammar.nts[nt].range.clone() {
         for lookahead in first.iter() {
           let item = store_item(builder, Lr1Item {
             prod_ix: prod_ix as u32,
@@ -434,7 +435,7 @@ impl<'a> ClrBuilder<'a> {
     let nt = self.grammar.prods[item.prod_ix as usize].nt;
     let symbols = &self.grammar.prods[item.prod_ix as usize].symbols;
 
-    write!(fmt, "{} ->", self.grammar.nts[&nt])?;
+    write!(fmt, "{} ->", self.grammar.nts[&nt].name)?;
 
     for (i, sym) in symbols.iter().enumerate() {
       if i == item.dot_ix as usize {
@@ -447,7 +448,7 @@ impl<'a> ClrBuilder<'a> {
           write!(fmt, " {}", name)?;
         }
         Symbol::Nonterminal(nt) => {
-          let name = &self.grammar.nts[nt];
+          let name = &self.grammar.nts[nt].name;
           write!(fmt, " {}", name)?;
         }
       }

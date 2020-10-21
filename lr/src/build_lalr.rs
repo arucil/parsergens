@@ -2,13 +2,14 @@ use std::collections::VecDeque;
 use grammar::{LoweredGrammar, Symbol, Map, NonterminalId, Assoc, HashMap};
 use bittyset::{BitSet, bitset};
 use std::fmt::{self, Write};
-use crate::first::FirstAndNullable;
+use crate::first::NonterminalFirst;
 use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError, EntryPoint};
 use crate::builder::{Builder, StateStore, ItemSet};
 use crate::intmap::MyIntMap;
+use crate::token_set::TokenSet;
 
 /// Lookahead set of an item.
-type LookaheadSet = MyIntMap<BitSet>;
+type LookaheadSet = MyIntMap<TokenSet>;
 
 type LalrBuilder<'a> = Builder<'a, LookaheadSet>;
 
@@ -27,13 +28,13 @@ pub fn build_states(
 
   for &start_nt in &grammar.start_nts {
     let start_state = start(builder, grammar, &fan, start_nt);
-    let start_prod_ix = grammar.nt_metas[&start_nt].range.start;
+    let start_prod_ix = grammar.nts[&start_nt].range.start;
     let real_start_nt =
       match grammar.prods[start_prod_ix].symbols[0] {
         Symbol::Nonterminal(nt) => nt,
         _ => unreachable!(),
       };
-    let nt_name = grammar.nts[&real_start_nt].clone();
+    let nt_name = grammar.nts[&real_start_nt].name.clone();
     entry_points.insert(nt_name, EntryPoint {
       real_start_nt: real_start_nt.id(),
       start_state,
@@ -73,7 +74,7 @@ pub fn build_tables(
         let to_state = tx[sym];
         match sym {
           Symbol::Token(tok) => {
-            let old = &mut action[from_state][tok.id() as usize];
+            let old = &mut action[from_state][tok.index()];
             if *old < 0 {
               match resolve_sr_conflict(&builder.grammar, !*old as u32, tok.id()) {
                 SrConflictResolution::Shift => *old = to_state as i32 + 1,
@@ -94,13 +95,13 @@ pub fn build_tables(
             }
           }
           Symbol::Nonterminal(nt) => {
-            goto[from_state][nt.id() as usize] = to_state + 1;
+            goto[from_state][nt.index()] = to_state + 1;
           }
         }
       } else {
         // reduce
         for lookahead in lookaheads[item_ix as u64].iter() {
-          let old = &mut action[from_state][lookahead];
+          let old = &mut action[from_state][lookahead as usize];
           if *old > 0 {
             match resolve_sr_conflict(&builder.grammar, item.prod_ix, lookahead as u32) {
               SrConflictResolution::Shift => {
@@ -227,10 +228,10 @@ fn make_sr_conflict_error(
 fn start(
   builder: &mut LalrBuilder,
   grammar: &LoweredGrammar,
-  fan: &FirstAndNullable,
+  nt_firsts: &[NonterminalFirst],
   nt: NonterminalId
 ) -> u32 {
-  let start_prod = grammar.nt_metas[&nt].range.start as u32;
+  let start_prod = grammar.nts[&nt].range.start as u32;
   let start_item = store_item(builder,
     Lr0Item {
       prod_ix: start_prod,
@@ -239,11 +240,12 @@ fn start(
   let mut start_item_set = vec![start_item];
   let mut start_lookaheads = {
     let mut m = MyIntMap::new();
-    m.insert(start_item as u64, bitset![builder.eof as usize]);
+    m.insert(start_item as u64,
+      TokenSet::from_token(builder.eof as usize + 1, builder.eof));
     m
   };
 
-  closure(builder, grammar, fan, &mut start_item_set, &mut start_lookaheads);
+  closure(builder, grammar, nt_firsts, &mut start_item_set, &mut start_lookaheads);
   let (start_state, _) = store_state(&mut builder.state_store,
     start_item_set.clone(),
     start_item_set,
@@ -289,7 +291,7 @@ fn start(
 
     for (sym, (mut to_item_set, mut lookaheads)) in to_states {
       let kernel_item_set = to_item_set.clone();
-      closure(builder, grammar, fan, &mut to_item_set, &mut lookaheads);
+      closure(builder, grammar, nt_firsts, &mut to_item_set, &mut lookaheads);
       let (to_state, changed) = store_state(&mut builder.state_store,
         kernel_item_set,
         to_item_set,
@@ -309,7 +311,7 @@ fn start(
 fn closure(
   builder: &mut LalrBuilder,
   grammar: &LoweredGrammar,
-  fan: &FirstAndNullable,
+  nt_firsts: &[NonterminalFirst],
   item_set: &mut ItemSet,
   lookaheads: &mut LookaheadSet,
 ) {
@@ -325,18 +327,18 @@ fn closure(
         Symbol::Nonterminal(nt) => nt,
       };
 
-      let mut first = BitSet::new();
+      let mut first = TokenSet::new(builder.grammar.tokens.len() + 1);
       let mut rest_nullable = true;
       for sym in &symbols[item.dot_ix as usize + 1..] {
         match sym {
           Symbol::Token(tok) => {
-            first.insert(tok.id() as usize);
+            first.insert(tok.id());
             rest_nullable = false;
             break;
           }
           Symbol::Nonterminal(nt) => {
-            first.union_with(&fan.first[nt]);
-            if !fan.nullable.contains(nt.id() as usize) {
+            first.union_with(&nt_firsts[nt.index()].first);
+            if !nt_firsts[nt.index()].nullable {
               rest_nullable = false;
               break;
             }
@@ -348,7 +350,7 @@ fn closure(
         first.union_with(&lookaheads[i as u64]);
       }
 
-      for prod_ix in grammar.nt_metas[nt].range.clone() {
+      for prod_ix in grammar.nts[nt].range.clone() {
         let item = store_item(builder, Lr0Item {
           prod_ix: prod_ix as u32,
           dot_ix: 0,
@@ -385,9 +387,7 @@ fn store_state(
   if let Some(&ix) = state_store.state_indices.get(&kernel_item_set) {
     let mut changed = false;
     for (&item, old_lookaheads) in state_store.states[ix as usize].1.iter_mut() {
-      let old = old_lookaheads.clone();
-      *old_lookaheads |= &lookaheads[item];
-      changed |= old != *old_lookaheads;
+      changed |= old_lookaheads.union_with(&lookaheads[item]);
     }
     (ix, changed)
   } else {
@@ -469,7 +469,7 @@ impl<'a> LalrBuilder<'a> {
 impl<'a> LalrBuilder<'a> {
   fn fmt_item(
     &self,
-    lookaheads: &BitSet,
+    lookaheads: &TokenSet,
     item_ix: u32,
     fmt: &mut impl Write,
   ) -> fmt::Result {
@@ -478,7 +478,7 @@ impl<'a> LalrBuilder<'a> {
     let nt = self.grammar.prods[item.prod_ix as usize].nt;
     let symbols = &self.grammar.prods[item.prod_ix as usize].symbols;
 
-    write!(fmt, "{} ->", self.grammar.nts[&nt])?;
+    write!(fmt, "{} ->", self.grammar.nts[&nt].name)?;
 
     for (i, sym) in symbols.iter().enumerate() {
       if i == item.dot_ix as usize {
@@ -491,7 +491,7 @@ impl<'a> LalrBuilder<'a> {
           write!(fmt, " {}", name)?;
         }
         Symbol::Nonterminal(nt) => {
-          let name = &self.grammar.nts[nt];
+          let name = &self.grammar.nts[nt].name;
           write!(fmt, " {}", name)?;
         }
       }

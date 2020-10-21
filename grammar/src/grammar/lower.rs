@@ -9,8 +9,7 @@ use crate::{
 pub struct LoweredGrammar {
   pub prods: Vec<Production>,
   pub start_nts: Set<NonterminalId>,
-  pub nts: Map<NonterminalId, String>,
-  pub nt_metas: Map<NonterminalId, LoweredNonterminalMetadata>,
+  pub nts: Map<NonterminalId, LoweredNonterminal>,
   pub lexer: Option<Lexer>,
   pub tokens: Map<TokenId, String>,
   pub token_precs: Map<TokenId, (Assoc, u32)>,
@@ -28,7 +27,8 @@ pub struct Production {
 }
 
 #[derive(Debug)]
-pub struct LoweredNonterminalMetadata {
+pub struct LoweredNonterminal {
+  pub name: String,
   pub range: Range<usize>,
   pub ty: Option<String>,
   pub kind: NonterminalKind,
@@ -66,8 +66,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
   let mut lowered = LoweredGrammar {
     prods: vec![],
     start_nts: grammar.start_nts,
-    nts: grammar.nts,
-    nt_metas: Map::default(),
+    nts: Map::new(),
     lexer: grammar.lexer,
     tokens: grammar.tokens,
     token_precs: grammar.token_precs,
@@ -75,10 +74,10 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
     user_state: grammar.user_state,
   };
 
-  for (nt, meta) in grammar.nt_metas {
+  for (nt_id, nt) in grammar.nts {
     let mut rules = vec![];
 
-    for rule in &grammar.rules[meta.range] {
+    for rule in &grammar.rules[nt.range] {
       rules.push((
         lower_items(&rule.items, &mut lowered, &mut nt_id_gen),
         rule.prec,
@@ -90,7 +89,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
 
     for (symbols, prec, action) in rules {
       lowered.prods.push(Production {
-        nt,
+        nt: nt_id,
         kind: ProductionKind::Ordinary,
         symbols,
         prec,
@@ -100,13 +99,14 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
 
     let end = lowered.prods.len();
 
-    let meta = LoweredNonterminalMetadata {
+    let nt = LoweredNonterminal {
+      name: nt.name,
       range: start..end,
-      ty: meta.ty,
+      ty: nt.ty,
       kind: NonterminalKind::User,
     };
 
-    lowered.nt_metas.insert(nt, meta);
+    lowered.nts.insert(nt_id, nt);
   }
 
   lowered
@@ -126,7 +126,6 @@ fn lower_items(
         let start = lowered.prods.len();
         let nt = nt_id_gen.gen();
         let name = make_production_name(&symbols, lowered, '?');
-        lowered.nts.insert(nt, name);
 
         lowered.prods.push(Production {
           nt,
@@ -145,7 +144,8 @@ fn lower_items(
 
         let end = lowered.prods.len();
 
-        lowered.nt_metas.insert(nt, LoweredNonterminalMetadata {
+        lowered.nts.insert(nt, LoweredNonterminal {
+          name,
           range: start..end,
           ty: None,
           kind: NonterminalKind::Optional,
@@ -158,7 +158,6 @@ fn lower_items(
         let start = lowered.prods.len();
         let nt = nt_id_gen.gen();
         let name = make_production_name(&symbols, lowered, '*');
-        lowered.nts.insert(nt, name);
 
         lowered.prods.push(Production {
           nt,
@@ -179,7 +178,8 @@ fn lower_items(
 
         let end = lowered.prods.len();
 
-        lowered.nt_metas.insert(nt, LoweredNonterminalMetadata {
+        lowered.nts.insert(nt, LoweredNonterminal {
+          name,
           range: start..end,
           ty: None,
           kind: NonterminalKind::Repetition,
@@ -192,7 +192,6 @@ fn lower_items(
         let start = lowered.prods.len();
         let nt = nt_id_gen.gen();
         let name = make_production_name(&symbols, lowered, '+');
-        lowered.nts.insert(nt, name);
 
         lowered.prods.push(Production {
           nt,
@@ -213,7 +212,8 @@ fn lower_items(
 
         let end = lowered.prods.len();
 
-        lowered.nt_metas.insert(nt, LoweredNonterminalMetadata {
+        lowered.nts.insert(nt, LoweredNonterminal {
+          name,
           range: start..end,
           ty: None,
           kind: NonterminalKind::Repetition,
@@ -240,7 +240,7 @@ fn make_production_name(
 
     match symbol {
       Symbol::Nonterminal(nt) => {
-        buf.push_str(&lowered.nts[nt]);
+        buf.push_str(&lowered.nts[nt].name);
       }
       Symbol::Token(token) => {
         buf.push_str(&lowered.tokens[token]);
@@ -258,11 +258,11 @@ fn make_production_name(
 
 impl Production {
   pub fn fmt(&self, grammar: &LoweredGrammar, f: &mut impl fmt::Write) -> fmt::Result {
-    write!(f, "{} ->", grammar.nts[&self.nt])?;
+    write!(f, "{} ->", grammar.nts[&self.nt].name)?;
     for sym in &self.symbols {
       match sym {
         Symbol::Token(tok) => write!(f, " {}", grammar.tokens[tok])?,
-        Symbol::Nonterminal(nt) => write!(f, " {}", grammar.nts[nt])?,
+        Symbol::Nonterminal(nt) => write!(f, " {}", grammar.nts[nt].name)?,
       }
     }
     Ok(())

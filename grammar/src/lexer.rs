@@ -56,6 +56,10 @@ impl TokenId {
   pub fn id(&self) -> u32 {
     self.0
   }
+
+  pub fn index(&self) -> usize {
+    self.0 as usize
+  }
 }
 
 impl Borrow<u32> for TokenId {

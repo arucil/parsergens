@@ -2,45 +2,45 @@
 source: lr/src/first.rs
 expression: first
 ---
-FirstAndNullable {
-    first: {
-        NonterminalId(
-            5,
-        ): {
+[
+    NonterminalFirst {
+        first: {
             2,
             3,
         },
-        NonterminalId(
-            3,
-        ): {
+        nullable: false,
+    },
+    NonterminalFirst {
+        first: {
             2,
             3,
         },
-        NonterminalId(
-            1,
-        ): {
-            2,
-            3,
-        },
-        NonterminalId(
-            0,
-        ): {
-            2,
-            3,
-        },
-        NonterminalId(
-            2,
-        ): {
+        nullable: false,
+    },
+    NonterminalFirst {
+        first: {
             0,
         },
-        NonterminalId(
-            4,
-        ): {
+        nullable: true,
+    },
+    NonterminalFirst {
+        first: {
+            2,
+            3,
+        },
+        nullable: false,
+    },
+    NonterminalFirst {
+        first: {
             1,
         },
+        nullable: true,
     },
-    nullable: {
-        2,
-        4,
+    NonterminalFirst {
+        first: {
+            2,
+            3,
+        },
+        nullable: false,
     },
-}
+]

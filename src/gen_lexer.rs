@@ -20,21 +20,6 @@ pub fn gen(
 
   scope.new_const("DFA_START", "u32").value(lexer.dfa.start.to_string());
 
-  /*
-  let num_states = lexer.dfa.state_disp.len();
-  let accept_states = (0..num_states as u32).map(|s| {
-    if let Some(token) = lexer.dfa.accept_states.get(&State(s)) {
-      if tokens.contains_key(token) {
-        token.id() as i32 + 1
-      } else {
-        -1
-      }
-    } else {
-      0
-    }
-  }).join(", ");
-  */
-
   scope.new_struct("Token")
     .vis("pub")
     .generic("'input")
@@ -212,7 +197,7 @@ fn gen_accept_states(
     if !skip.contains(token) {
       func.line(format!("    {} => {{ end = self.pos; token_kind = Some(TokenKind::{}); }}",
         state.0,
-        tokens[&token.id()]));
+        tokens[token]));
     }
   }
 
