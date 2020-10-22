@@ -4,7 +4,7 @@ type BitBlock = u64;
 
 const BLOCK_NBITS: usize = std::mem::size_of::<BitBlock>() * 8;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct TokenSet {
   slice: Box<[BitBlock]>,
 }

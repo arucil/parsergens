@@ -1,47 +1,44 @@
 ---
 source: lr/src/clr.rs
-expression: builder.states()
+expression: builder.states(&start_nts)
 ---
 State 0 (start)
 _S -> . S      $
-S -> . A a      $
-S -> . b A c      $
-S -> . d c      $
-S -> . b d a      $
-A -> . d      a
+S -> . C C      $
+C -> . c C      c / d
+C -> . d      c / d
 
 State 1
 _S -> S .      $
 
 State 2
-S -> A . a      $
+S -> C . C      $
+C -> . c C      $
+C -> . d      $
 
 State 3
-S -> b . A c      $
-S -> b . d a      $
-A -> . d      c
+C -> c . C      c / d
+C -> . c C      c / d
+C -> . d      c / d
 
 State 4
-S -> d . c      $
-A -> d .      a
+C -> d .      c / d
 
 State 5
-S -> A a .      $
+S -> C C .      $
 
 State 6
-S -> b A . c      $
+C -> c . C      $
+C -> . c C      $
+C -> . d      $
 
 State 7
-S -> b d . a      $
-A -> d .      c
+C -> d .      $
 
 State 8
-S -> d c .      $
+C -> c C .      c / d
 
 State 9
-S -> b A c .      $
-
-State 10
-S -> b d a .      $
+C -> c C .      $
 
 

@@ -2,7 +2,7 @@
 
 use grammar::{TokenId, Map, NonterminalIdGen, HashMap};
 use std::ops::Range;
-use builder::Builder;
+use self::builder::{Builder, LrComputation, gen_states, gen_tables};
 
 pub use grammar::{
   LoweredGrammar,
@@ -12,14 +12,11 @@ pub use grammar::{
   GrammarError
 };
 
-//mod clr;
+mod clr;
 mod lalr;
 mod first;
 mod augment;
 mod builder;
-mod build_lalr;
-mod build_clr;
-mod intmap;
 mod token_set;
 
 #[derive(Debug)]
@@ -117,31 +114,26 @@ pub enum ParserKind {
   Lalr,
 }
 
-pub fn build(input: &str, kind: ParserKind) -> Result<Parser, Error> {
+pub fn build(input: &str, kind: ParserKind) -> Result<Parser, Vec<Error>> {
   match kind {
-    ParserKind::Clr => build_parser(
-      input,
-      build_clr::build_states,
-      build_clr::build_tables),
-    ParserKind::Lalr => build_parser(
-      input,
-      build_lalr::build_states,
-      build_lalr::build_tables),
+    ParserKind::Clr => build_parser::<self::clr::ClrComputation>(input),
+    ParserKind::Lalr => build_parser::<self::lalr::LalrComputation>(input),
   }
 }
 
-fn build_parser<S: Default>(
+fn build_parser<T: LrComputation>(
   input: &str,
-  build_states: fn(&mut Builder<S>, &LoweredGrammar) -> HashMap<String, EntryPoint>,
-  build_tables: fn(&Builder<S>) -> Result<(Vec<Vec<i32>>, Vec<Vec<u32>>), Error>,
-) -> Result<Parser, Error> {
-  let grammar = grammar::build(input).map_err(Error::GrammarError)?;
+) -> Result<Parser, Vec<Error>> {
+  let grammar = grammar::build(input)
+    .map_err(|err| vec![
+      Error::GrammarError(err)
+    ])?;
   let grammar = grammar.lower();
   let grammar = augment::augment(grammar);
 
   let mut builder = Builder::new(&grammar);
-  let entry_points = build_states(&mut builder, &grammar);
-  let (action, goto) = build_tables(&builder)?;
+  let entry_points = gen_states::<T>(&mut builder);
+  let (action, goto) = gen_tables::<T>(&builder)?;
 
   let prods = grammar.prods.iter().map(|prod| {
     let symbols = prod.symbols.iter()

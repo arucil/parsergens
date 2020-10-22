@@ -1,0 +1,133 @@
+---
+source: lr/src/clr.rs
+expression: builder.states(&start_nts)
+---
+State 0 (start)
+_E -> . E      $
+E -> . T E'      $
+T -> . F T'      plus / $
+F -> . num      plus / mult / $
+F -> . lparen E rparen      plus / mult / $
+
+State 1
+_E -> E .      $
+
+State 2
+E -> T . E'      $
+E' -> . plus T E'      $
+E' -> .      $
+
+State 3
+T -> F . T'      plus / $
+T' -> . mult F T'      plus / $
+T' -> .      plus / $
+
+State 4
+F -> num .      plus / mult / $
+
+State 5
+F -> lparen . E rparen      plus / mult / $
+E -> . T E'      rparen
+T -> . F T'      plus / rparen
+F -> . num      plus / mult / rparen
+F -> . lparen E rparen      plus / mult / rparen
+
+State 6
+E -> T E' .      $
+
+State 7
+E' -> plus . T E'      $
+T -> . F T'      plus / $
+F -> . num      plus / mult / $
+F -> . lparen E rparen      plus / mult / $
+
+State 8
+T -> F T' .      plus / $
+
+State 9
+T' -> mult . F T'      plus / $
+F -> . num      plus / mult / $
+F -> . lparen E rparen      plus / mult / $
+
+State 10
+F -> lparen E . rparen      plus / mult / $
+
+State 11
+E -> T . E'      rparen
+E' -> . plus T E'      rparen
+E' -> .      rparen
+
+State 12
+T -> F . T'      plus / rparen
+T' -> . mult F T'      plus / rparen
+T' -> .      plus / rparen
+
+State 13
+F -> num .      plus / mult / rparen
+
+State 14
+F -> lparen . E rparen      plus / mult / rparen
+E -> . T E'      rparen
+T -> . F T'      plus / rparen
+F -> . num      plus / mult / rparen
+F -> . lparen E rparen      plus / mult / rparen
+
+State 15
+E' -> plus T . E'      $
+E' -> . plus T E'      $
+E' -> .      $
+
+State 16
+T' -> mult F . T'      plus / $
+T' -> . mult F T'      plus / $
+T' -> .      plus / $
+
+State 17
+F -> lparen E rparen .      plus / mult / $
+
+State 18
+E -> T E' .      rparen
+
+State 19
+E' -> plus . T E'      rparen
+T -> . F T'      plus / rparen
+F -> . num      plus / mult / rparen
+F -> . lparen E rparen      plus / mult / rparen
+
+State 20
+T -> F T' .      plus / rparen
+
+State 21
+T' -> mult . F T'      plus / rparen
+F -> . num      plus / mult / rparen
+F -> . lparen E rparen      plus / mult / rparen
+
+State 22
+F -> lparen E . rparen      plus / mult / rparen
+
+State 23
+E' -> plus T E' .      $
+
+State 24
+T' -> mult F T' .      plus / $
+
+State 25
+E' -> plus T . E'      rparen
+E' -> . plus T E'      rparen
+E' -> .      rparen
+
+State 26
+T' -> mult F . T'      plus / rparen
+T' -> . mult F T'      plus / rparen
+T' -> .      plus / rparen
+
+State 27
+F -> lparen E rparen .      plus / mult / rparen
+
+State 28
+E' -> plus T E' .      rparen
+
+State 29
+T' -> mult F T' .      plus / rparen
+
+
