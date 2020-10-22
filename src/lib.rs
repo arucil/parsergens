@@ -41,7 +41,7 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
 
   let parser = match parser {
     Ok(parser) => parser,
-    Err(err) => report(source_path, grammar, err),
+    Err(mut err) => report(source_path, grammar, err.pop().unwrap()),
   };
 
   let vis = spec.vis.to_token_stream().to_string();

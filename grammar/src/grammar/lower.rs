@@ -66,7 +66,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
   let mut lowered = LoweredGrammar {
     prods: vec![],
     start_nts: grammar.start_nts,
-    nts: Map::new(),
+    nts: Map::default(),
     lexer: grammar.lexer,
     tokens: grammar.tokens,
     token_precs: grammar.token_precs,
