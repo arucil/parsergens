@@ -27,8 +27,6 @@ grammar:
 - [x] merge ACCEPT into REDUCE
 - [ ] parse_expr().with_input()
 - [ ] test S -> xx S | epsilon
-- [ ] reduce code redundancy in LALR builder and CLR builder
-- [ ] compress item store: prod_base, item_prod_ix(map bitset bit to prod ix)
-- [ ] Production no need to contains Assoc
-- [ ] token prec default to 0
-- [ ] lookahead set fixed length (num_tokens), Vec<u32>
+- [x] reduce code redundancy in LALR builder and CLR builder
+- [x] Production no need to contains Assoc
+- [x] lookahead set fixed length (num_tokens), Vec<u32>

@@ -199,11 +199,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
     .collect::<Result<Set<_>, GrammarError>>()?;
 
   let token_precs = tokens.iter().filter_map(|(&tok, name)| {
-    if let Some(&(assoc, prec)) = assocs.get(name) {
-      Some((tok, (assoc, prec)))
-    } else {
-      None
-    }
+    assocs.get(name).cloned().map(|prec| (tok, prec))
   }).collect();
 
   let mut rules = vec![];
@@ -221,29 +217,28 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         }
       };
 
-      // TODO right most token prec
       let prec = match &alt.1.prec {
         Some(name) => {
           Some(assocs.get(&name.1)
-            .cloned()
+            .map(|prec| prec.1)
             .ok_or_else(|| GrammarError {
-            kind: GrammarErrorKind::NameNotFound,
-            message: format!("precedence symbol not found"),
-            span: name.0,
-          })?)
+              kind: GrammarErrorKind::NameNotFound,
+              message: format!("precedence symbol not found"),
+              span: name.0,
+            })?)
         }
         None => {
           fn find_right_most_token_prec(
             items: &[Item],
             assocs: &Map<String, (Assoc, u32)>,
             tokens: &BiMap<TokenId, String>,
-          ) -> Option<(Assoc, u32)> {
+          ) -> Option<u32> {
             for item in items.iter().rev() {
               match item {
                 Item::Nonterminal(_) => {}
                 Item::Token(tok) => {
                   if let Some(x) = assocs.get(tokens.get_by_left(tok).unwrap()) {
-                    return Some(*x);
+                    return Some(x.1);
                   }
                 }
                 Item::Many(items) | Item::Many1(items) | Item::Optional(items) => {

@@ -27,7 +27,7 @@ pub struct Grammar {
 pub struct Rule {
   pub nt: NonterminalId,
   pub items: Vec<Item>,
-  pub prec: Option<(Assoc, u32)>,
+  pub prec: Option<u32>,
   pub action: Option<String>,
 }
 

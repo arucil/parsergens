@@ -27,10 +27,7 @@ Ok(
                     ),
                 ],
                 prec: Some(
-                    (
-                        LeftAssoc,
-                        0,
-                    ),
+                    0,
                 ),
                 action: None,
             },
@@ -56,10 +53,7 @@ Ok(
                     ),
                 ],
                 prec: Some(
-                    (
-                        LeftAssoc,
-                        0,
-                    ),
+                    0,
                 ),
                 action: None,
             },
@@ -85,10 +79,7 @@ Ok(
                     ),
                 ],
                 prec: Some(
-                    (
-                        LeftAssoc,
-                        1,
-                    ),
+                    1,
                 ),
                 action: None,
             },
@@ -114,10 +105,7 @@ Ok(
                     ),
                 ],
                 prec: Some(
-                    (
-                        LeftAssoc,
-                        1,
-                    ),
+                    1,
                 ),
                 action: None,
             },
@@ -194,10 +182,7 @@ Ok(
                     ),
                 ],
                 prec: Some(
-                    (
-                        NonAssoc,
-                        2,
-                    ),
+                    2,
                 ),
                 action: None,
             },

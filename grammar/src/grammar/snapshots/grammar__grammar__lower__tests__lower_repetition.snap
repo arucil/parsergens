@@ -179,53 +179,41 @@ LoweredGrammar {
     },
     nts: {
         NonterminalId(
-            0,
-        ): "top",
-        NonterminalId(
-            1,
-        ): "atom",
-        NonterminalId(
             2,
-        ): "(A)?",
-        NonterminalId(
-            3,
-        ): "(atom (A)?)*",
-        NonterminalId(
-            4,
-        ): "(A atom)+",
-    },
-    nt_metas: {
-        NonterminalId(
-            2,
-        ): LoweredNonterminalMetadata {
+        ): LoweredNonterminal {
+            name: "(A)?",
             range: 0..2,
             ty: None,
             kind: Optional,
         },
         NonterminalId(
             3,
-        ): LoweredNonterminalMetadata {
+        ): LoweredNonterminal {
+            name: "(atom (A)?)*",
             range: 2..4,
             ty: None,
             kind: Repetition,
         },
         NonterminalId(
             4,
-        ): LoweredNonterminalMetadata {
+        ): LoweredNonterminal {
+            name: "(A atom)+",
             range: 4..6,
             ty: None,
             kind: Repetition,
         },
         NonterminalId(
             0,
-        ): LoweredNonterminalMetadata {
+        ): LoweredNonterminal {
+            name: "top",
             range: 6..8,
             ty: None,
             kind: User,
         },
         NonterminalId(
             1,
-        ): LoweredNonterminalMetadata {
+        ): LoweredNonterminal {
+            name: "atom",
             range: 8..10,
             ty: None,
             kind: User,

@@ -173,6 +173,34 @@ E = E minus E
     assert_debug_snapshot!(tables);
   }
 
+  static START_REPETITION: &str = r#"
+%token x "-"
+
+%start S
+
+S = S x | ()
+  "#;
+
+  #[test]
+  fn start_repetition_states() {
+    let grammar = prepare(START_REPETITION);
+    let mut builder = Builder::<LalrComputation>::new(&grammar);
+    let start_nts = gen_states(&mut builder);
+
+    assert_snapshot!(builder.states(&start_nts));
+  }
+
+  #[test]
+  fn start_repetition_action_goto() {
+    let grammar = prepare(START_REPETITION);
+    let mut builder = Builder::<LalrComputation>::new(&grammar);
+    let _start_nts = gen_states(&mut builder);
+    let tables = gen_tables(&builder).unwrap();
+    let tables = merge_action_goto(tables);
+
+    assert_debug_snapshot!(tables);
+  }
+
   static TIGER: &str = r##"
 %token EQ          "="
 %token NEQ         "<>"

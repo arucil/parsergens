@@ -22,7 +22,7 @@ pub struct Production {
   pub nt: NonterminalId,
   pub kind: ProductionKind,
   pub symbols: Vec<Symbol>,
-  pub prec: Option<(Assoc, u32)>,
+  pub prec: Option<u32>,
   pub action: Option<String>,
 }
 
@@ -74,7 +74,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
     user_state: grammar.user_state,
   };
 
-  let nt_names = grammar.nts.iter()
+  let mut nt_names = grammar.nts.iter()
     .map(|(&id, nt)| (id, nt.name.clone()))
     .collect();
 
@@ -83,7 +83,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
 
     for rule in &grammar.rules[nt.range] {
       rules.push((
-        lower_items(&rule.items, &nt_names, &mut lowered, &mut nt_id_gen),
+        lower_items(&rule.items, &mut nt_names, &mut lowered, &mut nt_id_gen),
         rule.prec,
         rule.action.clone()
       ));
@@ -118,7 +118,7 @@ pub(super) fn lower(grammar: Grammar) -> LoweredGrammar {
 
 fn lower_items(
   items: &[Item],
-  nt_names: &HashMap<NonterminalId, String>,
+  nt_names: &mut HashMap<NonterminalId, String>,
   lowered: &mut LoweredGrammar,
   nt_id_gen: &mut NonterminalIdGen,
 ) -> Vec<Symbol> {
@@ -149,6 +149,7 @@ fn lower_items(
 
         let end = lowered.prods.len();
 
+        nt_names.insert(nt, name.clone());
         lowered.nts.insert(nt, LoweredNonterminal {
           name,
           range: start..end,
@@ -183,6 +184,7 @@ fn lower_items(
 
         let end = lowered.prods.len();
 
+        nt_names.insert(nt, name.clone());
         lowered.nts.insert(nt, LoweredNonterminal {
           name,
           range: start..end,
@@ -217,6 +219,7 @@ fn lower_items(
 
         let end = lowered.prods.len();
 
+        nt_names.insert(nt, name.clone());
         lowered.nts.insert(nt, LoweredNonterminal {
           name,
           range: start..end,

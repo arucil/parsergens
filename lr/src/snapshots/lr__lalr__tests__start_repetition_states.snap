@@ -1,0 +1,17 @@
+---
+source: lr/src/lalr.rs
+expression: builder.states(&start_nts)
+---
+State 0 (start)
+_S -> . S      $
+S -> . S x      x / $
+S -> .      x / $
+
+State 1
+S -> S . x      x / $
+_S -> S .      $
+
+State 2
+S -> S x .      x / $
+
+

@@ -338,9 +338,9 @@ fn resolve_sr_conflict(
   tok: u32,
 ) -> SrConflictResolution {
   match (&grammar.prods[prod_ix as usize].prec, grammar.token_precs.get(&tok)) {
-    (Some((_, prec1)), Some((assoc2, prec2))) => {
+    (Some(prec1), Some((assoc, prec2))) => {
       if prec1 == prec2 {
-        match assoc2 {
+        match assoc {
           Assoc::LeftAssoc => SrConflictResolution::Reduce,
           Assoc::RightAssoc => SrConflictResolution::Shift,
           Assoc::NonAssoc => SrConflictResolution::Error,
@@ -525,7 +525,6 @@ impl<'a, T: LrComputation> Builder<'a, T> {
       }
       slash = true;
 
-      let lookahead = lookahead as u32;
       write!(fmt, "{}",
         self.grammar.tokens.get(&lookahead).map(|s|s.as_str()).unwrap_or("$"))?;
     }
