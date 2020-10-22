@@ -30,3 +30,4 @@ grammar:
 - [x] reduce code redundancy in LALR builder and CLR builder
 - [x] Production no need to contains Assoc
 - [x] lookahead set fixed length (num_tokens), Vec<u32>
+- [ ] use dispatch table instead of `match` for semantc action
