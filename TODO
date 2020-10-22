@@ -26,7 +26,7 @@ grammar:
 - [ ] improve DFA table compression
 - [x] merge ACCEPT into REDUCE
 - [ ] parse_expr().with_input()
-- [ ] test S -> xx S | epsilon
+- [x] test S -> xx S | epsilon
 - [x] reduce code redundancy in LALR builder and CLR builder
 - [x] Production no need to contains Assoc
 - [x] lookahead set fixed length (num_tokens), Vec<u32>

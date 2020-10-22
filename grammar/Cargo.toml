@@ -26,3 +26,6 @@ lalrpop = "0.19.0"
 [dev-dependencies]
 insta = "0.16.1"
 pretty_assertions = "0.6.1"
+
+[profile.dev.build-override]
+opt-level = 3
