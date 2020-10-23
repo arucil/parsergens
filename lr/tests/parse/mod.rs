@@ -26,7 +26,7 @@ pub  fn parse<'a>(
       let event = format!("shift  {}", token_text);
       events.push(event);
       stack.push((state, token_text.to_owned()));
-      state = (action - 1) as u32;
+      state = action as u32;
       token = tokens.next().transpose().unwrap();
     } else if action < 0 {
       if !action as usize == accept_prod {
@@ -43,7 +43,7 @@ pub  fn parse<'a>(
       };
       let nt_name = &parser.nts[prod.nt as usize].name;
 
-      state = parser.goto[state0 as usize][prod.nt as usize] - 1;
+      state = parser.goto[prod.nt as usize][state0 as usize];
 
       event.push_str(nt_name);
       event.push_str(" ->");

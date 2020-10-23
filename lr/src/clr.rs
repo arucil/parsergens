@@ -42,8 +42,8 @@ mod tests {
   }
 
   fn merge_action_goto((action, goto): (Vec<Vec<i32>>, Vec<Vec<u32>>)) -> Vec<Vec<i32>> {
-    action.into_iter().zip(goto).map(|(mut row1, row2)| {
-      row1.extend(row2.into_iter().map(|x| x as i32));
+    action.into_iter().enumerate().map(|(state, mut row1)| {
+      row1.extend((0..goto.len()).map(|nt| goto[nt][state] as i32));
       row1
     })
     .collect()
