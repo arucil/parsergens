@@ -1,0 +1,46 @@
+---
+source: lr/src/lalr.rs
+expression: tables
+---
+CompressedTables {
+    parse_table: [
+        3,
+        4,
+        5,
+        6,
+    ],
+    action_disp: [
+        0,
+        -3,
+        0,
+        0,
+        -3,
+        -3,
+        -3,
+    ],
+    goto_disp: [
+        -7,
+        0,
+        -7,
+    ],
+    action_default: [
+        0,
+        -4,
+        0,
+        0,
+        -3,
+        -1,
+        -2,
+    ],
+    goto_default: [
+        1,
+        2,
+        0,
+    ],
+    check_table: [
+        0,
+        1,
+        4,
+        4,
+    ],
+}

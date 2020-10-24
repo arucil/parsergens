@@ -9,8 +9,12 @@ pub fn gen(
   scope: &mut Scope,
 ) {
 
-  super::gen_2d_table("ACTION", "i32", &parser.action, scope);
-  super::gen_2d_table("GOTO", "u32", &parser.goto, scope);
+  super::gen_1d_table("PARSE_TABLE", "i32", &parser.parse_tables.parse_table, scope);
+  super::gen_1d_table("CHECK_TABLE", "i32", &parser.parse_tables.check_table, scope);
+  super::gen_1d_table("ACTION_DISP", "isize", &parser.parse_tables.action_disp, scope);
+  super::gen_1d_table("GOTO_DISP", "isize", &parser.parse_tables.goto_disp, scope);
+  super::gen_1d_table("ACTION_DEFAULT", "i32", &parser.parse_tables.action_default, scope);
+  super::gen_1d_table("GOTO_DEFAULT", "i32", &parser.parse_tables.goto_default, scope);
   super::gen_1d_table("PRODUCTIONS", "(usize, u32)",
     &parser.prods.iter().map(|prod| (prod.rhs_len, prod.nt)).collect::<Vec<_>>(),
     scope);
@@ -357,7 +361,7 @@ Self {
 
   gen_get_token_fn(parser.eof_index, imp);
 
-  gen_parse_fn(user_state_tuple, imp);
+  gen_parse_fn(user_state_tuple, parser.eof_index, imp);
 }
 
 fn gen_start_fn(
@@ -426,6 +430,7 @@ if let Some(token) = &token {{
 
 fn gen_parse_fn(
   user_state_tuple: &str,
+  eof_index: usize,
   imp: &mut Impl,
 ) {
   imp.new_fn("parse")
@@ -436,13 +441,21 @@ fn gen_parse_fn(
     .ret("::std::result::Result<NtType<'input>, ParseError<'input>>")
     .line("let mut stack = ::std::vec::Vec::<(usize, NtType)>::new();")
     .line("self.get_token()?;")
+    .line(format!("const GOTO_CHECK_BASE: i32 = {};", eof_index + 1))
     .line(r#"
 loop {
-  let action = ACTION[state][self.token_kind];
+  let i = ACTION_DISP[state] + self.token_kind as isize;
+  let action = if i < 0 || i as usize >= PARSE_TABLE.len() ||
+    CHECK_TABLE[i as usize] != self.token_kind as i32
+  {
+    ACTION_DEFAULT[state]
+  } else {
+    PARSE_TABLE[i as usize]
+  };
 
   if action > 0 {
     stack.push((state, NtType::_Token(self.token.take().unwrap())));
-    state = (action - 1) as usize;
+    state = action as usize;
     self.get_token()?;
   } else if action < 0 {
     let prod = (!action) as usize;
@@ -457,7 +470,15 @@ loop {
       stack[stack.len() - rhs_len].0
     };
 
-    state = GOTO[state0 as usize][nt as usize] as usize - 1;
+    let i = GOTO_DISP[nt as usize] + state0 as isize;
+    let check = GOTO_CHECK_BASE + nt as i32;
+    state = if i < 0 || i as usize >= PARSE_TABLE.len() ||
+      CHECK_TABLE[i as usize] != check
+    {
+      GOTO_DEFAULT[nt as usize] as usize
+    } else {
+      PARSE_TABLE[i as usize] as usize
+    };
 
     let rhs = stack.drain(stack.len() - rhs_len..)
       .map(|(_, x)| x)

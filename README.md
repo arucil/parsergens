@@ -12,3 +12,6 @@ A collection of toy parser generators
 cargo test --workspace
 cargo test --release  # integration test in release mode
 ```
+
+# References
+- [Miniyacc](https://c9x.me/yacc)

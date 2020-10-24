@@ -47,3 +47,22 @@ ARGS = ()
 
   assert_snapshot!(parse::parse(&parser, input, "E").join("\n"));
 }
+
+
+#[test]
+fn simple() {
+  let parser = lr::build(r#"
+%token c "c"
+%token d "d"
+
+%start S
+
+S = C C
+C = c C
+  | d
+  "#, lr::ParserKind::Lalr).unwrap();
+
+  let input = "cdccd";
+
+  assert_snapshot!(parse::parse(&parser, input, "S").join("\n"));
+}

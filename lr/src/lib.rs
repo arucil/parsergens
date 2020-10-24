@@ -2,7 +2,11 @@
 
 use grammar::{TokenId, Map, NonterminalIdGen, HashMap};
 use std::ops::Range;
-use self::builder::{Builder, LrComputation, gen_states, gen_tables};
+use self::builder::{
+  Builder, LrComputation, gen_states, gen_tables, compress_tables,
+};
+
+pub use self::builder::CompressedTables;
 
 pub use grammar::{
   LoweredGrammar,
@@ -21,14 +25,14 @@ mod token_set;
 
 #[derive(Debug)]
 pub struct Parser {
-  /// - positive: shift (n - 1)  
-  /// - zero: error
-  /// - negative: reduce (-n - 1)
-  /// - MIN: accept
-  pub action: Vec<Vec<i32>>,
-  /// - positive: goto (n - 1)
-  /// - zero: error
-  pub goto: Vec<Vec<u32>>,
+  /// - ACTION table:
+  ///     + positive: shift (state index)
+  ///     + zero: error
+  ///     + negative: reduce (-(state index) - 1)
+  /// - GOTO table:
+  ///     + positive: goto (state index)
+  ///     + zero: error
+  pub parse_tables: CompressedTables,
   pub prods: Vec<Production>,
   pub nts: Vec<Nonterminal>,
   /// non-terminal name -> (non-terminal id, starting state)
@@ -134,6 +138,7 @@ fn build_parser<T: LrComputation>(
   let mut builder = Builder::new(&grammar);
   let entry_points = gen_states::<T>(&mut builder);
   let (action, goto) = gen_tables::<T>(&builder)?;
+  let parse_tables = compress_tables(&grammar, action, goto);
 
   let prods = grammar.prods.iter().map(|prod| {
     let symbols = prod.symbols.iter()
@@ -170,8 +175,7 @@ fn build_parser<T: LrComputation>(
     .collect();
 
   Ok(Parser {
-    action,
-    goto,
+    parse_tables,
     prods,
     nts,
     entry_points: entry_points,

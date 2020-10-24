@@ -12,6 +12,8 @@ pub  fn parse<'a>(
   let mut tokens = parser.lexer.as_ref().unwrap().lex(input);
   let mut token = tokens.next().transpose().unwrap();
 
+  let goto_check_base = (parser.eof_index + 1) as i32;
+
   loop {
     let token_kind = token.as_ref()
       .map(|t| t.kind.index())
@@ -20,7 +22,14 @@ pub  fn parse<'a>(
     let token_start = token.as_ref().map(|t| t.start).unwrap_or(input.len());
     let token_end = token.as_ref().map(|t| t.end).unwrap_or(input.len());
 
-    let action = parser.action[state as usize][token_kind];
+    let i = parser.parse_tables.action_disp[state as usize] + token_kind as isize;
+    let action = if i < 0 || i as usize >= parser.parse_tables.parse_table.len() ||
+      parser.parse_tables.check_table[i as usize] != token_kind as i32
+    {
+      parser.parse_tables.action_default[state as usize]
+    } else {
+      parser.parse_tables.parse_table[i as usize]
+    };
 
     if action > 0 {
       let event = format!("shift  {}", token_text);
@@ -35,7 +44,7 @@ pub  fn parse<'a>(
       }
 
       let mut event = format!("reduce ");
-      let prod = &parser.prods[!action as usize];
+      let prod = &parser.prods[(!action) as usize];
       let state0 = if prod.rhs_len == 0 {
         state
       } else {
@@ -43,7 +52,15 @@ pub  fn parse<'a>(
       };
       let nt_name = &parser.nts[prod.nt as usize].name;
 
-      state = parser.goto[prod.nt as usize][state0 as usize];
+      let i = parser.parse_tables.goto_disp[prod.nt as usize] + state0 as isize;
+      let check = goto_check_base + prod.nt as i32;
+      state = if i < 0 || i as usize >= parser.parse_tables.parse_table.len() ||
+        parser.parse_tables.check_table[i as usize] != check
+      {
+        parser.parse_tables.goto_default[prod.nt as usize] as u32
+      } else {
+        parser.parse_tables.parse_table[i as usize] as u32
+      };
 
       event.push_str(nt_name);
       event.push_str(" ->");

@@ -7,6 +7,7 @@ use crate::token_set::TokenSet;
 
 pub use self::states::gen_states;
 pub use self::tables::gen_tables;
+pub use self::compress::{compress_tables, CompressedTables};
 
 mod states;
 mod tables;

@@ -118,23 +118,6 @@ fn gen_1d_table(
   scope.new_static(table_name, ty).value(value);
 }
 
-fn gen_2d_table(
-  table_name: &str,
-  cell_type: &str,
-  table: &[Vec<impl fmt::Debug>],
-  scope: &mut Scope,
-) {
-  let rows = table.len();
-  let cols = table[0].len();
-
-  let ty = format!("[[{}; {}]; {}]", cell_type, cols, rows);
-  let value = table.iter().map(|row|
-    format!("[{}]", row.iter().map(|x| format!("{:?}", x)).join(", ")))
-    .join(", ");
-  let value = format!("[{}]", value);
-  scope.new_static(table_name, ty).value(value);
-}
-
 trait ExpectWith {
   type Ok;
   type Error;
