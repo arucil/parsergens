@@ -371,4 +371,15 @@ field-init-exprs =
 
     assert_debug_snapshot!(tables);
   }
+
+  #[test]
+  fn tiger_tables() {
+    let grammar = prepare(TIGER);
+    let mut builder = Builder::<LalrComputation>::new(&grammar);
+    let _start_nts = gen_states(&mut builder);
+    let (action, goto) = gen_tables(&builder).unwrap();
+    let tables = compress_tables(&grammar, action, goto);
+
+    assert_debug_snapshot!(tables);
+  }
 }

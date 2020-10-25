@@ -158,7 +158,7 @@ pub fn build(grammar: &str) -> Result<Grammar, GrammarError> {
         .map_err(|err| {
           GrammarError {
             kind: GrammarErrorKind::ParseError,
-            message: format!("invalid user code: {}, error: {}", decl.code.1, err),
+            message: format!("syntax error in user code: {}, error: {}", decl.code.1, err),
             span: decl.code.0,
           }
         })?;

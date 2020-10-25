@@ -1,0 +1,17 @@
+---
+source: tests/multi_entry_points.rs
+expression: result
+---
+Ok(
+    Binary(
+        Mul,
+        Number(
+            45,
+        ),
+        Neg(
+            Number(
+                2,
+            ),
+        ),
+    ),
+)

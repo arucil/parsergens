@@ -1,0 +1,27 @@
+---
+source: tests/multi_entry_points.rs
+expression: result
+---
+Ok(
+    ProcCall(
+        "foo",
+        [
+            Neg(
+                Number(
+                    2,
+                ),
+            ),
+            Binary(
+                Mul,
+                Number(
+                    45,
+                ),
+                Neg(
+                    Number(
+                        2,
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

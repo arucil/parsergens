@@ -22,7 +22,7 @@ fn report_grammar_error(
   err: GrammarError
 ) -> String {
   let lines = input.as_ref()[..err.span.0].split('\n').collect::<Vec<_>>();
-  let line = lines.len() + 1;
+  let line = lines.len();
   let col = lines.last().unwrap().chars().count() + 1;
   let error = match err.kind {
     GrammarErrorKind::MissingDecl => "missing declaration",

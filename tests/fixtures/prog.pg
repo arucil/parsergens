@@ -1,0 +1,73 @@
+%user {
+  #[derive(Debug, Clone)]
+  pub enum Stmt {
+    ProcCall(String, Vec<Expr>),
+  }
+
+  #[derive(Debug, Clone)]
+  pub enum Expr {
+    Number(i32),
+    Binary(BinOp, Box<Expr>, Box<Expr>),
+    Neg(Box<Expr>),
+  }
+
+  #[derive(Debug, Clone)]
+  pub enum BinOp {
+    Add,
+    Sub,
+    Mul,
+    Div
+  }
+}
+
+%token PLUS "+"
+%token MINUS "-"
+%token MUL "*"
+%token DIV "/"
+%token LPAREN "("
+%token RPAREN ")"
+%token SEMI ";"
+%token COMMA ","
+%token NUMBER /\d+/
+%token ID /[a-zA-Z]\w*/
+
+%skip /[ \n]/
+
+%left-assoc PLUS MINUS
+%left-assoc MUL DIV
+%right-assoc NEG
+
+%start prog
+%start expr
+%start proc-call
+
+prog: {Vec<Stmt>} = stmt (SEMI stmt)*
+  {
+    let mut v = $2.into_iter().map(|(_, x)| x).collect::<Vec<_>>();
+    v.insert(0, $1);
+    v
+  }
+
+stmt: {Stmt} = proc-call { $1 }
+
+proc-call: {Stmt} =
+  ID LPAREN args RPAREN { Stmt::ProcCall($1.text.to_owned(), $3) }
+
+args: {Vec<Expr>} = () { vec![] }
+  | expr (COMMA expr)* {
+    let mut v = $2.into_iter().map(|(_, x)| x).collect::<Vec<_>>();
+    v.insert(0, $1);
+    v
+  }
+
+expr: {Expr} =
+    expr PLUS expr { Expr::Binary(BinOp::Add, Box::new($1), Box::new($3)) }
+  | expr MINUS expr { Expr::Binary(BinOp::Sub, Box::new($1), Box::new($3)) }
+  | expr MUL expr { Expr::Binary(BinOp::Mul, Box::new($1), Box::new($3)) }
+  | expr DIV expr { Expr::Binary(BinOp::Div, Box::new($1), Box::new($3)) }
+  | factor { $1 }
+
+factor: {Expr} =
+    MINUS expr %prec NEG { Expr::Neg(Box::new($2)) }
+  | LPAREN expr RPAREN { $2 }
+  | NUMBER { Expr::Number($1.text.parse::<i32>().unwrap()) }

@@ -161,7 +161,10 @@ fn make_rr_conflict_error<T: LrComputation>(
   reduce1: u32,
   reduce2: u32,
 ) -> Error {
-  let lookahead = builder.grammar.tokens[&lookahead].clone();
+  let lookahead = builder.grammar.tokens.get(&lookahead)
+    .map(|s| s.as_str())
+    .unwrap_or("$")
+    .to_owned();
   let reduce1 = builder.grammar.prods[reduce1 as usize].to_string(
     &builder.grammar);
   let reduce2 = builder.grammar.prods[reduce2 as usize].to_string(
