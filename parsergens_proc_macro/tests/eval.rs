@@ -1,7 +1,7 @@
 
 use insta::assert_debug_snapshot;
 
-parsergens::parsergen!(mod clr_parser: LR("fixtures/expr_eval.pg"));
+parsergens_proc_macro::parsergen!(mod clr_parser: LR("fixtures/expr_eval.pg"));
 
 #[test]
 fn clr() {
@@ -10,7 +10,7 @@ fn clr() {
   assert_debug_snapshot!(result);
 }
 
-parsergens::parsergen!(mod lalr_parser: LALR("fixtures/expr_eval.pg"));
+parsergens_proc_macro::parsergen!(mod lalr_parser: LALR("fixtures/expr_eval.pg"));
 
 #[test]
 fn lalr() {

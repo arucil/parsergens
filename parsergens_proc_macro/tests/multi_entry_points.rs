@@ -1,7 +1,7 @@
 
 use insta::assert_debug_snapshot;
 
-parsergens::parsergen!(mod prog_lalr_parser: LR("fixtures/prog.pg"));
+parsergens_proc_macro::parsergen!(mod prog_lalr_parser: LR("fixtures/prog.pg"));
 
 #[test]
 fn lalr() {

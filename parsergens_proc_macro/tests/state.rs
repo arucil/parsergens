@@ -3,7 +3,7 @@ use insta::assert_debug_snapshot;
 use pretty_assertions::assert_eq;
 use std::collections::BTreeMap;
 
-parsergens::parsergen!(mod clr_parser_with_state: LR("fixtures/expr_state.pg"));
+parsergens_proc_macro::parsergen!(mod clr_parser_with_state: LR("fixtures/expr_state.pg"));
 
 #[test]
 fn clr() {
@@ -15,7 +15,7 @@ fn clr() {
   assert_debug_snapshot!(env);
 }
 
-parsergens::parsergen!(mod lalr_parser_with_state: LALR("fixtures/expr_state.pg"));
+parsergens_proc_macro::parsergen!(mod lalr_parser_with_state: LALR("fixtures/expr_state.pg"));
 
 #[test]
 fn lalr() {

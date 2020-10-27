@@ -1,5 +1,5 @@
 ---
-source: tests/lexer.rs
+source: parsergens_proc_macro/tests/lexer.rs
 expression: tokens
 ---
 [

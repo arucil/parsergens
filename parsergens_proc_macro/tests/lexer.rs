@@ -1,7 +1,7 @@
 
 use insta::assert_debug_snapshot;
 
-parsergens::parsergen!(mod parser: LALR("fixtures/expr_tokens.pg"));
+parsergens_proc_macro::parsergen!(mod parser: LALR("fixtures/expr_tokens.pg"));
 
 #[test]
 fn simple() {

@@ -1,5 +1,5 @@
 ---
-source: tests/multi_entry_points.rs
+source: parsergens_proc_macro/tests/multi_entry_points.rs
 expression: result
 ---
 Ok(

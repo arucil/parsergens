@@ -1,5 +1,5 @@
 ---
-source: tests/func.rs
+source: parsergens_proc_macro/tests/func.rs
 expression: result
 ---
 Ok(
