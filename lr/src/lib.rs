@@ -2,11 +2,13 @@
 
 use grammar::{TokenId, Map, NonterminalIdGen, HashMap};
 use std::ops::Range;
+use ::codegen::{Formatter, Scope, Format};
 use self::builder::{
   Builder, LrComputation, gen_states, gen_tables, compress_tables,
 };
 
 pub use self::builder::CompressedTables;
+pub use self::codegen::gen_decls;
 
 pub use grammar::{
   LoweredGrammar,
@@ -22,6 +24,8 @@ mod first;
 mod augment;
 mod builder;
 mod token_set;
+mod codegen;
+pub mod report;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -123,6 +127,18 @@ pub fn build(input: &str, kind: ParserKind) -> Result<Parser, Vec<Error>> {
     ParserKind::Clr => build_parser::<self::clr::ClrComputation>(input),
     ParserKind::Lalr => build_parser::<self::lalr::LalrComputation>(input),
   }
+}
+
+pub fn gen_code(parser: &Parser) -> String {
+  let mut output = String::new();
+  let mut fmt = Formatter::new(&mut output);
+  fmt.set_indent(2);
+
+  let mut scope = Scope::new();
+  self::codegen::gen_decls(parser, &mut scope);
+  scope.fmt(&mut fmt).unwrap();
+
+  output
 }
 
 fn build_parser<T: LrComputation>(

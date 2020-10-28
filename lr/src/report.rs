@@ -2,17 +2,17 @@ use grammar::{GrammarError, GrammarErrorKind};
 use std::fmt::Write;
 use std::path::Path;
 
-pub(crate) fn report(
+pub fn report(
   path: impl AsRef<Path>,
   input: impl AsRef<str>,
-  err: lr::Error
+  err: crate::Error
 ) -> String {
   match err {
-    lr::Error::GrammarError(err) => report_grammar_error(path, input, err),
-    lr::Error::ReduceReduceConflict(err) => report_rr_conflict(err),
-    lr::Error::ShiftReduceConflict(err) => report_sr_conflict(err),
-    lr::Error::PrecConflict(err) => report_prec_conflict(err),
-    lr::Error::AssocConflict(err) => report_assoc_conflict(err),
+    crate::Error::GrammarError(err) => report_grammar_error(path, input, err),
+    crate::Error::ReduceReduceConflict(err) => report_rr_conflict(err),
+    crate::Error::ShiftReduceConflict(err) => report_sr_conflict(err),
+    crate::Error::PrecConflict(err) => report_prec_conflict(err),
+    crate::Error::AssocConflict(err) => report_assoc_conflict(err),
   }
 }
 
@@ -48,7 +48,7 @@ fn report_grammar_error(
 }
 
 fn report_rr_conflict(
-  err: lr::ReduceReduceConflictError
+  err: crate::ReduceReduceConflictError
 ) -> String {
   let mut buf = String::new();
 
@@ -73,7 +73,7 @@ fn report_rr_conflict(
 }
 
 fn report_sr_conflict(
-  err: lr::ShiftReduceConflictError
+  err: crate::ShiftReduceConflictError
 ) -> String {
   let mut buf = String::new();
 
@@ -97,7 +97,7 @@ fn report_sr_conflict(
 }
 
 fn report_prec_conflict(
-  err: lr::PrecConflictError
+  err: crate::PrecConflictError
 ) -> String {
   let mut buf = String::new();
 
@@ -121,7 +121,7 @@ fn report_prec_conflict(
 }
 
 fn report_assoc_conflict(
-  err: lr::AssocConflictError
+  err: crate::AssocConflictError
 ) -> String {
   let mut buf = String::new();
 

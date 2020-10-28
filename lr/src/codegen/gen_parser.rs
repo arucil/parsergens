@@ -1,4 +1,4 @@
-use lr::{Parser, Symbol, Nonterminal, NonterminalKind, ProductionKind, Production};
+use crate::{Parser, Symbol, Nonterminal, NonterminalKind, ProductionKind, Production};
 use heck::SnakeCase;
 use itertools::Itertools;
 use nanoid::nanoid;

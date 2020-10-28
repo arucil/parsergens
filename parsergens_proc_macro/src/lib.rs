@@ -6,16 +6,10 @@ use syn::*;
 use quote::{ToTokens, quote};
 use std::fs;
 use std::path::Path;
-use std::fmt;
 use parser_spec::ParserKind;
-use codegen::{Module, Scope, Formatter, Format};
-use itertools::Itertools;
+use codegen::{Module, Formatter, Format};
 
 mod parser_spec;
-mod gen_token_enum;
-mod gen_lexer;
-mod gen_parser;
-mod report;
 
 #[proc_macro_error]
 #[proc_macro]
@@ -43,7 +37,7 @@ pub fn parsergen(expr: TokenStream) -> TokenStream {
     Ok(parser) => parser,
     Err(errors) => {
       for error in errors {
-        emit_error!("{}", report::report(&source_path, &grammar, error));
+        emit_error!("{}", lr::report::report(&source_path, &grammar, error));
       }
       abort_call_site!("building parser failed");
     }
@@ -90,32 +84,9 @@ fn gen_mod(
   mo.vis(vis);
   let scope = mo.scope();
 
-  scope.new_attr("allow").arg_delimited(
-    "dead_code, non_camel_case_types, unused_parens, unused_mut");
-  scope.new_attr("allow").arg_delimited(
-    "unused_variables, unused_braces, non_snake_case");
-
-  for code in &parser.user_code {
-    scope.raw(code);
-  }
-
-  let tokens = gen_token_enum::gen(&parser.tokens, scope);
-  gen_lexer::gen(&parser.lexer, &tokens, scope);
-  gen_parser::gen(&parser, scope);
+  lr::gen_decls(parser, scope);
 
   mo
-}
-
-fn gen_1d_table(
-  table_name: &str,
-  cell_type: &str,
-  table: &[impl fmt::Debug],
-  scope: &mut Scope,
-) {
-  let ty = format!("[{}; {}]", cell_type, table.len());
-  let value = table.iter().map(|x| format!("{:?}", x)).join(", ");
-  let value = format!("[{}]", value);
-  scope.new_static(table_name, ty).value(value);
 }
 
 trait ExpectWith {
