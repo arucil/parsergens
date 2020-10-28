@@ -111,6 +111,7 @@ if tx.0 == state && tx.1 != 0 {
   let impl_iter_toks_next = impl_iter_toks.new_fn("next")
     .arg_mut_self()
     .ret("::std::option::Option<Self::Item>")
+    .line("#[allow(unused_imports)]")
     .line("use ::std::option::Option::{self, *};")
     .line(r"
 if self.pos == self.input.len() {

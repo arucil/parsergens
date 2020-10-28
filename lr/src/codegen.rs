@@ -1,6 +1,5 @@
 use ::codegen::Scope;
 use std::fmt;
-use itertools::Itertools;
 use crate::Parser;
 
 mod gen_token_enum;
@@ -32,7 +31,31 @@ fn gen_1d_table(
   scope: &mut Scope,
 ) {
   let ty = format!("[{}; {}]", cell_type, table.len());
-  let value = table.iter().map(|x| format!("{:?}", x)).join(", ");
-  let value = format!("[{}]", value);
+
+  let value = if table.is_empty() {
+    "[]".to_owned()
+  } else {
+    let table = table.iter().map(|x| format!("{:?}", x)).collect::<Vec<_>>();
+    let max_len = table.iter().map(|x| x.len()).max().unwrap();
+    let num_col = 80 / (max_len + 2);
+
+    let mut value = "[".to_owned();
+    let mut i = 0;
+    for x in table {
+      if i % num_col == 0 {
+        value.push_str("\n  ");
+      }
+
+      value.push_str(&format!("{:>1$}", x, max_len));
+      value.push_str(", ");
+
+      i += 1;
+    }
+
+    value.push_str("\n]");
+
+    value
+  };
+
   scope.new_static(table_name, ty).value(value);
 }

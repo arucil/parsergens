@@ -201,7 +201,7 @@ fn compute_nt_type(
         } else {
           0
         };
-        let types = parser.prods[nt.range.start + 1].symbols.iter().skip(skip)
+        let mut types = parser.prods[nt.range.start + 1].symbols.iter().skip(skip)
           .map(|sym| {
             match sym {
               Symbol::Token(_) => format!("Token<'input>"),
@@ -211,6 +211,10 @@ fn compute_nt_type(
             }
           })
           .join(", ");
+
+        if !types.is_empty() {
+          types.push_str(", ");
+        }
 
         if nt.kind == NonterminalKind::Repetition {
           format!("Vec<({})>", types)
@@ -237,6 +241,17 @@ fn gen_prod_actions(
       match prod.kind {
         ProductionKind::Ordinary => {
           func.line(format!("  {} => NtType::{}(()),", i, nt_names[nt]));
+        }
+        ProductionKind::OptionNone => {
+          func.line(format!("  {} => NtType::{}(None),", i, nt_names[nt]));
+        }
+        ProductionKind::OptionSome => {
+          func.line(format!("  {} => {{", i));
+          func.line("    let mut rhs = rhs.into_iter();");
+          func.line(format!("    NtType::{}(Some((", nt_names[nt]));
+          gen_prod_action_init_args(&prod.symbols, &nt_names, func);
+          func.line("    )))");
+          func.line("  }");
         }
         ProductionKind::RepetitionEpsilon => {
           func.line(format!("  {} => NtType::{}(vec![]),", i, nt_names[nt]));

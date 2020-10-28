@@ -47,6 +47,8 @@ pub enum ProductionKind {
   RepetitionEpsilon,
   RepetitionFirst,
   RepetitionRest,
+  OptionSome,
+  OptionNone,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -134,14 +136,14 @@ fn lower_items(
 
         lowered.prods.push(Production {
           nt,
-          kind: ProductionKind::Ordinary,
+          kind: ProductionKind::OptionNone,
           symbols: vec![],
           prec: None,
           action: None,
         });
         lowered.prods.push(Production {
           nt,
-          kind: ProductionKind::Ordinary,
+          kind: ProductionKind::OptionSome,
           symbols,
           prec: None,
           action: None,
