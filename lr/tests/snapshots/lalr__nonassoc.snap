@@ -1,0 +1,10 @@
+---
+source: lr/tests/lalr.rs
+expression: "parse::parse(&parser, input, \"expr\").join(\"\\n\")"
+---
+shift  1
+reduce expr -> 1
+shift  >
+shift  2
+reduce expr -> 2
+error token > at 6:7

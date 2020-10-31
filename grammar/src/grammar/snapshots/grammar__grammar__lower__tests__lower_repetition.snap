@@ -8,7 +8,7 @@ LoweredGrammar {
             nt: NonterminalId(
                 2,
             ),
-            kind: Ordinary,
+            kind: OptionNone,
             symbols: [],
             prec: None,
             action: None,
@@ -17,7 +17,7 @@ LoweredGrammar {
             nt: NonterminalId(
                 2,
             ),
-            kind: Ordinary,
+            kind: OptionSome,
             symbols: [
                 Token(
                     TokenId(

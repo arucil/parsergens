@@ -2,11 +2,14 @@ use grammar::{Symbol, LoweredGrammar, Assoc};
 use crate::{Error, ShiftReduceConflictError, ReduceReduceConflictError};
 use super::{Builder, LrComputation, Item, decode_item};
 
+pub(crate) const ERROR_ACTION: i32 = std::i32::MIN;
+
 /// Generates ACTION table and GOTO table.
 /// 
 /// entry in `ACTION[state][token]` table:
 /// - positive: shift (shift state is never zero, since the starting state is state 0)
 /// - negative: reduce (- reduce production - 1)
+/// - i32::MIN : error
 /// - zero: error
 ///
 /// entry in `GOTO[nt][state]` table:
@@ -15,7 +18,6 @@ use super::{Builder, LrComputation, Item, decode_item};
 pub fn gen_tables<T: LrComputation>(
   builder: &Builder<T>,
 ) -> Result<(Vec<Vec<i32>>, Vec<Vec<u32>>), Vec<Error>> {
-  const ERROR_ACTION: i32 = -1;
 
   let num_states = builder.states.len();
   let mut action = vec![vec![0i32; builder.eof as usize + 1]; num_states];
@@ -41,7 +43,7 @@ pub fn gen_tables<T: LrComputation>(
             }
 
             if *old < 0 {
-              match resolve_sr_conflict(&builder.grammar, (-*old - 2) as u32, tok.id()) {
+              match resolve_sr_conflict(&builder.grammar, !*old as u32, tok.id()) {
                 SrConflictResolution::Shift => *old = to_state as i32,
                 SrConflictResolution::Reduce => {
                   // do nothing
@@ -52,7 +54,7 @@ pub fn gen_tables<T: LrComputation>(
                     builder,
                     &state.items,
                     tok.id(),
-                    (-*old - 2) as u32));
+                    !*old as u32));
                   *old = ERROR_ACTION;
                 }
               }
@@ -79,7 +81,7 @@ pub fn gen_tables<T: LrComputation>(
                 // do nothing
               }
               SrConflictResolution::Reduce => {
-                *old = -(prod as i32 + 2);
+                *old = !(prod as i32);
               }
               SrConflictResolution::Error => {
                 *old = ERROR_ACTION;
@@ -98,21 +100,13 @@ pub fn gen_tables<T: LrComputation>(
               builder,
               &state.items,
               lookahead as u32,
-              (-*old - 2) as u32,
+              !*old as u32,
               prod as u32));
             *old = ERROR_ACTION;
           } else {
-            *old = -(prod as i32 + 2);
+            *old = !(prod as i32);
           }
         }
-      }
-    }
-
-    for x in &mut action[from_state] {
-      // reset ERROR_ACTION to zero, and change the base of reduce actions from
-      // -2 to -1.
-      if *x < 0 {
-        *x += 1;
       }
     }
   }

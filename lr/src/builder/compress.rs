@@ -54,6 +54,12 @@ pub fn compress_tables(
     state.parse_table.pop();
   }
 
+  for x in &mut state.parse_table {
+    if *x == super::tables::ERROR_ACTION {
+      *x = 0;
+    }
+  }
+
   CompressedTables {
     parse_table: state.parse_table,
     check_table: state.check_table,
@@ -71,7 +77,7 @@ fn compress_action_table(
 ) -> (Vec<isize>, Vec<i32>) {
   let mut action = action.into_iter()
     .enumerate()
-    .map(|(i, row)| make_row(i, row, |x| x > 0))
+    .map(|(i, row)| make_row(i, row, |x| x > 0 || x == super::tables::ERROR_ACTION))
     .collect::<Vec<_>>();
 
   let default_table = action.iter().map(|row| row.default).collect::<Vec<_>>();

@@ -48,7 +48,6 @@ ARGS = ()
   assert_snapshot!(parse::parse(&parser, input, "E").join("\n"));
 }
 
-
 #[test]
 fn simple() {
   let parser = lr::build(r#"
@@ -65,4 +64,31 @@ C = c C
   let input = "cdccd";
 
   assert_snapshot!(parse::parse(&parser, input, "S").join("\n"));
+}
+
+#[test]
+fn nonassoc() {
+  let parser = lr::build(r#"
+%token AND "&&"
+%token OR "||"
+%token GT ">"
+%token num /\d+/
+
+%skip /[ \t\n]+/
+
+%right-assoc OR
+%right-assoc AND
+%non-assoc GT
+
+%start expr
+
+expr = expr AND expr
+  | expr OR expr
+  | expr GT expr
+  | num
+  "#, lr::ParserKind::Lalr).unwrap();
+
+  let input = "1 > 2 > 3";
+
+  assert_snapshot!(parse::parse(&parser, input, "expr").join("\n"));
 }
