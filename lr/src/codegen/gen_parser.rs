@@ -476,10 +476,6 @@ loop {
   } else if action < 0 {
     let prod = (!action) as usize;
     if prod == accept_prod {
-      // the default entry of ACTION table can delay error to next shift, and
-      // perform redundant reductions. If the reduction performed is ACCEPT,
-      // no shift will be performed. So we make sure EOF is reached before
-      // accepting.
       if self.token_kind == EOF_TOKEN {
         return Ok(stack.pop().unwrap().1);
       } else {

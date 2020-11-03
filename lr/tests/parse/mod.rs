@@ -43,6 +43,9 @@ pub  fn parse<'a>(
         // perform redundant reductions. If the reduction performed is ACCEPT,
         // no shift will be performed. So we make sure EOF is reached before
         // accepting.
+        //
+        // miniyacc doesn't need this check, because its augmented non-terminal,
+        // S' -> S $, the $ (EOF) token need to be shifted to finish the parsing.
         if token_kind == parser.eof_index {
           events.push(format!("accept"));
         } else {

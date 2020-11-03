@@ -34,3 +34,4 @@ grammar:
 - [x] test multiple entry point
 - [ ] merge unit production semantic type
 - [x] executable
+- [ ] ACTION_DEFAULT always reduce or error, no need to turn reduce negative
