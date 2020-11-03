@@ -443,7 +443,7 @@ impl<'a> Into<GrammarError> for ParseError<usize, Token<'a>, UserParseError> {
   }
 }
 
-impl<'a> Into<GrammarError> for LexError {
+impl Into<GrammarError> for LexError {
   fn into(self) -> GrammarError {
     match self.kind {
       LexErrorKind::UnclosedRegex => {
@@ -485,7 +485,7 @@ impl<'a> Into<GrammarError> for LexError {
   }
 }
 
-impl<'a> Into<GrammarError> for RegexError {
+impl Into<GrammarError> for RegexError {
   fn into(self) -> GrammarError {
     match self.kind {
       RegexErrorKind::SyntaxError => {
