@@ -19,6 +19,9 @@ pub fn gen(
     &parser.prods.iter().map(|prod| (prod.rhs_len, prod.nt)).collect::<Vec<_>>(),
     scope);
 
+  scope.new_const("EOF_TOKEN", "usize").value(format!("{}", parser.eof_index));
+  scope.new_const("NUM_TOKENS", "usize").value(format!("{}", parser.eof_index + 1));
+
   let nt_names = parser.nts.iter()
     .map(|nt| {
       if nt.kind == NonterminalKind::User {
@@ -374,9 +377,9 @@ Self {
     &user_state_names,
     imp);
 
-  gen_get_token_fn(parser.eof_index, imp);
+  gen_get_token_fn(imp);
 
-  gen_parse_fn(user_state_tuple, parser.eof_index, imp);
+  gen_parse_fn(user_state_tuple, imp);
 }
 
 fn gen_start_fn(
@@ -419,7 +422,6 @@ fn gen_start_fn(
 }
 
 fn gen_get_token_fn(
-  eof: usize,
   imp: &mut Impl,
 ) {
   imp.new_fn("get_token")
@@ -437,15 +439,14 @@ let token = self.tokens.next()
 if let Some(token) = &token {{
   self.token_kind = token.kind as usize;
 }} else {{
-  self.token_kind = {};
-}}", eof))
+  self.token_kind = EOF_TOKEN;
+}}"))
     .line(r"self.token = token;")
     .line("Ok(())");
 }
 
 fn gen_parse_fn(
   user_state_tuple: &str,
-  eof_index: usize,
   imp: &mut Impl,
 ) {
   imp.new_fn("parse")
@@ -456,7 +457,7 @@ fn gen_parse_fn(
     .ret("::std::result::Result<NtType<'input>, ParseError<'input>>")
     .line("let mut stack = ::std::vec::Vec::<(usize, NtType)>::new();")
     .line("self.get_token()?;")
-    .line(format!("const GOTO_CHECK_BASE: i32 = {};", eof_index + 1))
+    .line("const GOTO_CHECK_BASE: i32 = NUM_TOKENS as i32;")
     .line(r#"
 loop {
   let i = ACTION_DISP[state] + self.token_kind as isize;
@@ -475,7 +476,15 @@ loop {
   } else if action < 0 {
     let prod = (!action) as usize;
     if prod == accept_prod {
-      return Ok(stack.pop().unwrap().1);
+      // the default entry of ACTION table can delay error to next shift, and
+      // perform redundant reductions. If the reduction performed is ACCEPT,
+      // no shift will be performed. So we make sure EOF is reached before
+      // accepting.
+      if self.token_kind == EOF_TOKEN {
+        return Ok(stack.pop().unwrap().1);
+      } else {
+        return Err(ParseError::InvalidToken(self.token.take().unwrap()));
+      }
     }
 
     let (rhs_len, nt) = PRODUCTIONS[prod];

@@ -1,0 +1,15 @@
+---
+source: lr/tests/lalr.rs
+expression: "parse::parse(&parser, input, \"S\").join(\"\\n\")"
+---
+shift  a
+reduce S -> a
+shift  b
+reduce S -> S b
+shift  b
+reduce S -> S b
+shift  b
+reduce S -> S b
+shift  b
+reduce S -> S b
+accept

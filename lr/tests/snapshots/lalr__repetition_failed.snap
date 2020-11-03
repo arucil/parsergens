@@ -1,0 +1,7 @@
+---
+source: lr/tests/lalr.rs
+expression: "parse::parse(&parser, input2, \"S\").join(\"\\n\")"
+---
+shift  a
+reduce S -> a
+error token a at 1:2, expected EOF

@@ -92,3 +92,36 @@ expr = expr AND expr
 
   assert_snapshot!(parse::parse(&parser, input, "expr").join("\n"));
 }
+
+#[test]
+fn repetition_succeed() {
+  let parser = lr::build(r#"
+%token a "a"
+%token b "b"
+
+%start S
+
+S = S b | a
+  "#, lr::ParserKind::Lalr).unwrap();
+
+  let input = "abbbb";
+
+  assert_snapshot!(parse::parse(&parser, input, "S").join("\n"));
+
+}
+
+#[test]
+fn repetition_failed() {
+  let parser = lr::build(r#"
+%token a "a"
+%token b "b"
+
+%start S
+
+S = S b | a
+  "#, lr::ParserKind::Lalr).unwrap();
+
+  let input2 = "aaab";
+
+  assert_snapshot!(parse::parse(&parser, input2, "S").join("\n"));
+}

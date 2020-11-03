@@ -39,7 +39,17 @@ pub  fn parse<'a>(
       token = tokens.next().transpose().unwrap();
     } else if action < 0 {
       if !action as usize == accept_prod {
-        events.push(format!("accept"));
+        // the default entry of ACTION table can delay error to next shift, and
+        // perform redundant reductions. If the reduction performed is ACCEPT,
+        // no shift will be performed. So we make sure EOF is reached before
+        // accepting.
+        if token_kind == parser.eof_index {
+          events.push(format!("accept"));
+        } else {
+          let event = format!("error token {} at {}:{}, expected EOF",
+            token_text, token_start, token_end);
+          events.push(event);
+        }
         break;
       }
 
